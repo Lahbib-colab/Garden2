@@ -1304,11 +1304,7 @@ function switchTab(name){
 // ══════════════════════════════════════════
 // LAWN VISUALISATION
 // ══════════════════════════════════════════
-function buildBlades(){
-  const w=$('blades');w.innerHTML='';
-  const cols=['#30d158','#1fa344','#27c04f','#2a7a2a'];
-  for(let i=0;i<72;i++){const b=document.createElement('div');b.className='blade';b.style.animationDelay=(i*.05%1.4)+'s';b.style.animationDuration=(1.9+Math.random()*.8)+'s';b.style.background=cols[i%cols.length];w.appendChild(b);}
-}
+function buildBlades(){ /* désactivé — photo remplace les lames animées */ }
 function updateLawn(){
   if(!S.lastDate)return;
   const days=daysSince(S.lastDate),freq=getFreq(),ratio=Math.min(days/freq,2);
