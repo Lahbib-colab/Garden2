@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LawnNotifier">
+<meta name="theme-color" content="#09090f" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="description" content="Planifiez vos tontes — notifications push, .ics, IA">
+<title>LawnNotifier</title>
+<style>
+/* ── Tokens ── */
+:root {
+  --bg-primary:#09090f;--bg-secondary:#111118;--bg-card:rgba(255,255,255,.055);
+  --bg-card-hover:rgba(255,255,255,.08);--bg-input:rgba(255,255,255,.07);
+  --border:rgba(255,255,255,.09);
+  --text-primary:#f5f5f7;--text-secondary:rgba(245,245,247,.55);--text-tertiary:rgba(245,245,247,.30);
+  --green:#30d158;--blue:#0a84ff;--amber:#ffd60a;--red:#ff453a;--orange:#ff9f0a;
+  --gray:#636366;--gray2:#48484a;
+  --green-tint:rgba(48,209,88,.13);--blue-tint:rgba(10,132,255,.13);
+  --amber-tint:rgba(255,214,10,.13);--red-tint:rgba(255,69,58,.13);
+  --green-glow:rgba(48,209,88,.28);--blue-glow:rgba(10,132,255,.28);
+  --blur-sm:blur(20px) saturate(160%);--blur-md:blur(40px) saturate(180%);
+  --r-xs:6px;--r-sm:10px;--r-md:14px;--r-lg:20px;--r-xl:28px;
+  --sp2:8px;--sp3:12px;--sp4:16px;--sp5:20px;
+  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
+  --ease-out:cubic-bezier(.22,1,.36,1);--ease-spring:cubic-bezier(.34,1.56,.64,1);
+}
+@media(prefers-color-scheme:light){
+  :root{
+    --bg-primary:#f2f2f7;--bg-secondary:#fff;--bg-card:rgba(255,255,255,.75);
+    --bg-card-hover:rgba(255,255,255,.9);--bg-input:rgba(0,0,0,.04);
+    --border:rgba(0,0,0,.09);
+    --text-primary:#1c1c1e;--text-secondary:rgba(28,28,30,.55);--text-tertiary:rgba(28,28,30,.30);
+    --green:#28a745;--blue:#007AFF;--amber:#c9a100;--red:#ff3b30;--gray:#8e8e93;--gray2:#c7c7cc;
+    --green-tint:rgba(40,167,69,.10);--blue-tint:rgba(0,122,255,.10);
+    --amber-tint:rgba(201,161,0,.10);--red-tint:rgba(255,59,48,.10);
+    --green-glow:rgba(40,167,69,.18);--blue-glow:rgba(0,122,255,.18);
+  }
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg-primary);color:var(--text-primary);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","Segoe UI",system-ui,sans-serif;
+  font-size:16px;line-height:1.4;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button,input{font-family:inherit}a{color:var(--blue);text-decoration:none}svg{display:block}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:var(--r-xs)}
+.icon{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon svg{width:100%;height:100%}
+.i14{width:14px;height:14px}.i16{width:16px;height:16px}.i18{width:18px;height:18px}
+.i20{width:20px;height:20px}.i22{width:22px;height:22px}.i24{width:24px;height:24px}
+.hidden{display:none!important}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ── Aurora ── */
+.aurora{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.ab{position:absolute;border-radius:50%;filter:blur(100px);animation:adrift 24s ease-in-out infinite alternate}
+.ab:nth-child(1){width:60vw;height:60vw;background:#30d158;opacity:.10;top:-20%;left:-10%;animation-duration:26s}
+.ab:nth-child(2){width:50vw;height:50vw;background:#0a84ff;opacity:.08;bottom:-15%;right:-15%;animation-duration:32s;animation-delay:-12s}
+.ab:nth-child(3){width:40vw;height:40vw;background:#30d158;opacity:.05;top:40%;left:30%;animation-duration:18s;animation-delay:-6s}
+@keyframes adrift{from{transform:translate(0,0) scale(1)}to{transform:translate(6vw,5vh) scale(1.1)}}
+@media(prefers-color-scheme:light){.ab:nth-child(1){opacity:.06}.ab:nth-child(2){opacity:.05}.ab:nth-child(3){opacity:.03}}
+
+/* ── Shell ── */
+.shell{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100dvh}
+
+/* ── Topbar (mobile) — Liquid Glass ── */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  padding:calc(var(--sat) + 8px) var(--sp4) 8px;
+  background:rgba(14,14,20,.78);
+  backdrop-filter:blur(48px) saturate(200%);
+  -webkit-backdrop-filter:blur(48px) saturate(200%);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  box-shadow:0 1px 0 rgba(255,255,255,.04), 0 4px 20px rgba(0,0,0,.3);
+}
+@media(prefers-color-scheme:light){
+  .topbar{
+    background:rgba(248,248,252,.82);
+    border-bottom-color:rgba(0,0,0,.07);
+    box-shadow:0 1px 0 rgba(255,255,255,.8), 0 4px 16px rgba(0,0,0,.08);
+  }
+}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;padding-bottom:0;max-width:600px;margin:0 auto;width:100%}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:32px;height:32px;background:var(--green-tint);border:1px solid var(--green-glow);
+  border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--green)}
+.logo-name{font-size:.95rem;font-weight:700;letter-spacing:-.025em}
+.logo-name em{font-style:normal;color:var(--green)}
+.install-btn{display:none;align-items:center;gap:6px;background:var(--blue-tint);border:1px solid var(--blue-glow);
+  border-radius:20px;padding:6px 12px;color:var(--blue);font-size:.73rem;font-weight:600;cursor:pointer}
+.install-btn.visible{display:flex}
+
+/* ══ TAB BAR — iOS 27 Liquid Glass Pill ══ */
+.tabbar{
+  position:fixed;bottom:0;left:0;right:0;z-index:50;
+  display:flex;justify-content:center;align-items:flex-end;
+  padding:0 20px calc(var(--sab) + 12px);
+  /* Do NOT use pointer-events:none on the container — breaks Safari iOS tap routing */
+  background:transparent;
+}
+/* The pill container */
+.tab-pill{
+  pointer-events:auto;
+  display:flex;align-items:center;
+  gap:4px;
+  padding:6px 6px;
+  border-radius:30px;
+  /* Liquid Glass: heavy blur + dual-layer tint */
+  background:rgba(28,28,32,.72);
+  backdrop-filter:blur(48px) saturate(220%) brightness(1.08);
+  -webkit-backdrop-filter:blur(48px) saturate(220%) brightness(1.08);
+  border:1px solid rgba(255,255,255,.14);
+  /* subtle inner highlight — top edge catches light */
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.18),
+    inset 0 -1px 0 rgba(0,0,0,.25),
+    0 8px 32px rgba(0,0,0,.45),
+    0 2px 8px rgba(0,0,0,.3);
+}
+@media(prefers-color-scheme:light){
+  .tab-pill{
+    background:rgba(255,255,255,.55);
+    border-color:rgba(0,0,0,.09);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.9),
+      inset 0 -1px 0 rgba(0,0,0,.06),
+      0 8px 32px rgba(0,0,0,.15),
+      0 2px 8px rgba(0,0,0,.08);
+  }
+}
+/* Each tab button */
+.tab-item{
+  position:relative;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;
+  padding:8px 16px;
+  border:none;background:none;cursor:pointer;
+  color:rgba(245,245,247,.45);
+  font-size:.58rem;font-weight:600;letter-spacing:.01em;
+  border-radius:24px;
+  transition:color .2s, background .2s;
+  min-width:60px;
+  /* Safari iOS tap fixes */
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  user-select:none;
+  -webkit-user-select:none;
+  /* Ensure clicks register on the element itself */
+  pointer-events:auto;
+}
+@media(prefers-color-scheme:light){
+  .tab-item{color:rgba(28,28,30,.38)}
+}
+/* Active pill highlight inside the pill */
+.tab-item.active{
+  color:#fff;
+  background:rgba(255,255,255,.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 -1px 0 rgba(0,0,0,.18);
+}
+@media(prefers-color-scheme:light){
+  .tab-item.active{
+    color:var(--green);
+    background:rgba(40,167,69,.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.7),
+      inset 0 -1px 0 rgba(40,167,69,.12);
+  }
+}
+/* Active icon gets green tint in dark */
+.tab-item.active .tab-icon{color:var(--green)}
+.tab-icon{width:22px;height:22px;transition:transform .2s var(--ease-spring),color .2s}
+.tab-item.active .tab-icon{transform:scale(1.08)}
+/* Tap spring */
+.tab-item:active .tab-icon{transform:scale(.9)}
+
+/* ── Main ── */
+.main-content{flex:1;padding:var(--sp4) var(--sp4) calc(var(--sab) + 88px);max-width:600px;margin:0 auto;width:100%}
+.pane{display:none}.pane.active{display:block}
+
+/* ── Sidebar (macOS ≥768px) ── */
+.sidebar{display:none}
+@media(min-width:768px){
+  .topbar{display:none}.tabbar{display:none!important}
+  .shell{flex-direction:row;height:100dvh;overflow:hidden}
+  .sidebar{display:flex!important;flex-direction:column;width:220px;flex-shrink:0;
+    background:rgba(9,9,15,.75);backdrop-filter:var(--blur-md);-webkit-backdrop-filter:var(--blur-md);
+    border-right:1px solid var(--border);padding:calc(var(--sat) + 20px) 0 calc(var(--sab) + 16px)}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:0 16px 24px}
+  .sidebar-logo-mark{width:34px;height:34px;background:var(--green-tint);border:1px solid var(--green-glow);
+    border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--green)}
+  .sidebar-logo-name{font-size:1rem;font-weight:700;letter-spacing:-.025em}
+  .sidebar-logo-name em{font-style:normal;color:var(--green)}
+  .sidebar-nav{flex:1;display:flex;flex-direction:column;gap:2px;padding:0 8px}
+  .sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r-sm);
+    border:none;background:none;cursor:pointer;width:100%;color:var(--text-secondary);
+    font-size:.85rem;font-weight:500;transition:background .15s,color .15s;text-align:left}
+  .sidebar-item:hover{background:rgba(255,255,255,.06);color:var(--text-primary)}
+  .sidebar-item.active{background:var(--green-tint);color:var(--green);font-weight:600}
+  .sidebar-item .icon{width:18px;height:18px;opacity:.8}
+  .sidebar-item.active .icon{opacity:1}
+  .sidebar-footer{padding:16px 8px 0;border-top:1px solid var(--border);margin-top:auto}
+  .main-content{flex:1;overflow-y:auto;padding:28px 32px;max-width:720px;margin:0}
+  .card{border-radius:var(--r-xl)}
+}
+@media(prefers-color-scheme:light){
+  .sidebar{background:rgba(242,242,247,.88)!important}
+}
+
+/* ── Card ── */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:var(--sp5);margin-bottom:var(--sp3);backdrop-filter:var(--blur-sm);-webkit-backdrop-filter:var(--blur-sm);transition:background .2s}
+.card:hover{background:var(--bg-card-hover)}
+.card-title{font-size:.95rem;font-weight:700;letter-spacing:-.02em;margin-bottom:var(--sp4)}
+.sec-lbl{font-size:.72rem;font-weight:600;color:var(--text-tertiary);letter-spacing:.02em;margin-bottom:var(--sp3)}
+
+/* ── Lawn ── */
+.lawn-scene{position:relative;height:136px;margin-bottom:var(--sp3);border-radius:var(--r-lg);
+  overflow:hidden;background:linear-gradient(180deg,rgba(48,209,88,.04),rgba(48,209,88,.12));
+  border:1px solid rgba(48,209,88,.14)}
+.lawn-sky{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,132,255,.06),transparent 55%)}
+.lawn-gnd{position:absolute;bottom:0;left:0;right:0;height:44px;
+  background:linear-gradient(180deg,rgba(48,209,88,.22),rgba(14,60,14,.5))}
+.blades-wrap{position:absolute;bottom:0;left:0;right:0;height:44px;
+  display:flex;align-items:flex-end;justify-content:center;gap:1.5px;padding:0 4px;overflow:hidden}
+.blade{width:3px;border-radius:3px 3px 0 0;transform-origin:bottom center;flex-shrink:0;
+  animation:sway 2.4s ease-in-out infinite alternate}
+@keyframes sway{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
+.lawn-badge{position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  background:rgba(9,9,15,.7);border:1px solid var(--border);border-radius:20px;
+  padding:5px 14px;font-size:.76rem;font-weight:600;white-space:nowrap;
+  backdrop-filter:var(--blur-sm);display:flex;align-items:center;gap:6px}
+@media(prefers-color-scheme:light){.lawn-badge{background:rgba(242,242,247,.85)}}
+.ring-wrap{position:absolute;bottom:50px;right:14px;width:48px;height:48px}
+.ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;font-size:.82rem;font-weight:700;line-height:1}
+.ring-lbl{font-size:.4rem;color:var(--text-secondary);margin-top:1px}
+
+/* ── Inputs ── */
+.input-row{display:flex;align-items:center;gap:var(--sp2)}
+.field{flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:11px 14px;color:var(--text-primary);font-size:.9rem;font-weight:500;
+  outline:none;transition:border-color .2s,box-shadow .2s;color-scheme:dark;-webkit-appearance:none}
+@media(prefers-color-scheme:light){.field{color-scheme:light}}
+.field:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(48,209,88,.14)}
+.days-chip{font-size:.74rem;font-weight:700;padding:5px 11px;background:var(--green-tint);
+  border:1px solid var(--green-glow);border-radius:20px;color:var(--green);white-space:nowrap}
+
+/* ── Freq grid ── */
+.freq-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp2);margin-top:2px}
+.freq-chip{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:10px 6px 9px;color:var(--text-primary);font-size:.75rem;font-weight:500;
+  cursor:pointer;transition:all .16s;text-align:center;line-height:1.4;
+  display:flex;flex-direction:column;align-items:center;gap:4px}
+.freq-chip .fc-icon{width:18px;height:18px;color:var(--text-secondary)}
+.freq-chip:hover{background:var(--green-tint);border-color:var(--green-glow)}
+.freq-chip.on{background:var(--green-tint);border-color:var(--green);color:var(--green);box-shadow:0 0 12px rgba(48,209,88,.14)}
+.freq-chip.on .fc-icon{color:var(--green)}
+
+/* ── Time row ── */
+.time-row{display:flex;align-items:center;gap:var(--sp3)}
+.time-lbl{font-size:.8rem;color:var(--text-secondary);flex:1}
+.time-field{background:var(--bg-input);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:8px 11px;color:var(--text-primary);font-size:.88rem;font-weight:600;
+  outline:none;color-scheme:dark;-webkit-appearance:none;transition:border-color .2s}
+@media(prefers-color-scheme:light){.time-field{color-scheme:light}}
+.time-field:focus{border-color:var(--green)}
+
+/* ── Buttons ── */
+.btn-primary{width:100%;margin-top:var(--sp3);background:linear-gradient(160deg,#24b34a,var(--green));
+  border:none;border-radius:var(--r-sm);padding:14px;color:#fff;font-size:.9rem;font-weight:700;
+  letter-spacing:-.01em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:transform .18s var(--ease-out),box-shadow .18s;box-shadow:0 4px 16px rgba(48,209,88,.2)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(48,209,88,.3)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.pill-btn{background:var(--blue-tint);border:1px solid var(--blue-glow);border-radius:9px;
+  padding:6px 12px;color:var(--blue);font-size:.73rem;font-weight:700;cursor:pointer;
+  transition:opacity .18s;display:flex;align-items:center;gap:5px}
+.pill-btn:hover{opacity:.8}
+.pill-btn:disabled{opacity:.4;cursor:default}
+
+/* ── Progress ── */
+.prog-bar{height:2px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden;display:none}
+.prog-fill{height:100%;width:0%;background:linear-gradient(90deg,#24b34a,var(--green),var(--blue));
+  border-radius:2px;transition:width .4s ease}
+
+/* ── Schedule ── */
+.sched-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp4)}
+.season-chip{font-size:.68rem;font-weight:600;background:var(--green-tint);border:1px solid var(--green-glow);
+  color:var(--green);border-radius:20px;padding:3px 9px;display:flex;align-items:center;gap:4px}
+.ev-row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--r-sm);
+  background:rgba(255,255,255,.03);border:1px solid transparent;border-left-width:2.5px;
+  margin-bottom:6px;transition:background .14s}
+.ev-row:hover{background:rgba(255,255,255,.06)}
+.ev-row.done{border-left-color:var(--border);opacity:.5}
+.ev-row.urgent{border-left-color:var(--red)}
+.ev-row.soon{border-left-color:var(--amber)}
+.ev-row.normal{border-left-color:var(--green)}
+.ev-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ev-dot.done{background:var(--gray)}
+.ev-dot.urgent{background:var(--red);box-shadow:0 0 5px var(--red)}
+.ev-dot.soon{background:var(--amber);box-shadow:0 0 5px var(--amber)}
+.ev-dot.normal{background:var(--green);box-shadow:0 0 5px var(--green)}
+.ev-date{font-size:.78rem;font-weight:600;min-width:84px}
+.ev-label{flex:1;font-size:.77rem;color:var(--text-secondary)}
+.ev-diff{font-size:.72rem;color:var(--text-tertiary);margin-left:4px}
+.ev-badge{font-size:.63rem;font-weight:700;padding:2px 7px;border-radius:12px;white-space:nowrap}
+.badge-done{background:rgba(255,255,255,.06);color:var(--text-secondary)}
+.badge-urgent{background:var(--red-tint);color:var(--red)}
+.badge-soon{background:var(--amber-tint);color:var(--amber)}
+.badge-normal{background:var(--green-tint);color:var(--green)}
+.ai-tip{background:var(--green-tint);border:1px solid rgba(48,209,88,.18);border-radius:var(--r-sm);
+  padding:var(--sp3);margin-top:var(--sp3);font-size:.79rem;color:var(--text-secondary);line-height:1.6}
+.ai-tip-lbl{font-size:.63rem;font-weight:700;color:var(--green);margin-bottom:5px;
+  display:flex;align-items:center;gap:5px}
+.ai-pulse{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── Notif rows ── */
+.push-banner{display:none;align-items:center;gap:8px;padding:10px 12px;border-radius:var(--r-sm);margin-bottom:10px;font-size:.78rem;font-weight:600}
+.push-banner.granted{display:flex;background:var(--green-tint);border:1px solid var(--green-glow);color:var(--green)}
+.push-banner.denied{display:flex;background:var(--red-tint);border:1px solid rgba(255,69,58,.25);color:var(--red)}
+.push-banner.pending{display:flex;background:var(--amber-tint);border:1px solid rgba(255,214,10,.25);color:var(--amber)}
+.notif-row{display:flex;align-items:center;gap:var(--sp3);padding:12px;border-radius:var(--r-sm);
+  background:rgba(255,255,255,.03);border:1px solid var(--border);margin-bottom:7px;transition:background .15s}
+.notif-row:hover{background:rgba(255,255,255,.06)}
+.ni-wrap{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ni{flex:1;min-width:0}
+.ni-t{font-size:.82rem;font-weight:600}
+.ni-s{font-size:.71rem;color:var(--text-secondary);margin-top:2px;line-height:1.35}
+.na{flex-shrink:0}
+/* ── Toggle switch (iOS style) ── */
+.toggle{position:relative;width:51px;height:31px;cursor:pointer;flex-shrink:0;display:inline-block}
+.toggle input{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.toggle-track{
+  position:absolute;inset:0;
+  background:#3a3a3c;
+  border-radius:31px;
+  transition:background .22s ease;
+  border:1px solid rgba(255,255,255,.08);
+}
+.toggle-thumb{
+  position:absolute;top:2px;left:2px;
+  width:27px;height:27px;
+  background:#ffffff;
+  border-radius:50%;
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 2px 6px rgba(0,0,0,.4),0 0 0 0.5px rgba(0,0,0,.08);
+}
+/* Checked state — input BEFORE track/thumb in DOM so ~ works */
+.toggle input:checked + .toggle-track{background:var(--green);border-color:transparent}
+.toggle input:checked + .toggle-track + .toggle-thumb{transform:translateX(20px)}
+@media(prefers-color-scheme:light){
+  .toggle-track{background:#e5e5ea;border-color:rgba(0,0,0,.06)}
+  .toggle-thumb{box-shadow:0 2px 4px rgba(0,0,0,.2)}
+}
+.next-box{padding:11px 13px;background:var(--blue-tint);border:1px solid var(--blue-glow);
+  border-radius:var(--r-sm);margin-top:10px;font-size:.8rem;font-weight:600;color:var(--blue);
+  display:flex;align-items:center;gap:8px}
+
+/* ── History ── */
+.hist-empty{text-align:center;padding:28px 0;color:var(--text-tertiary);font-size:.82rem}
+.hist-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.hist-row:last-child{border-bottom:none}
+.hist-date{font-size:.8rem;font-weight:600;flex:1}
+.hist-note{font-size:.75rem;color:var(--text-secondary);flex:2}
+.hist-del{background:none;border:none;color:var(--red);cursor:pointer;padding:4px;opacity:.5;transition:opacity .18s;display:flex}
+.hist-del:hover{opacity:1}
+.log-btn{width:100%;margin-top:10px;background:var(--green-tint);border:1px solid var(--green-glow);
+  border-radius:var(--r-sm);padding:12px;color:var(--green);font-size:.84rem;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px;transition:all .18s}
+.log-btn:hover{background:rgba(48,209,88,.2)}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.stat-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--r-md);padding:13px 10px;text-align:center}
+.stat-val{font-size:1.4rem;font-weight:700;letter-spacing:-.03em}
+.stat-lbl{font-size:.62rem;color:var(--text-tertiary);margin-top:3px;line-height:1.3}
+
+/* ── Tips ── */
+.tips-body{font-size:.82rem;color:var(--text-secondary);line-height:1.7}
+.tips-body strong{color:var(--text-primary)}
+.chk-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.chk-item:last-child{border-bottom:none}
+.chk-item input[type=checkbox]{width:17px;height:17px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
+.chk-item label{font-size:.79rem;color:var(--text-secondary);cursor:pointer;line-height:1.4}
+.chk-item.done label{text-decoration:line-through;color:var(--text-tertiary)}
+
+/* ── Sheet ── */
+.sheet-overlay{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.5);
+  backdrop-filter:blur(14px);opacity:0;pointer-events:none;transition:opacity .28s}
+.sheet-overlay.open{opacity:1;pointer-events:all}
+.sheet{position:fixed;bottom:0;left:50%;z-index:901;translate:-50% 0;
+  width:100%;max-width:600px;
+  background:rgba(18,18,24,.95);border:1px solid var(--border);border-bottom:none;
+  border-radius:24px 24px 0 0;padding:10px 20px calc(env(safe-area-inset-bottom,0px) + 20px);
+  backdrop-filter:var(--blur-md);transform:translateY(100%);
+  transition:transform .4s var(--ease-spring)}
+@media(prefers-color-scheme:light){.sheet{background:rgba(242,242,247,.97)}}
+.sheet.open{transform:translateY(0)}
+.sheet-handle{width:32px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 16px}
+.sheet-title{font-size:1rem;font-weight:700;letter-spacing:-.02em;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.sheet-sub{font-size:.79rem;color:var(--text-secondary);line-height:1.55;margin-bottom:12px}
+.step{display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid var(--border)}
+.step:last-child{border-bottom:none}
+.step-n{width:20px;height:20px;border-radius:50%;background:var(--green-tint);border:1px solid var(--green-glow);
+  color:var(--green);font-size:.66rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-txt{font-size:.79rem;color:var(--text-secondary);line-height:1.5}
+.step-txt strong{color:var(--text-primary)}
+.sheet-actions{display:flex;gap:8px;margin-top:14px}
+.btn-dl{flex:1;background:var(--blue);border:none;border-radius:var(--r-sm);padding:13px;color:#fff;
+  font-size:.86rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .18s}
+.btn-dl:hover{opacity:.88}
+.btn-close-sh{background:rgba(255,255,255,.08);border:none;border-radius:var(--r-sm);
+  padding:13px 14px;color:var(--text-secondary);font-size:.86rem;font-weight:600;cursor:pointer;display:flex;align-items:center}
+
+/* ── Toast ── */
+.toast{position:fixed;top:calc(var(--sat) + 10px);left:50%;
+  transform:translateX(-50%) translateY(-100px);
+  background:rgba(18,18,24,.93);border:1px solid var(--border);
+  border-radius:var(--r-md);padding:10px 16px;font-size:.78rem;font-weight:600;
+  backdrop-filter:var(--blur-sm);z-index:9999;white-space:nowrap;
+  display:flex;align-items:center;gap:7px;
+  transition:transform .32s var(--ease-spring);pointer-events:none}
+@media(prefers-color-scheme:light){.toast{background:rgba(242,242,247,.97)}}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── Plan pane — notification status banner ── */
+.plan-notif-banner{
+  display:flex;align-items:center;gap:9px;
+  padding:11px 14px;border-radius:var(--r-md);
+  margin-bottom:var(--sp3);cursor:pointer;
+  background:var(--bg-card);border:1px solid var(--border);
+  backdrop-filter:var(--blur-sm);
+  transition:background .15s;
+  font-size:.8rem;font-weight:600;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+.plan-notif-banner:hover,.plan-notif-banner:active{background:var(--bg-card-hover)}
+.plan-notif-banner.ok  {border-color:var(--green-glow);background:var(--green-tint);color:var(--green)}
+.plan-notif-banner.warn{border-color:rgba(255,214,10,.3);background:var(--amber-tint);color:var(--amber)}
+.plan-notif-banner.off {border-color:var(--border);color:var(--text-secondary)}
+.plan-notif-cta{margin-left:auto;font-size:.72rem;opacity:.7;flex-shrink:0}
+.plan-notif-banner.ok .plan-notif-cta{display:none}
+
+/* ── Schedule share row (contextual, inside sched card) ── */
+.sched-share{
+  display:flex;gap:7px;margin-top:14px;flex-wrap:wrap;
+}
+.sched-share-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 13px;border-radius:var(--r-sm);
+  border:1px solid var(--border);background:rgba(255,255,255,.05);
+  color:var(--text-primary);font-size:.76rem;font-weight:700;
+  cursor:pointer;text-decoration:none;
+  font-family:inherit;
+  transition:all .16s;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+.sched-share-btn:hover{transform:translateY(-1px)}
+.sched-share-btn.ics{color:var(--blue);border-color:var(--blue-glow);background:var(--blue-tint)}
+.sched-share-btn.wa {color:#25D366;border-color:rgba(37,211,102,.3);background:rgba(37,211,102,.08)}
+.sched-share-btn.tg {color:#229ED9;border-color:rgba(34,158,217,.3);background:rgba(34,158,217,.08)}
+
+/* ── Misc ── */
+.divider{height:1px;background:var(--border);margin:var(--sp4) 0}
+.dots span{animation:blink 1.2s infinite;display:inline-block}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+@media(max-width:380px){.freq-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ══════════════════════════════════════════════
+   MÉTÉO — iOS 27 Weather style
+   ══════════════════════════════════════════════ */
+
+/* Hero weather card */
+.wx-hero{
+  position:relative;overflow:hidden;
+  border-radius:var(--r-xl);
+  margin-bottom:var(--sp3);
+  min-height:180px;
+  padding:24px 22px 20px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  background:linear-gradient(145deg,#0a2a5e 0%,#1a4a8a 45%,#0a3a6e 100%);
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 12px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.18);
+}
+/* Dynamic background shifts with weather */
+.wx-hero.sunny{background:linear-gradient(145deg,#1a3a6e 0%,#0a5494 40%,#1565c0 100%)}
+.wx-hero.cloudy{background:linear-gradient(145deg,#2a2a3a 0%,#3a3a4e 50%,#2e2e42 100%)}
+.wx-hero.rainy{background:linear-gradient(145deg,#1a2a3e 0%,#243040 50%,#1e2a38 100%)}
+.wx-hero.stormy{background:linear-gradient(145deg,#0a0a1a 0%,#1a1a2e 50%,#111128 100%)}
+.wx-hero.snowy{background:linear-gradient(145deg,#2e3a4e 0%,#3a4a5e 50%,#344058 100%)}
+
+/* Floating glass orb behind temperature */
+.wx-hero::before{
+  content:'';position:absolute;top:-40px;right:-30px;
+  width:200px;height:200px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.12) 0%,transparent 70%);
+  pointer-events:none;
+}
+
+.wx-location{font-size:.72rem;font-weight:600;color:rgba(255,255,255,.65);
+  letter-spacing:.04em;margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.wx-city{font-size:1.1rem;font-weight:700;color:#fff;letter-spacing:-.02em}
+.wx-desc{font-size:.8rem;color:rgba(255,255,255,.7);margin-top:2px;font-weight:500}
+
+.wx-temp-row{display:flex;align-items:flex-end;justify-content:space-between}
+.wx-temp{font-size:4rem;font-weight:200;color:#fff;line-height:1;letter-spacing:-.04em}
+.wx-temp sup{font-size:1.4rem;font-weight:400;vertical-align:super;margin-left:2px}
+.wx-icon-big{font-size:3.2rem;line-height:1;filter:drop-shadow(0 2px 8px rgba(0,0,0,.3))}
+
+/* Lawn suitability badge */
+.wx-lawn-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(0,0,0,.28);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.15);border-radius:20px;
+  padding:5px 12px;font-size:.72rem;font-weight:700;color:#fff;
+  margin-top:12px;align-self:flex-start;
+}
+
+/* Hourly scroll */
+.wx-hourly-wrap{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:16px 0 14px;
+  margin-bottom:var(--sp3);overflow:hidden;
+  backdrop-filter:var(--blur-sm);
+}
+.wx-hourly-title{font-size:.68rem;font-weight:600;color:var(--text-tertiary);
+  letter-spacing:.04em;padding:0 16px 12px;border-bottom:1px solid var(--border)}
+.wx-hourly-scroll{
+  display:flex;gap:0;overflow-x:auto;padding:12px 8px 0;
+  scrollbar-width:none;-ms-overflow-style:none;
+}
+.wx-hourly-scroll::-webkit-scrollbar{display:none}
+.wx-hour{
+  flex:0 0 60px;display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:8px 4px;border-radius:var(--r-sm);
+  transition:background .15s;cursor:default;
+}
+.wx-hour:hover{background:rgba(255,255,255,.06)}
+.wx-hour-time{font-size:.65rem;color:var(--text-tertiary);font-weight:600}
+.wx-hour-now{color:var(--blue)!important}
+.wx-hour-icon{font-size:1.3rem;line-height:1}
+.wx-hour-temp{font-size:.82rem;font-weight:700;color:var(--text-primary)}
+.wx-hour-rain{font-size:.6rem;color:var(--blue);font-weight:600}
+
+/* 7-day forecast */
+.wx-daily-wrap{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:16px;
+  margin-bottom:var(--sp3);
+  backdrop-filter:var(--blur-sm);
+}
+.wx-daily-title{font-size:.68rem;font-weight:600;color:var(--text-tertiary);
+  letter-spacing:.04em;margin-bottom:0;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.wx-day{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 0;border-bottom:1px solid var(--border);
+}
+.wx-day:last-child{border-bottom:none}
+.wx-day-name{font-size:.82rem;font-weight:600;min-width:48px;color:var(--text-primary)}
+.wx-day-icon{font-size:1.2rem;flex-shrink:0}
+.wx-day-lawn{flex:1;display:flex;align-items:center;gap:4px}
+.wx-lawn-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.wx-lawn-ok{background:var(--green);box-shadow:0 0 4px var(--green)}
+.wx-lawn-warn{background:var(--amber);box-shadow:0 0 4px var(--amber)}
+.wx-lawn-bad{background:var(--red);box-shadow:0 0 4px var(--red)}
+.wx-lawn-txt{font-size:.68rem;color:var(--text-secondary);font-weight:500}
+.wx-day-temps{display:flex;align-items:center;gap:8px;font-size:.82rem;font-weight:600}
+.wx-day-lo{color:var(--text-tertiary)}
+
+/* Lawn index widget */
+.wx-index-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:var(--sp3)}
+.wx-index-card{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:16px;backdrop-filter:var(--blur-sm);
+}
+.wx-index-label{font-size:.63rem;font-weight:600;color:var(--text-tertiary);
+  letter-spacing:.03em;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.wx-index-val{font-size:1.5rem;font-weight:700;letter-spacing:-.03em}
+.wx-index-sub{font-size:.68rem;color:var(--text-secondary);margin-top:3px}
+
+/* Loading skeleton */
+.wx-loading{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:48px 0;gap:12px;color:var(--text-tertiary);font-size:.82rem;
+}
+.wx-spinner{
+  width:28px;height:28px;border-radius:50%;
+  border:2px solid var(--border);border-top-color:var(--blue);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.wx-error{
+  background:var(--red-tint);border:1px solid rgba(255,69,58,.2);
+  border-radius:var(--r-md);padding:16px;text-align:center;
+  font-size:.8rem;color:var(--red);margin-bottom:var(--sp3);
+}
+.wx-locate-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--blue);border:none;border-radius:var(--r-sm);
+  padding:12px 20px;color:#fff;font-size:.84rem;font-weight:700;
+  cursor:pointer;transition:opacity .18s;margin:0 auto;
+}
+.wx-locate-btn:hover{opacity:.88}
+.wx-attribution{font-size:.6rem;color:var(--text-tertiary);text-align:center;
+  padding-top:4px;opacity:.6}
+
+/* ══════════════════════════════════════════════
+   PARAMÈTRES — iOS Settings style
+   ══════════════════════════════════════════════ */
+.settings-group{margin-bottom:var(--sp3)}
+.settings-group-label{
+  font-size:.68rem;font-weight:600;color:var(--text-tertiary);
+  letter-spacing:.04em;text-transform:uppercase;
+  padding:0 4px;margin-bottom:8px;
+}
+.settings-list{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--r-lg);overflow:hidden;
+  backdrop-filter:var(--blur-sm);
+}
+.settings-row{
+  display:flex;align-items:center;gap:13px;
+  padding:13px 16px;border-bottom:1px solid var(--border);
+  transition:background .14s;
+}
+.settings-row:last-child{border-bottom:none}
+.settings-row:active{background:rgba(255,255,255,.06)}
+.sr-icon{
+  width:30px;height:30px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:.9rem;
+}
+.sr-body{flex:1;min-width:0}
+.sr-title{font-size:.85rem;font-weight:600;color:var(--text-primary)}
+.sr-sub{font-size:.71rem;color:var(--text-secondary);margin-top:2px}
+.sr-right{flex-shrink:0;display:flex;align-items:center;gap:6px}
+.sr-val{font-size:.82rem;color:var(--text-secondary);font-weight:500}
+.sr-chevron{width:14px;height:14px;color:var(--text-tertiary)}
+
+/* Segmented control (iOS) */
+.seg-ctrl{
+  display:flex;background:rgba(255,255,255,.08);border-radius:9px;padding:2px;
+  border:1px solid var(--border);
+}
+@media(prefers-color-scheme:light){.seg-ctrl{background:rgba(0,0,0,.06)}}
+.seg-opt{
+  flex:1;padding:5px 10px;border-radius:7px;border:none;background:none;
+  font-size:.72rem;font-weight:600;color:var(--text-secondary);cursor:pointer;
+  transition:all .18s;text-align:center;
+}
+.seg-opt.on{background:var(--bg-secondary);color:var(--text-primary);
+  box-shadow:0 1px 3px rgba(0,0,0,.3);}
+@media(prefers-color-scheme:light){
+  .seg-opt.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15);}
+}
+
+/* Select */
+.sr-select{
+  background:rgba(255,255,255,.07);border:1px solid var(--border);
+  border-radius:8px;padding:5px 10px;color:var(--text-primary);
+  font-size:.78rem;font-weight:600;font-family:inherit;
+  outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;
+}
+@media(prefers-color-scheme:light){.sr-select{background:rgba(0,0,0,.04);color:#1c1c1e}}
+
+/* About card */
+.about-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:24px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  backdrop-filter:var(--blur-sm);text-align:center;
+}
+.about-icon{width:64px;height:64px;border-radius:16px;
+  background:linear-gradient(145deg,#1a4a1a,var(--green));
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;margin-bottom:4px;
+  box-shadow:0 4px 16px rgba(48,209,88,.3);}
+.about-name{font-size:1rem;font-weight:700;letter-spacing:-.02em}
+.about-name em{font-style:normal;color:var(--green)}
+.about-version{font-size:.72rem;color:var(--text-tertiary)}
+.about-links{display:flex;gap:10px;margin-top:8px}
+.about-link{font-size:.75rem;color:var(--blue);font-weight:600;
+  background:var(--blue-tint);border:1px solid var(--blue-glow);
+  border-radius:20px;padding:5px 14px;cursor:pointer;text-decoration:none}
+
+/* Reset button */
+.danger-btn{
+  width:100%;background:var(--red-tint);border:1px solid rgba(255,69,58,.25);
+  border-radius:var(--r-sm);padding:13px;color:var(--red);
+  font-size:.84rem;font-weight:700;font-family:inherit;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:background .18s;
+}
+.danger-btn:hover{background:rgba(255,69,58,.2)}
+</style>
+</head>
+<body>
+
+<div class="aurora" aria-hidden="true"><div class="ab"></div><div class="ab"></div><div class="ab"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="shell">
+
+  <!-- Sidebar macOS -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-mark"><span class="icon i20" id="sl-leaf"></span></div>
+      <div class="sidebar-logo-name">Lawn<em>Notifier</em></div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="sidebar-item active" data-tab="plan" onclick="switchTab('plan')">
+        <span class="icon" id="sl-cal"></span>Planifier
+      </button>
+      <button class="sidebar-item" data-tab="history" onclick="switchTab('history')">
+        <span class="icon" id="sl-list"></span>Historique
+      </button>
+      <button class="sidebar-item" data-tab="tips" onclick="switchTab('tips')">
+        <span class="icon" id="sl-sun"></span>Conseils
+      </button>
+      <button class="sidebar-item" data-tab="weather" onclick="switchTab('weather')">
+        <span class="icon" id="sl-cloud"></span>Météo
+      </button>
+      <button class="sidebar-item" data-tab="settings" onclick="switchTab('settings')">
+        <span class="icon" id="sl-gear"></span>Paramètres
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="install-btn" id="installBtnSide" onclick="installPWA()">
+        <span class="icon i14" id="sl-inst"></span>Installer
+      </button>
+    </div>
+  </aside>
+
+  <!-- Top bar mobile -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="logo">
+        <div class="logo-mark"><span class="icon i18" id="tl-leaf"></span></div>
+        <div class="logo-name">Lawn<em>Notifier</em></div>
+      </div>
+      <button class="install-btn" id="installBtn" onclick="installPWA()">
+        <span class="icon i14" id="tl-inst"></span>Installer
+      </button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main-content">
+
+    <!-- Pane: Plan -->
+    <div class="pane active" id="pane-plan">
+      <div class="lawn-scene" role="img" aria-label="État de la pelouse">
+        <div class="lawn-sky" aria-hidden="true"></div>
+        <div class="lawn-gnd" aria-hidden="true"></div>
+        <div class="blades-wrap" id="blades" aria-hidden="true"></div>
+        <div class="lawn-badge" id="lawnBadge">— Entrez votre dernière tonte</div>
+        <div class="ring-wrap" id="ringWrap" style="display:none">
+          <svg viewBox="0 0 50 50">
+            <circle cx="25" cy="25" r="21" fill="none" stroke="var(--border)" stroke-width="3.5"/>
+            <circle cx="25" cy="25" r="21" fill="none" stroke="var(--green)" stroke-width="3.5"
+              stroke-dasharray="132" id="ringArc" stroke-dashoffset="132" stroke-linecap="round"/>
+          </svg>
+          <div class="ring-center"><span id="ringNum">0</span><span class="ring-lbl">jours</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sec-lbl">Dernière tonte</div>
+        <div class="input-row">
+          <input type="date" class="field" id="lastDate" aria-label="Date dernière tonte">
+          <div class="days-chip hidden" id="daysPill">0j</div>
+        </div>
+        <div class="divider"></div>
+        <div class="sec-lbl">Fréquence</div>
+        <div class="freq-grid" id="freqGrid"></div>
+        <button class="btn-primary" id="genBtn" onclick="generate()">
+          <span class="icon i18" id="btn-scissors"></span>Créer mon planning
+        </button>
+        <div class="prog-bar" id="progBar"><div class="prog-fill" id="progFill"></div></div>
+      </div>
+
+      <!-- Notification status banner (source of truth = Paramètres) -->
+      <div id="planNotifBanner" class="plan-notif-banner" onclick="switchTab('settings')">
+        <span class="icon i16" id="pnb-icon"></span>
+        <span id="pnb-text">Notifications non configurées</span>
+        <span class="plan-notif-cta" id="pnb-cta">Configurer →</span>
+      </div>
+
+      <div class="card hidden" id="schedCard">
+        <div class="sched-hdr">
+          <h2 class="card-title" style="margin-bottom:0">Planning</h2>
+          <div class="season-chip" id="seasonPill">—</div>
+        </div>
+        <div id="evList"></div>
+        <div class="ai-tip hidden" id="aiTip">
+          <div class="ai-tip-lbl"><div class="ai-pulse"></div>IA personnalisée</div>
+          <div id="aiTipTxt"></div>
+        </div>
+
+        <!-- Share actions — contextual, appear with the schedule -->
+        <div class="sched-share">
+          <button class="sched-share-btn ics" onclick="openSheet()">
+            <span class="icon i16" id="sh2-dl"></span>Calendrier .ics
+          </button>
+          <a class="sched-share-btn wa" id="waBtn" href="#" target="_blank" rel="noopener">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            WhatsApp
+          </a>
+          <a class="sched-share-btn tg" id="tgBtn" href="#" target="_blank" rel="noopener">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#229ED9"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+            Telegram
+          </a>
+        </div>
+      </div>
+
+      <div class="next-box hidden" id="nextBox">
+        <span class="icon i18" id="nb-bell"></span><span id="nextTxt"></span>
+      </div>
+    </div>
+
+    <!-- Pane: Historique -->
+    <div class="pane" id="pane-history">
+      <div class="card">
+        <h2 class="card-title">Historique</h2>
+        <div id="histList"></div>
+        <button class="log-btn" onclick="logTonte()">
+          <span class="icon i18" id="lb-icon"></span>Enregistrer une tonte aujourd'hui
+        </button>
+      </div>
+      <div class="card">
+        <div class="sec-lbl">Statistiques</div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-val" id="sTotal">0</div><div class="stat-lbl">Tontes totales</div></div>
+          <div class="stat-card"><div class="stat-val" id="sAvg">—</div><div class="stat-lbl">Intervalle moyen</div></div>
+          <div class="stat-card"><div class="stat-val" id="sSeason">0</div><div class="stat-lbl">Cette saison</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pane: Conseils -->
+    <div class="pane" id="pane-tips">
+      <div class="card">
+        <div class="sched-hdr"><h2 class="card-title" style="margin-bottom:0">Conseils saisonniers</h2>
+          <div class="season-chip" id="tipSeason">—</div></div>
+        <div class="tips-body" id="tipsTxt">Générez un planning pour des conseils personnalisés par l'IA.</div>
+      </div>
+      <div class="card">
+        <div class="sec-lbl">Checklist avant tonte</div>
+        <div id="checklist"></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════
+         Pane: Météo
+         ════════════════════════════════ -->
+    <div class="pane" id="pane-weather">
+
+      <!-- Loading state -->
+      <div id="wxLoading" class="wx-loading">
+        <div class="wx-spinner"></div>
+        Localisation en cours…
+      </div>
+
+      <!-- Error / no location -->
+      <div id="wxError" class="wx-error hidden">
+        <div style="font-size:1.4rem;margin-bottom:8px">📍</div>
+        <div style="font-weight:700;margin-bottom:4px">Localisation requise</div>
+        <div style="opacity:.8;margin-bottom:14px;font-size:.78rem">Autorisez l'accès à votre position pour afficher la météo locale et savoir si c'est le bon moment pour tondre.</div>
+        <button class="wx-locate-btn" onclick="loadWeather()">
+          <span class="icon i18" id="wx-loc-icon"></span>Autoriser la localisation
+        </button>
+      </div>
+
+      <!-- Weather content (hidden until loaded) -->
+      <div id="wxContent" class="hidden">
+
+        <!-- Hero card -->
+        <div class="wx-hero sunny" id="wxHero">
+          <div>
+            <div class="wx-location">
+              <span class="icon i14" id="wx-pin-icon"></span>
+              <span id="wxCity">—</span>
+            </div>
+            <div class="wx-desc" id="wxDesc">—</div>
+          </div>
+          <div class="wx-temp-row">
+            <div>
+              <div class="wx-temp"><span id="wxTemp">—</span><sup>°</sup></div>
+              <div class="wx-lawn-badge" id="wxLawnBadge">— Pelouse</div>
+            </div>
+            <div class="wx-icon-big" id="wxIconBig">—</div>
+          </div>
+        </div>
+
+        <!-- Index widgets -->
+        <div class="wx-index-grid">
+          <div class="wx-index-card">
+            <div class="wx-index-label"><span id="wx-drop-icon" class="icon i14"></span>Humidité</div>
+            <div class="wx-index-val" id="wxHumidity">—<span style="font-size:.9rem;font-weight:400">%</span></div>
+            <div class="wx-index-sub" id="wxHumSub">—</div>
+          </div>
+          <div class="wx-index-card">
+            <div class="wx-index-label"><span id="wx-wind-icon" class="icon i14"></span>Vent</div>
+            <div class="wx-index-val" id="wxWind">—<span style="font-size:.9rem;font-weight:400">km/h</span></div>
+            <div class="wx-index-sub" id="wxWindSub">—</div>
+          </div>
+          <div class="wx-index-card">
+            <div class="wx-index-label"><span id="wx-rain-icon" class="icon i14"></span>Pluie 24h</div>
+            <div class="wx-index-val" id="wxRain">—<span style="font-size:.9rem;font-weight:400">mm</span></div>
+            <div class="wx-index-sub" id="wxRainSub">—</div>
+          </div>
+          <div class="wx-index-card">
+            <div class="wx-index-label"><span id="wx-uv-icon" class="icon i14"></span>UV Index</div>
+            <div class="wx-index-val" id="wxUV">—</div>
+            <div class="wx-index-sub" id="wxUVSub">—</div>
+          </div>
+        </div>
+
+        <!-- Hourly -->
+        <div class="wx-hourly-wrap">
+          <div class="wx-hourly-title">PRÉVISIONS PAR HEURE</div>
+          <div class="wx-hourly-scroll" id="wxHourly"></div>
+        </div>
+
+        <!-- 7-day -->
+        <div class="wx-daily-wrap">
+          <div class="wx-daily-title">PRÉVISIONS 7 JOURS</div>
+          <div id="wxDaily"></div>
+        </div>
+
+        <div class="wx-attribution">Données météo : Open-Meteo.com · Gratuit &amp; open source</div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════
+         Pane: Paramètres
+         ════════════════════════════════ -->
+    <div class="pane" id="pane-settings">
+
+      <!-- Notification -->
+      <div class="settings-group">
+        <div class="settings-group-label">Notifications</div>
+        <div class="settings-list">
+          <div class="settings-row">
+            <div class="sr-icon" style="background:#0a84ff20"><span class="icon i18" style="color:var(--blue)" id="s-bell"></span></div>
+            <div class="sr-body"><div class="sr-title">Notifications push</div><div class="sr-sub" id="pushStatus">Non activées</div></div>
+            <div class="sr-right">
+              <button class="pill-btn" id="pushBtn" onclick="requestPush()">Activer</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="sr-icon" style="background:#ffd60a20"><span class="icon i18" style="color:var(--amber)" id="s-clock"></span></div>
+            <div class="sr-body"><div class="sr-title">Heure du rappel</div><div class="sr-sub">Alerte le jour J + veille à 20h</div></div>
+            <div class="sr-right">
+              <input type="time" class="sr-select" id="notifTime" value="09:00" onchange="saveNotifTime()">
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="sr-icon" style="background:#30d15820"><span class="icon i18" style="color:var(--green)" id="s-phone"></span></div>
+            <div class="sr-body"><div class="sr-title">Alerte à l'ouverture</div><div class="sr-sub">Rappel si tonte imminente</div></div>
+            <div class="sr-right">
+              <label class="toggle" for="inAppToggle">
+                <input type="checkbox" id="inAppToggle" checked onchange="saveInAppToggle()">
+                <div class="toggle-track"></div><div class="toggle-thumb"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tonte -->
+      <div class="settings-group">
+        <div class="settings-group-label">Tonte</div>
+        <div class="settings-list">
+          <div class="settings-row">
+            <div class="sr-icon" style="background:#30d15820"><span class="icon i18" style="color:var(--green)" id="s-scissors"></span></div>
+            <div class="sr-body"><div class="sr-title">Fréquence par défaut</div><div class="sr-sub">Intervalle entre les tontes</div></div>
+            <div class="sr-right">
+              <select class="sr-select" id="sFreqDefault" onchange="saveFreqDefault()">
+                <option value="7">7 jours</option>
+                <option value="10" selected>10 jours</option>
+                <option value="14">14 jours</option>
+                <option value="21">21 jours</option>
+                <option value="30">1 mois</option>
+              </select>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="sr-icon" style="background:#ff9f0a20"><span class="icon i18" style="color:var(--orange)" id="s-leaf"></span></div>
+            <div class="sr-body"><div class="sr-title">Adaptation saisonnière</div><div class="sr-sub">Ajuste la fréquence selon la saison</div></div>
+            <div class="sr-right">
+              <label class="toggle" for="sSeasonToggle">
+                <input type="checkbox" id="sSeasonToggle" checked onchange="saveSetting('seasonAdapt',this.checked)">
+                <div class="toggle-track"></div><div class="toggle-thumb"></div>
+              </label>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="sr-icon" style="background:#0a84ff20"><span class="icon i18" style="color:var(--blue)" id="s-cal2"></span></div>
+            <div class="sr-body"><div class="sr-title">Rappel météo tonte</div><div class="sr-sub">Alerte si pluie prévue le jour J</div></div>
+            <div class="sr-right">
+              <label class="toggle" for="sWxAlert">
+                <input type="checkbox" id="sWxAlert" checked onchange="saveSetting('wxAlert',this.checked)">
+                <div class="toggle-track"></div><div class="toggle-thumb"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Affichage -->
+      <div class="settings-group">
+        <div class="settings-group-label">Affichage</div>
+        <div class="settings-list">
+          <div class="settings-row">
+            <div class="sr-icon" style="background:#5e5ce620"><span style="font-size:1rem">🌡️</span></div>
+            <div class="sr-body"><div class="sr-title">Unité de température</div></div>
+            <div class="sr-right">
+              <div class="seg-ctrl">
+                <button class="seg-opt on" id="segC" onclick="setTempUnit('C')">°C</button>
+                <button class="seg-opt" id="segF" onclick="setTempUnit('F')">°F</button>
+              </div>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="sr-icon" style="background:#5e5ce620"><span style="font-size:1rem">📏</span></div>
+            <div class="sr-body"><div class="sr-title">Hauteur de coupe cible</div><div class="sr-sub" id="sCutHeightSub">5 cm</div></div>
+            <div class="sr-right">
+              <select class="sr-select" id="sCutHeight" onchange="saveCutHeight()">
+                <option value="3">3 cm</option>
+                <option value="4">4 cm</option>
+                <option value="5" selected>5 cm</option>
+                <option value="6">6 cm</option>
+                <option value="7">7 cm</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Données -->
+      <div class="settings-group">
+        <div class="settings-group-label">Données</div>
+        <div class="settings-list">
+          <div class="settings-row" style="cursor:pointer" onclick="exportData()">
+            <div class="sr-icon" style="background:#30d15820"><span class="icon i18" style="color:var(--green)" id="s-export"></span></div>
+            <div class="sr-body"><div class="sr-title">Exporter l'historique</div><div class="sr-sub">Fichier JSON de toutes vos tontes</div></div>
+            <div class="sr-right"><span class="icon sr-chevron" id="s-chev1"></span></div>
+          </div>
+          <div class="settings-row" style="cursor:pointer" onclick="openSheet()">
+            <div class="sr-icon" style="background:#0a84ff20"><span class="icon i18" style="color:var(--blue)" id="s-ical"></span></div>
+            <div class="sr-body"><div class="sr-title">Exporter le calendrier</div><div class="sr-sub">Télécharger tonte-pelouse.ics</div></div>
+            <div class="sr-right"><span class="icon sr-chevron" id="s-chev2"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="settings-group">
+        <div class="settings-group-label">Zone de danger</div>
+        <button class="danger-btn" onclick="resetAllData()">
+          <span class="icon i18" id="s-trash"></span>Réinitialiser toutes les données
+        </button>
+      </div>
+
+      <!-- About -->
+      <div class="about-card">
+        <div class="about-icon">🌿</div>
+        <div class="about-name">Lawn<em>Notifier</em></div>
+        <div class="about-version">Version 4.0 · iOS 27 Design</div>
+        <div style="font-size:.72rem;color:var(--text-tertiary);text-align:center;line-height:1.6;margin-top:4px">
+          Météo : Open-Meteo · IA : Claude · Calendrier : iCal RFC 5545
+        </div>
+        <div class="about-links">
+          <a href="https://github.com" class="about-link" target="_blank">GitHub</a>
+          <a href="#" class="about-link" onclick="showToast('Pas de problèmes connus ✓');return false">Support</a>
+        </div>
+      </div>
+
+    </div><!-- /pane-settings -->
+
+  </main>
+
+  <!-- Tab bar — Liquid Glass pill (iOS 27 style) -->
+  <nav class="tabbar" role="navigation" aria-label="Navigation principale">
+    <div class="tab-pill">
+      <button class="tab-item active" data-tab="plan" onclick="switchTab('plan')" aria-label="Planifier">
+        <span class="icon tab-icon" id="tb-cal"></span>
+        Planifier
+      </button>
+      <button class="tab-item" data-tab="history" onclick="switchTab('history')" aria-label="Historique">
+        <span class="icon tab-icon" id="tb-list"></span>
+        Historique
+      </button>
+      <button class="tab-item" data-tab="tips" onclick="switchTab('tips')" aria-label="Conseils">
+        <span class="icon tab-icon" id="tb-sun"></span>
+        Conseils
+      </button>
+      <button class="tab-item" data-tab="weather" onclick="switchTab('weather')" aria-label="Météo">
+        <span class="icon tab-icon" id="tb-cloud"></span>
+        Météo
+      </button>
+      <button class="tab-item" data-tab="settings" onclick="switchTab('settings')" aria-label="Paramètres">
+        <span class="icon tab-icon" id="tb-gear"></span>
+        Réglages
+      </button>
+    </div>
+  </nav>
+</div>
+
+<!-- ICS Sheet -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+<div class="sheet" id="icsSheet" role="dialog" aria-modal="true">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title"><span class="icon i22" id="sh-cal"></span>Ajouter à l'iPhone</div>
+  <div class="sheet-sub">Téléchargez le fichier <strong>.ics</strong> et ouvrez-le sur iPhone. iOS importe automatiquement tout le planning avec 2 notifications par tonte.</div>
+  <div class="step"><div class="step-n">1</div><div class="step-txt">Téléchargez <strong>tonte-pelouse.ics</strong></div></div>
+  <div class="step"><div class="step-n">2</div><div class="step-txt">Sur iPhone : ouvrez depuis <strong>Fichiers</strong> → iOS importe auto</div></div>
+  <div class="step"><div class="step-n">3</div><div class="step-txt">Sur Mac : envoyez par <strong>AirDrop</strong> ou Mail</div></div>
+  <div class="step"><div class="step-n">4</div><div class="step-txt">2 alertes : veille à 20h + jour J à <strong id="sheetTime">09:00</strong></div></div>
+  <div class="sheet-actions">
+    <button class="btn-dl" onclick="downloadICS()"><span class="icon i18" id="sh-dl"></span>Télécharger .ics</button>
+    <button class="btn-close-sh" onclick="closeSheet()"><span class="icon i18" id="sh-x"></span></button>
+  </div>
+</div>
+
+<script>
+/* ── Global error boundary ── */
+// Only suppress the generic cross-origin "Script error." from Safari (no line/col/src).
+// Real JS errors (line !== 0) must NOT be swallowed — they break the app.
+window.onerror=function(msg,src,line){
+  if(msg==='Script error.'&&!src&&!line)return true; // cross-origin network error — safe to suppress
+  return false; // let real errors surface
+};
+window.addEventListener('unhandledrejection',function(e){
+  // Suppress only network/fetch rejections (no stack trace pointing to our code)
+  const r=e.reason;
+  if(r instanceof TypeError&&r.message&&r.message.includes('fetch'))e.preventDefault();
+  else if(!r||r==='Script error.')e.preventDefault();
+},true);
+
+/* ── SF Symbols flat icon library ── */
+const IC={
+  leaf:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 4 13c0-4.15 3.36-8 9-10 5.64 2 9 5.85 9 10a7 7 0 0 1-7 7z"/><path d="M11 20c0-6 4-10 9-10"/></svg>`,
+  calendar:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01"/></svg>`,
+  list:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>`,
+  sun:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>`,
+  clock:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`,
+  sparkles:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/><path d="M5 17l.75 2.25L8 20l-2.25.75L5 23l-.75-2.25L2 20l2.25-.75L5 17z"/></svg>`,
+  scissors:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>`,
+  bell:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
+  bellFill:`<svg viewBox="0 0 24 24" stroke="none" fill="currentColor"><path d="M12 22a2 2 0 0 0 1.73-1H10.27A2 2 0 0 0 12 22zm6-9c0-3.07-1.64-5.64-4.5-6.32V6a1.5 1.5 0 1 0-3 0v.68C7.63 7.36 6 9.92 6 13v5l-2 2h16l-2-2v-5z"/></svg>`,
+  bellSlash:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h14"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
+  download:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+  message:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  plus:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+  trash:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`,
+  xmark:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+  squarePlus:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`,
+  cloud:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`,
+  cloudRain:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="16" y1="13" x2="16" y2="21"/><line x1="8" y1="13" x2="8" y2="21"/><line x1="12" y1="15" x2="12" y2="23"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/></svg>`,
+  gear:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`,
+  mapPin:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  droplets:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></svg>`,
+  wind:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>`,
+  umbrella:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 12a11.05 11.05 0 0 0-22 0zm-5 7a3 3 0 0 1-6 0v-7"/></svg>`,
+  sunMed:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>`,
+  chevRight:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`,
+  share2:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
+};
+function setIcon(id,name){const el=document.getElementById(id);if(el&&IC[name])el.innerHTML=IC[name];}
+function ic(name,cls='i20'){return`<span class="icon ${cls}">${IC[name]||''}</span>`;}
+
+/* ── Constants ── */
+const MFR=['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+const DFR=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+const SEASONS={
+  spring:{name:'Printemps',emoji:'🌸',freq:7,months:[2,3,4]},
+  summer:{name:'Été',emoji:'☀️',freq:10,months:[5,6,7,8]},
+  autumn:{name:'Automne',emoji:'🍂',freq:14,months:[9,10]},
+  winter:{name:'Hiver',emoji:'❄️',freq:30,months:[11,0,1]},
+};
+const SEASON_TIPS={
+  spring:'<strong>Printemps</strong> — Croissance intense. Tondre toutes les 7–10 jours, hauteur 4–5 cm. Engrais de printemps. Scarifier si besoin.',
+  summer:'<strong>Été</strong> — Réduire par canicule. Laisser 6–7 cm pour protéger les racines. Tondre en fin de journée. Arroser 24h après.',
+  autumn:'<strong>Automne</strong> — Dernière pousse. Couper à 5 cm. Ramasser les feuilles. Engrais automne riche en potassium.',
+  winter:'<strong>Hiver</strong> — Croissance quasi nulle. Ne pas tondre si sol gelé. Hauteur min 5–6 cm. Affûter la lame.',
+};
+const CHECKLIST=["Vérifier le niveau d'huile moteur","Contrôler et affûter la lame","Vider le bac à herbe","Régler la hauteur de coupe","Dégager branches et obstacles","Vérifier météo (pas de pluie 24h)","Sol ni trop humide ni trop sec","Arroser 24h après si temps sec"];
+const FREQ_OPTS=[
+  {days:7,label:'7 jours',icon:'bell'},
+  {days:10,label:'10 jours',icon:'leaf'},
+  {days:14,label:'14 jours',icon:'calendar'},
+  {days:21,label:'21 jours',icon:'sun'},
+  {days:30,label:'1 mois',icon:'clock'},
+  {days:0,label:'Auto IA',icon:'sparkles'},
+];
+
+/* ── State ── */
+const S={
+  lastDate:'',freqDays:10,schedule:[],
+  history:JSON.parse(localStorage.getItem('ln_h')||'[]'),
+  checks:JSON.parse(localStorage.getItem('ln_ck')||'{}'),
+};
+const $=id=>document.getElementById(id);
+function pad2(n){return String(n).padStart(2,'0');}
+function daysSince(ds){return Math.max(0,Math.floor((Date.now()-new Date(ds))/864e5));}
+function fmtDate(d){return DFR[d.getDay()]+' '+d.getDate()+' '+MFR[d.getMonth()];}
+function getSeason(){const m=new Date().getMonth();for(const[k,v]of Object.entries(SEASONS))if(v.months.includes(m))return{...v,key:k};return{...SEASONS.winter,key:'winter'};}
+function getFreq(){return S.freqDays===0?getSeason().freq:S.freqDays;}
+
+/* ── Lawn ── */
+function buildBlades(){
+  const w=$('blades');if(!w)return;w.innerHTML='';
+  const p=['#30d158','#1fa344','#27c04f','#2a7a2a','#34a853'];
+  for(let i=0;i<76;i++){const b=document.createElement('div');b.className='blade';
+    b.style.animationDelay=(i*0.048%1.4)+'s';b.style.animationDuration=(1.9+Math.random()*.9)+'s';
+    b.style.background=p[i%p.length];w.appendChild(b);}
+}
+function updateLawn(){
+  if(!S.lastDate)return;
+  const days=daysSince(S.lastDate),freq=getFreq(),ratio=Math.min(days/freq,2);
+  const bh=Math.floor(7+ratio*55);
+  document.querySelectorAll('.blade').forEach((b,i)=>b.style.height=(bh+Math.sin(i*1.35)*9)+'px');
+  let lbl,col;
+  if(ratio<.5){lbl='Pelouse fraîche';col='var(--green)';}
+  else if(ratio<.8){lbl='Pousse modérée';col='var(--amber)';}
+  else if(ratio<1.1){lbl='Tonte recommandée';col='var(--orange)';}
+  else{lbl='Tonte urgente';col='var(--red)';}
+  const b=$('lawnBadge');if(b)b.innerHTML=`<span style="color:${col}">●</span> ${lbl}`;
+  $('ringWrap').style.display='';$('ringNum').textContent=days;
+  const arc=$('ringArc');if(arc){arc.style.strokeDashoffset=132-(Math.min(ratio,1)*132);arc.style.stroke=col;}
+  const ch=$('daysPill');if(ch){ch.textContent=days+'j';ch.style.color=col;ch.classList.remove('hidden');}
+}
+
+/* ── Freq grid ── */
+function initFreqGrid(){
+  const g=$('freqGrid');if(!g)return;g.innerHTML='';
+  FREQ_OPTS.forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.className='freq-chip'+(opt.days===S.freqDays?' on':'');
+    btn.dataset.d=opt.days;
+    btn.innerHTML=`${ic(opt.icon,'i18 fc-icon')}<span>${opt.label}</span>`;
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.freq-chip').forEach(c=>c.classList.remove('on'));
+      btn.classList.add('on');S.freqDays=opt.days;
+      if(opt.days===0){const s=getSeason();btn.querySelector('span').textContent=`Auto (${s.freq}j)`;}
+      updateLawn();
+    });
+    g.appendChild(btn);
+  });
+}
+
+/* ── Generate ── */
+async function generate(){
+  if(!S.lastDate)return;
+  const btn=$('genBtn'),bar=$('progBar'),fill=$('progFill');
+  btn.disabled=true;btn.innerHTML=ic('scissors','i18')+`<span>Génération <span class="dots"><span>.</span><span>.</span><span>.</span></span></span>`;
+  bar.style.display='block';fill.style.width='15%';
+  const freq=getFreq(),season=getSeason();
+  S.schedule=buildSchedule(freq);fill.style.width='55%';
+  let tip='';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,
+        messages:[{role:'user',content:`Expert jardinier. Saison ${season.name}, tonte il y a ${daysSince(S.lastDate)} jours, fréquence ${freq}j. 2 phrases pratiques en français, direct, sans intro.`}]})});
+    if(!res.ok)throw new Error('API '+res.status);
+    const d=await res.json();
+    tip=(d.content?.[0]?.text||'').trim();
+  }catch(err){
+    console.warn('AI tip unavailable:',err?.message);
+    tip='Adaptez la hauteur de coupe : 5–6 cm en été pour protéger les racines, 4 cm au printemps pour densifier.';
+  }
+  fill.style.width='95%';
+  renderSchedule(season,tip);renderNotifLinks();renderTipsTab(season,tip);scheduleWebPush();
+  localStorage.setItem('ln_lastDate',S.lastDate);localStorage.setItem('ln_freq',S.freqDays);
+  fill.style.width='100%';
+  setTimeout(()=>{bar.style.display='none';fill.style.width='0%';},450);
+  btn.disabled=false;btn.innerHTML=ic('scissors','i18')+'<span>Recalculer le planning</span>';
+  $('schedCard')?.classList.remove('hidden');$('nextBox')?.classList.remove('hidden');
+}
+
+function buildSchedule(freq){
+  const evs=[],base=new Date(S.lastDate),now=new Date();
+  evs.push({date:new Date(base),type:'done',label:'Dernière tonte'});
+  let cur=new Date(base);
+  for(let i=0;i<8;i++){
+    cur=new Date(cur.getTime()+freq*864e5);
+    const diff=Math.floor((cur-now)/864e5);
+    evs.push({date:new Date(cur),type:diff<0?'done':diff<=2?'urgent':diff<=5?'soon':'normal',label:`Tonte #${i+1}`,diff});
+  }
+  return evs;
+}
+
+function renderSchedule(season,tip){
+  const pill=$('seasonPill');if(pill)pill.innerHTML=season.emoji+' '+season.name;
+  const list=$('evList');if(!list)return;list.innerHTML='';
+  S.schedule.forEach(ev=>{
+    const ds=ev.diff!==undefined&&ev.diff>=0?`<span class="ev-diff">dans ${ev.diff}j</span>`:'';
+    const bt=ev.type==='done'?'Faite':ev.type==='urgent'?'Urgent':ev.type==='soon'?'Bientôt':'Planifié';
+    list.innerHTML+=`<div class="ev-row ${ev.type}"><div class="ev-dot ${ev.type}"></div>
+      <div class="ev-date">${fmtDate(ev.date)}</div>
+      <div class="ev-label">${ev.label} ${ds}</div>
+      <div class="ev-badge badge-${ev.type}">${bt}</div></div>`;
+  });
+  const te=$('aiTip');if(tip&&te){$('aiTipTxt').textContent=tip;te.classList.remove('hidden');}
+}
+
+function renderNotifLinks(){
+  const freq=getFreq();
+  const up=S.schedule.filter(e=>e.type!=='done').slice(0,6);
+  let msg=`🌿 *Planning de tonte*\n\n📅 Toutes les ${freq} jours\n\n`;
+  up.forEach(e=>{msg+=(e.type==='urgent'?'🔴':e.type==='soon'?'🟡':'🟢')+` ${fmtDate(e.date)}\n`;});
+  msg+='\n_LawnNotifier_';
+  const wa=$('waBtn');if(wa)wa.href='https://wa.me/?text='+encodeURIComponent(msg);
+  const tg=$('tgBtn');if(tg)tg.href='https://t.me/share/url?url=https://lawnnotifier.app&text='+encodeURIComponent(msg);
+  const next=S.schedule.find(e=>e.type!=='done');
+  if(next){
+    $('nextTxt').textContent=`Prochaine tonte : ${fmtDate(next.date)}`+(next.diff>=0?` — dans ${next.diff} jour${next.diff!==1?'s':''}`:'')+' ';
+    $('nextBox').classList.remove('hidden');
+  }
+}
+
+/* ── Push — single source of truth in Paramètres ── */
+function updatePushUI(){
+  const perm=Notification?.permission||'default';
+  // Settings pane controls (canonical)
+  const btn=$('pushBtn'), status=$('pushStatus');
+  if(perm==='granted'){
+    if(btn){btn.textContent='Activé ✓';btn.disabled=true;}
+    if(status)status.textContent='Activées ✓';
+  }else if(perm==='denied'){
+    if(btn){btn.textContent='Bloqué';btn.disabled=true;}
+    if(status)status.textContent='Bloquées — voir Réglages iOS';
+  }else{
+    if(btn){btn.textContent='Activer';btn.disabled=false;}
+    if(status)status.textContent='Non activées';
+  }
+  // Plan pane banner (read-only summary → taps to settings)
+  updatePlanBanner();
+}
+
+function updatePlanBanner(){
+  const banner=$('planNotifBanner');
+  if(!banner)return;
+  const perm=Notification?.permission||'default';
+  const inApp=$('inAppToggle')?.checked!==false;
+  const icon=$('pnb-icon'), text=$('pnb-text');
+  if(perm==='granted'){
+    banner.className='plan-notif-banner ok';
+    if(icon)icon.innerHTML=IC.bellFill||'';
+    if(text)text.textContent='Notifications push activées';
+  }else if(perm==='denied'){
+    banner.className='plan-notif-banner warn';
+    if(icon)icon.innerHTML=IC.bellSlash||'';
+    if(text)text.textContent='Notifications bloquées — toucher pour configurer';
+  }else{
+    banner.className='plan-notif-banner off';
+    if(icon)icon.innerHTML=IC.bell||'';
+    if(text)text.textContent=inApp?'Alerte à l\'ouverture activée · Push non configuré':'Notifications non activées · Toucher pour configurer';
+  }
+}
+async function requestPush(){
+  if(location.protocol==='file:'){showToast('⚠️ Serveur web requis pour les notifs push');return;}
+  if(!('Notification'in window)){showToast('Non supporté sur ce navigateur');return;}
+  if(Notification.permission==='granted'){scheduleWebPush();return;}
+  if(Notification.permission==='denied'){showToast('Bloquées — autorisez dans Réglages iOS');return;}
+  try{
+    const perm=await new Promise(resolve=>{
+      const r=Notification.requestPermission(p=>resolve(p));
+      if(r instanceof Promise)r.then(resolve).catch(()=>resolve('default'));
+    });
+    updatePushUI(); // updates both settings pane + plan banner in one call
+    if(perm==='granted'){showToast('Notifications activées ✓');if(S.schedule.length)scheduleWebPush();}
+    else showToast('Permission refusée');
+  }catch(err){
+    console.warn('Push error:',err);
+    showToast('Notifications non disponibles ici');
+  }
+}
+function safeNotif(title,opts){
+  try{if(Notification?.permission==='granted')new Notification(title,opts);}catch(e){}
+}
+function scheduleWebPush(){
+  if(Notification?.permission!=='granted')return;
+  const[hh,mm]=($('notifTime')?.value||'09:00').split(':').map(Number),now=Date.now();
+  let scheduled=0;
+  S.schedule.filter(e=>e.type!=='done'&&e.diff>=0).forEach(ev=>{
+    const dayOf=new Date(ev.date);dayOf.setHours(hh,mm,0,0);
+    const msD=dayOf.getTime()-now;
+    if(msD>0&&msD<7*864e5){
+      setTimeout(()=>safeNotif('🌿 LawnNotifier',{body:`Jour de tonte — ${fmtDate(ev.date)}`,tag:'lawn-'+ev.date.toISOString().split('T')[0]}),msD);
+      scheduled++;
+    }
+    const eve=new Date(ev.date);eve.setDate(eve.getDate()-1);eve.setHours(20,0,0,0);
+    const msE=eve.getTime()-now;
+    if(msE>0&&msE<7*864e5){
+      setTimeout(()=>safeNotif('🌿 LawnNotifier',{body:`Tonte demain — ${fmtDate(ev.date)} · Préparez la tondeuse`,tag:'lawn-eve-'+ev.date.toISOString().split('T')[0]}),msE);
+      scheduled++;
+    }
+  });
+  showToast(scheduled>0?`${scheduled} rappel${scheduled>1?'s':''} push programmé${scheduled>1?'s':''} ✓`:'Aucun rappel à venir dans 7 jours');
+}
+
+/* ── ICS ── */
+function openSheet(){
+  const t=$('notifTime')?.value||'09:00';$('sheetTime').textContent=t;
+  $('sheetOverlay').classList.add('open');$('icsSheet').classList.add('open');
+}
+function closeSheet(){$('sheetOverlay').classList.remove('open');$('icsSheet').classList.remove('open');}
+function downloadICS(){
+  const freq=getFreq(),[hh,mm]=($('notifTime')?.value||'09:00').split(':').map(Number);
+  const evLines=S.schedule.filter(e=>e.type!=='done').map(ev=>{
+    const d=ev.date,ds=`${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}`;
+    return['BEGIN:VEVENT',`UID:${Math.random().toString(36).slice(2)}@ln`,
+      `DTSTART;TZID=Europe/Paris:${ds}T${pad2(hh)}${pad2(mm)}00`,
+      `DTEND;TZID=Europe/Paris:${ds}T${pad2(hh)}${pad2(mm)}00`,
+      'SUMMARY:🌿 Tondre la pelouse',`DESCRIPTION:Toutes les ${freq} jours. LawnNotifier.`,
+      'BEGIN:VALARM','TRIGGER:-PT18H','ACTION:DISPLAY','DESCRIPTION:🌿 Tonte demain !','END:VALARM',
+      'BEGIN:VALARM','TRIGGER:PT0S','ACTION:DISPLAY',"DESCRIPTION:🌿 Jour de tonte !",'END:VALARM',
+      'END:VEVENT'].join('\r\n');
+  });
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//LawnNotifier//FR',
+    'CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:🌿 Tontes','X-WR-TIMEZONE:Europe/Paris',
+    ...evLines,'END:VCALENDAR'].join('\r\n');
+  const url=URL.createObjectURL(new Blob([ics],{type:'text/calendar;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download='tonte-pelouse.ics';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  closeSheet();showToast('Fichier .ics téléchargé ✓');
+}
+
+/* ── History ── */
+function logTonte(){
+  const today=new Date().toISOString().split('T')[0];
+  const note=prompt("Note optionnelle (ex: herbe haute, après pluie…)",'')??'';
+  S.history.unshift({date:today,note});
+  localStorage.setItem('ln_h',JSON.stringify(S.history));localStorage.setItem('ln_last',today);
+  $('lastDate').value=today;S.lastDate=today;updateLawn();renderHistory();showToast('Tonte enregistrée ✓');
+}
+function deleteHistory(i){S.history.splice(i,1);localStorage.setItem('ln_h',JSON.stringify(S.history));renderHistory();}
+function renderHistory(){
+  const list=$('histList');if(!list)return;
+  if(!S.history.length){list.innerHTML='<div class="hist-empty">Aucune tonte enregistrée.<br>Appuyez sur le bouton ci-dessous.</div>';return;}
+  list.innerHTML=S.history.map((h,i)=>`<div class="hist-row">
+    <div class="hist-date">${fmtDate(new Date(h.date+'T12:00'))}</div>
+    <div class="hist-note">${h.note||'—'}</div>
+    <button class="hist-del" onclick="deleteHistory(${i})">${ic('trash','i16')}</button>
+  </div>`).join('');
+  $('sTotal').textContent=S.history.length;
+  if(S.history.length>=2){let s=0;for(let i=0;i<S.history.length-1;i++)s+=Math.abs(daysSince(S.history[i+1].date)-daysSince(S.history[i].date));$('sAvg').textContent=Math.round(s/(S.history.length-1))+'j';}
+  const sm=getSeason().months;
+  $('sSeason').textContent=S.history.filter(h=>sm.includes(new Date(h.date+'T12:00').getMonth())).length;
+}
+
+/* ── Checklist ── */
+function renderChecklist(){
+  const el=$('checklist');if(!el)return;
+  el.innerHTML=CHECKLIST.map((item,i)=>{const done=S.checks[i]||false;
+    return`<div class="chk-item${done?' done':''}"><input type="checkbox" id="chk${i}" ${done?'checked':''} onchange="toggleCheck(${i})"><label for="chk${i}">${item}</label></div>`;
+  }).join('');
+}
+function toggleCheck(i){S.checks[i]=!S.checks[i];localStorage.setItem('ln_ck',JSON.stringify(S.checks));renderChecklist();}
+
+/* ── Tips ── */
+function renderTipsTab(season,tip){
+  const sp=$('tipSeason');if(sp)sp.innerHTML=season.emoji+' '+season.name;
+  const el=$('tipsTxt');if(!el)return;
+  el.innerHTML=`<p style="margin-bottom:12px">${SEASON_TIPS[season.key]}</p>`
+    +(tip?`<div class="ai-tip"><div class="ai-tip-lbl"><div class="ai-pulse"></div>IA personnalisée</div>${tip}</div>`:'');
+}
+
+/* ── In-app alert ── */
+function checkInAppAlert(){
+  const last=localStorage.getItem('ln_last')||S.lastDate;
+  const inApp=localStorage.getItem('ln_inApp')!=='0'; // read from storage, not DOM (DOM may not be ready)
+  if(!last||!inApp)return;
+  const freq=parseInt(localStorage.getItem('ln_freq')||'10');
+  const ratio=daysSince(last)/freq;
+  if(ratio>=.85){
+    const msg=ratio>=1.1?`Tonte urgente — ${daysSince(last)} jours`:'Tonte bientôt recommandée';
+    setTimeout(()=>showToast('🌿 '+msg,5000),800);
+    safeNotif('🌿 LawnNotifier',{body:msg,tag:'lawn-alert'});
+  }
+}
+
+/* ── Tabs ── */
+function switchTab(name){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-item,.sidebar-item').forEach(t=>t.classList.remove('active'));
+  const pane=document.getElementById('pane-'+name);
+  if(pane)pane.classList.add('active');
+  document.querySelectorAll('[data-tab="'+name+'"]').forEach(t=>t.classList.add('active'));
+  // Side effects per tab (no redefinition needed)
+  if(name==='weather'){
+    const wxOk=$('wxContent')&&!$('wxContent').classList.contains('hidden');
+    const wxErr=$('wxError')&&!$('wxError').classList.contains('hidden');
+    if(!wxOk&&!wxErr)loadWeather();
+  }
+  if(name==='settings')updatePushUI();
+}
+
+/* ── Toast ── */
+let _tt=null;
+function showToast(msg,dur=2600){const el=$('toast');if(!el)return;el.textContent=msg;el.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),dur);}
+
+/* ── PWA ── */
+let _pwa=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_pwa=e;$('installBtn')?.classList.add('visible');$('installBtnSide')?.classList.add('visible');});
+function installPWA(){if(!_pwa)return;_pwa.prompt();_pwa.userChoice.then(()=>{_pwa=null;$('installBtn')?.classList.remove('visible');$('installBtnSide')?.classList.remove('visible');});}
+window.addEventListener('appinstalled',()=>{$('installBtn')?.classList.remove('visible');$('installBtnSide')?.classList.remove('visible');showToast('App installée ✓');});
+
+/* ── Service Worker ── */
+function registerSW(){
+  if(!('serviceWorker'in navigator))return;
+  // Blob SW only works on HTTPS or localhost — skip on file:// to avoid Safari crash
+  if(location.protocol==='file:')return;
+  try{
+    const sw=`const C='ln-v4';
+self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll([self.location.pathname]))));
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>new Response('Offline',{status:503}))));});
+self.addEventListener('notificationclick',e=>{e.notification.close();e.waitUntil(clients.openWindow('/'));});`;
+    const blob=new Blob([sw],{type:'application/javascript'});
+    const url=URL.createObjectURL(blob);
+    navigator.serviceWorker.register(url).then(()=>URL.revokeObjectURL(url)).catch(()=>URL.revokeObjectURL(url));
+  }catch(e){/* SW unavailable in this context */}
+}
+
+/* ── Init ── */
+document.addEventListener('DOMContentLoaded',()=>{
+  /* Inject icons */
+  const slots={
+    'sl-leaf':'leaf','tl-leaf':'leaf',
+    'sl-cal':'calendar','tb-cal':'calendar',
+    'sl-list':'list','tb-list':'list',
+    'sl-sun':'sun','tb-sun':'sun',
+    'sl-cloud':'cloud','tb-cloud':'cloud',
+    'sl-gear':'gear','tb-gear':'gear',
+    'sl-inst':'squarePlus','tl-inst':'squarePlus',
+    'nr-bell':'bell','pb-icon':'bell',
+    'nr-clock':'clock','nr-phone':'bell',
+    'nr-cal':'calendar','nr-dl':'download',
+    'nr-msg':'message','lb-icon':'plus',
+    'btn-scissors':'scissors','nb-bell':'bell',
+    'sh-cal':'calendar','sh-dl':'download','sh-x':'xmark',
+    'sh2-dl':'download','pnb-icon':'bell',
+    // weather
+    'wx-loc-icon':'mapPin','wx-pin-icon':'mapPin',
+    'wx-drop-icon':'droplets','wx-wind-icon':'wind',
+    'wx-rain-icon':'umbrella','wx-uv-icon':'sunMed',
+    // settings
+    's-bell':'bell','s-clock':'clock','s-phone':'bell',
+    's-scissors':'scissors','s-leaf':'leaf','s-cal2':'calendar',
+    's-export':'share2','s-ical':'download',
+    's-chev1':'chevRight','s-chev2':'chevRight','s-trash':'trash',
+  };
+  Object.entries(slots).forEach(([id,name])=>setIcon(id,name));
+
+  /* State restore */
+  const savedDate=localStorage.getItem('ln_lastDate');
+  const savedFreq=parseInt(localStorage.getItem('ln_freq')||'10');
+  const def=(()=>{const d=new Date();d.setDate(d.getDate()-7);return d.toISOString().split('T')[0];})();
+  S.lastDate=savedDate||def;S.freqDays=savedFreq;
+
+  const dp=$('lastDate');
+  if(dp){dp.value=S.lastDate;dp.max=new Date().toISOString().split('T')[0];
+    dp.addEventListener('change',e=>{S.lastDate=e.target.value;updateLawn();
+      $('schedCard')?.classList.add('hidden');$('nextBox')?.classList.add('hidden');});}
+
+  buildBlades();updateLawn();initFreqGrid();renderHistory();renderChecklist();updatePushUI();registerSW();checkInAppAlert();
+  loadSettings();
+  switchTab('plan');
+});
+
+/* ══════════════════════════════════════════
+   MÉTÉO — Open-Meteo (no API key needed)
+   ══════════════════════════════════════════ */
+
+const WX_ICONS={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'❄️',77:'🌨',80:'🌦',81:'🌧',82:'⛈',85:'🌨',86:'❄️',95:'⛈',96:'⛈',99:'⛈'};
+const WX_DESC={0:'Ciel dégagé',1:'Principalement clair',2:'Partiellement nuageux',3:'Couvert',45:'Brumeux',48:'Brouillard givrant',51:'Bruine légère',53:'Bruine modérée',55:'Bruine dense',61:'Pluie légère',63:'Pluie modérée',65:'Pluie forte',71:'Neige légère',73:'Neige modérée',75:'Neige forte',80:'Averses légères',81:'Averses modérées',82:'Averses violentes',95:'Orages',96:'Orages avec grêle',99:'Orages violents'};
+
+let WX={}, WX_UNIT='C';
+
+async function loadWeather(){
+  $('wxLoading').classList.remove('hidden');
+  $('wxError').classList.add('hidden');
+  $('wxContent').classList.add('hidden');
+
+  if(!navigator.geolocation){
+    showWxError('Géolocalisation non disponible sur ce navigateur.');return;
+  }
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    try{
+      const {latitude:lat,longitude:lon}=pos.coords;
+      // Reverse geocode via Open-Meteo's geocoding
+      const [wxRes,geoRes]=await Promise.all([
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,weather_code,uv_index&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&wind_speed_unit=kmh&timezone=auto&forecast_days=7`),
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=fr`)
+      ]);
+      const wx=await wxRes.json();
+      const geo=await geoRes.json().catch(()=>({address:{city:'Votre position'}}));
+      const city=geo.address?.city||geo.address?.town||geo.address?.village||geo.address?.county||'Position actuelle';
+      renderWeather(wx,city);
+    }catch(err){
+      showWxError('Impossible de charger la météo. Vérifiez votre connexion.');
+      console.warn('Weather error:',err);
+    }
+  }, err=>{
+    showWxError('Localisation refusée. Autorisez l\'accès dans les réglages.');
+  },{timeout:10000});
+}
+
+function showWxError(msg){
+  $('wxLoading').classList.add('hidden');
+  $('wxContent').classList.add('hidden');
+  const e=$('wxError'); e.classList.remove('hidden');
+  e.querySelector('div:nth-child(3)').textContent=msg;
+}
+
+function cvtTemp(c){return WX_UNIT==='C'?Math.round(c):Math.round(c*9/5+32);}
+function unitLabel(){return WX_UNIT==='C'?'°C':'°F';}
+
+function lawnScore(wx){
+  const c=wx.current;
+  const rain=c.precipitation||0;
+  const wind=c.wind_speed_10m||0;
+  const temp=c.temperature_2m||15;
+  const hum=c.relative_humidity_2m||50;
+  // Bad: rain recent, very windy, too cold/hot
+  if(rain>2)return{ok:false,bad:true,icon:'🚫',label:'Ne pas tondre — sol mouillé',cls:'wx-hero rainy'};
+  if(temp<5)return{ok:false,bad:true,icon:'🥶',label:'Trop froid pour tondre',cls:'wx-hero snowy'};
+  if(wind>40)return{ok:false,bad:false,icon:'💨',label:'Vent trop fort',cls:'wx-hero cloudy'};
+  if(hum>88)return{ok:false,bad:false,icon:'💧',label:'Humidité trop élevée',cls:'wx-hero cloudy'};
+  if(temp>35)return{ok:false,bad:false,icon:'🌡',label:'Trop chaud — tondre le soir',cls:'wx-hero sunny'};
+  return{ok:true,bad:false,icon:'✅',label:'Conditions idéales pour tondre',cls:'wx-hero sunny'};
+}
+
+function dailyLawn(maxTemp,minTemp,precip,wind){
+  if(precip>5)return{dot:'wx-lawn-bad',txt:'Pluie — éviter'};
+  if(wind>40)return{dot:'wx-lawn-warn',txt:'Vent fort'};
+  if(maxTemp<5)return{dot:'wx-lawn-bad',txt:'Trop froid'};
+  if(precip>1)return{dot:'wx-lawn-warn',txt:'Pluie possible'};
+  return{dot:'wx-lawn-ok',txt:'Idéal'};
+}
+
+function renderWeather(wx,city){
+  WX=wx;
+  const c=wx.current, hr=wx.hourly, d=wx.daily;
+  const score=lawnScore(wx);
+
+  // Hero
+  $('wxCity').textContent=city;
+  $('wxDesc').textContent=WX_DESC[c.weather_code]||'—';
+  $('wxTemp').textContent=cvtTemp(c.temperature_2m);
+  $('wxIconBig').textContent=WX_ICONS[c.weather_code]||'🌡';
+  $('wxHero').className='wx-hero '+score.cls.replace('wx-hero ','');
+  $('wxLawnBadge').textContent=score.icon+' '+score.label;
+  $('wxLawnBadge').style.borderColor=score.ok?'rgba(48,209,88,.4)':score.bad?'rgba(255,69,58,.4)':'rgba(255,214,10,.4)';
+
+  // Index cards
+  const hum=c.relative_humidity_2m;
+  $('wxHumidity').innerHTML=hum+'<span style="font-size:.9rem;font-weight:400">%</span>';
+  $('wxHumSub').textContent=hum<60?'Sol bien drainé':hum<80?'Humidité modérée':'Herbe potentiellement mouillée';
+  const wind=Math.round(c.wind_speed_10m);
+  $('wxWind').innerHTML=wind+'<span style="font-size:.9rem;font-weight:400">km/h</span>';
+  $('wxWindSub').textContent=wind<20?'Calme — idéal':wind<35?'Brise légère':wind<50?'Vent modéré':'Fort vent — déconseillé';
+  const rain=c.precipitation||0;
+  $('wxRain').innerHTML=rain.toFixed(1)+'<span style="font-size:.9rem;font-weight:400">mm</span>';
+  $('wxRainSub').textContent=rain===0?'Aucune précipitation':rain<2?'Légères pluies récentes':'Sol potentiellement mouillé';
+  const uv=Math.round(c.uv_index||0);
+  $('wxUV').textContent=uv;
+  $('wxUVSub').textContent=uv<=2?'Faible':uv<=5?'Modéré':uv<=7?'Élevé':uv<=10?'Très élevé':'Extrême';
+
+  // Hourly
+  const nowH=new Date().getHours();
+  const scroll=$('wxHourly');scroll.innerHTML='';
+  // Show next 24 hours
+  const times=hr.time.map((t,i)=>({t,temp:hr.temperature_2m[i],code:hr.weather_code[i],rain:hr.precipitation_probability[i],i}));
+  const startIdx=times.findIndex(x=>new Date(x.t).getHours()===nowH);
+  const slice=times.slice(Math.max(0,startIdx),startIdx+24);
+  slice.forEach((h,idx)=>{
+    const hDate=new Date(h.t);
+    const hh=hDate.getHours();
+    const isNow=idx===0;
+    const div=document.createElement('div');div.className='wx-hour';
+    div.innerHTML=`<div class="wx-hour-time${isNow?' wx-hour-now':''}">${isNow?'Maint.':(hh<10?'0':'')+hh+'h'}</div>
+      <div class="wx-hour-icon">${WX_ICONS[h.code]||'—'}</div>
+      <div class="wx-hour-temp">${cvtTemp(h.temp)}°</div>
+      ${h.rain>20?`<div class="wx-hour-rain">${h.rain}%</div>`:'<div style="height:14px"></div>'}`;
+    scroll.appendChild(div);
+  });
+
+  // Daily
+  const DAYS=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  const daily=$('wxDaily');daily.innerHTML='';
+  d.time.forEach((t,i)=>{
+    const day=new Date(t+'T12:00');
+    const isToday=i===0;
+    const lawn=dailyLawn(d.temperature_2m_max[i],d.temperature_2m_min[i],d.precipitation_sum[i],d.wind_speed_10m_max[i]);
+    daily.innerHTML+=`<div class="wx-day">
+      <div class="wx-day-name">${isToday?'Auj.':DAYS[day.getDay()]}</div>
+      <div class="wx-day-icon">${WX_ICONS[d.weather_code[i]]||'—'}</div>
+      <div class="wx-day-lawn"><div class="wx-lawn-dot ${lawn.dot}"></div><span class="wx-lawn-txt">${lawn.txt}</span></div>
+      <div class="wx-day-temps">
+        <span>${cvtTemp(d.temperature_2m_max[i])}°</span>
+        <span class="wx-day-lo">${cvtTemp(d.temperature_2m_min[i])}°</span>
+      </div>
+    </div>`;
+  });
+
+  $('wxLoading').classList.add('hidden');
+  $('wxError').classList.add('hidden');
+  $('wxContent').classList.remove('hidden');
+}
+
+/* ══════════════════════════════════════════
+   PARAMÈTRES
+   ══════════════════════════════════════════ */
+
+function loadSettings(){
+  // Notif time — single canonical input in Paramètres
+  const t=localStorage.getItem('ln_notifTime')||'09:00';
+  if($('notifTime'))$('notifTime').value=t;
+
+  // InApp toggle — single canonical input in Paramètres
+  const inApp=localStorage.getItem('ln_inApp')!=='0';
+  if($('inAppToggle'))$('inAppToggle').checked=inApp;
+
+  // Freq default
+  const f=localStorage.getItem('ln_freq')||'10';
+  if($('sFreqDefault'))$('sFreqDefault').value=f;
+
+  // Cut height
+  const h=localStorage.getItem('ln_cutH')||'5';
+  if($('sCutHeight')){$('sCutHeight').value=h;}
+  if($('sCutHeightSub'))$('sCutHeightSub').textContent=h+' cm';
+
+  // Temp unit
+  WX_UNIT=localStorage.getItem('ln_unit')||'C';
+  updateSegCtrl();
+
+  // Booleans
+  const sa=localStorage.getItem('ln_seasonAdapt')!=='false';
+  const wx=localStorage.getItem('ln_wxAlert')!=='false';
+  if($('sSeasonToggle'))$('sSeasonToggle').checked=sa;
+  if($('sWxAlert'))$('sWxAlert').checked=wx;
+
+  // Update push UI (both settings label + plan banner)
+  updatePushUI();
+}
+
+function saveNotifTime(){
+  const t=$('notifTime')?.value||'09:00';
+  localStorage.setItem('ln_notifTime',t);
+  showToast('Heure de rappel : '+t+' ✓');
+}
+
+function saveInAppToggle(){
+  const v=$('inAppToggle')?.checked;
+  localStorage.setItem('ln_inApp',v?'1':'0');
+  updatePlanBanner();
+  showToast(v?'Alerte à l\'ouverture activée ✓':'Alerte désactivée');
+}
+
+function saveSetting(key,val){
+  localStorage.setItem('ln_'+key,val);
+  showToast('Préférence enregistrée ✓');
+}
+
+function saveFreqDefault(){
+  const v=$('sFreqDefault')?.value;
+  localStorage.setItem('ln_freq',v);
+  S.freqDays=parseInt(v);
+  // Re-select in freq grid
+  document.querySelectorAll('.freq-chip').forEach(c=>c.classList.toggle('on',c.dataset.d===v));
+  showToast('Fréquence mise à jour ✓');
+}
+
+function saveCutHeight(){
+  const h=$('sCutHeight')?.value||'5';
+  localStorage.setItem('ln_cutH',h);
+  if($('sCutHeightSub'))$('sCutHeightSub').textContent=h+' cm';
+  showToast('Hauteur de coupe : '+h+' cm ✓');
+}
+
+function setTempUnit(u){
+  WX_UNIT=u;
+  localStorage.setItem('ln_unit',u);
+  updateSegCtrl();
+  // Re-render if weather loaded
+  if(WX.current)renderWeather(WX,$('wxCity')?.textContent||'—');
+  showToast('Unité : °'+u+' ✓');
+}
+
+function updateSegCtrl(){
+  const isC=WX_UNIT==='C';
+  $('segC')?.classList.toggle('on',isC);
+  $('segF')?.classList.toggle('on',!isC);
+}
+
+function exportData(){
+  const data={
+    version:4,
+    exportDate:new Date().toISOString(),
+    history:S.history,
+    settings:{
+      freqDays:S.freqDays,
+      lastDate:S.lastDate,
+      notifTime:localStorage.getItem('ln_notifTime')||'09:00',
+      cutHeight:localStorage.getItem('ln_cutH')||'5',
+      tempUnit:WX_UNIT,
+    }
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='lawnnotifier-export.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  showToast('Export téléchargé ✓');
+}
+
+function resetAllData(){
+  if(!confirm('Supprimer tout l\'historique et réinitialiser les paramètres ?'))return;
+  ['ln_h','ln_ck','ln_lastDate','ln_freq','ln_last','ln_inApp','ln_notifTime','ln_cutH','ln_unit','ln_seasonAdapt','ln_wxAlert']
+    .forEach(k=>localStorage.removeItem(k));
+  S.history=[];S.checks={};S.lastDate='';S.freqDays=10;
+  renderHistory();renderChecklist();loadSettings();updateLawn();
+  showToast('Données réinitialisées ✓');
+}
+
+// switchTab is fully defined above with all side-effects included.
+
+
+</script>
+</body>
+</html>
