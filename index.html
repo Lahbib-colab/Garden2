@@ -1204,15 +1204,43 @@ function runDiagnostic(){
   );
 
   // 3. Service Worker
-  const hasSW='serviceWorker' in navigator;
-  navigator.serviceWorker?.getRegistration().then(reg=>{
-    const swOk=!!reg;
-    setDiag('SW',swOk,
-      'Enregistré (offline OK)','Non enregistré',
-      swOk?'ok':'warn'
-    );
-  }).catch(()=>setDiag('SW',false,'—','Erreur','warn'));
-  if(!hasSW)setDiag('SW',false,'Non supporté','—','warn');
+  const hasSW = 'serviceWorker' in navigator;
+  const inIframe = window.self !== window.top;
+
+  if(!hasSW){
+    setDiag('SW',false,'Non supporté par ce navigateur','—','fail');
+  } else if(inIframe){
+    // Dans un iframe cross-origin (artifact claude.ai) : SW bloqué par le navigateur,
+    // c'est normal et attendu — pas un bug.
+    setDiag('SW',true,'Non requis (artifact claude.ai)','—','ok');
+  } else if(location.protocol==='file:'){
+    setDiag('SW',false,'Non disponible sur file://','Déployez sur HTTPS','warn');
+  } else {
+    // HTTPS ou localhost : lire l'état réel du SW enregistré au chargement
+    navigator.serviceWorker.getRegistrations().then(regs=>{
+      if(regs.length>0){
+        const reg=regs[0];
+        const state=reg.active?'actif':reg.installing?'installation…':reg.waiting?'en attente':'—';
+        setDiag('SW',true,'Enregistré ✓ — '+state,'—','ok');
+      } else {
+        // Pas encore enregistré (premier chargement / délai) — tenter maintenant
+        navigator.serviceWorker.register('./sw.js',{scope:'./'})
+          .then(reg=>{
+            const state=reg.active?'actif':reg.installing?'installation…':'en attente';
+            setDiag('SW',true,'Enregistré ✓ — '+state,'—','ok');
+          })
+          .catch(e=>{
+            // Erreur fréquente : sw.js introuvable si déployé dans un sous-dossier
+            const hint=location.pathname.replace('/index.html','').replace(/\/$/,'');
+            setDiag('SW',false,
+              'Erreur : '+e.message,
+              hint?'sw.js manquant dans '+hint+'/':'sw.js introuvable',
+              'fail'
+            );
+          });
+      }
+    }).catch(e=>setDiag('SW',false,'Erreur : '+e.message,'—','fail'));
+  }
 
   // 4. Protocole HTTPS
   const proto=location.protocol;
@@ -1225,14 +1253,17 @@ function runDiagnostic(){
 
   // Update hint based on state
   const hint=$('ntHint');
+  const inIframe2 = window.self !== window.top;
   if(!hasAPI){
     hint.textContent='⚠️ Notifications non supportées sur ce navigateur.';
   }else if(perm==='denied'){
-    hint.textContent='⛔ Notifications bloquées. Sur iPhone : Réglages → LawnNotifier → Notifications → Autoriser.';
+    hint.textContent='⛔ Notifications bloquées. Sur iPhone : Réglages iOS → Notifications → LawnNotifier → Autoriser.';
   }else if(perm==='default'){
     hint.textContent='👆 Allez dans Réglages → Notifications push → Activer, puis revenez ici pour tester.';
   }else if(!isSecure){
     hint.textContent='⚠️ Fonctionne uniquement en HTTPS. Publiez sur GitHub Pages ou ouvrez depuis claude.ai.';
+  }else if(inIframe2){
+    hint.textContent='✅ Tout est prêt. Le Service Worker s\'activera automatiquement sur GitHub Pages pour le mode offline et les notifications en arrière-plan.';
   }else{
     hint.textContent='✅ Tout est prêt. Appuyez sur un bouton ci-dessus pour envoyer une notification test.';
   }
@@ -1523,8 +1554,19 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   switchTab('plan');
+
+  // ── Enregistrement Service Worker au chargement ──
+  // Obligatoire pour : offline, notifications en arrière-plan, install PWA
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    navigator.serviceWorker.register('./sw.js', {scope:'./'})
+      .then(reg=>{
+        console.log('[LawnNotifier] SW enregistré, scope:', reg.scope);
+        // Force update si nouvelle version disponible
+        reg.update();
+      })
+      .catch(err=>{
+        console.warn('[LawnNotifier] SW erreur:', err.message);
+      });
   }
 });
 </script>
