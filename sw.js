@@ -1,5 +1,5 @@
 const CACHE = 'lawnnotifier-v9';
-const ASSETS = ['/', '/index.html'];
+const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -22,12 +22,12 @@ self.addEventListener('fetch', e => {
   if (e.request.url.includes('nominatim.openstreetmap.org')) return;
   e.respondWith(
     caches.match(e.request).then(r => r || fetch(e.request).catch(() =>
-      e.request.destination === 'document' ? caches.match('/index.html') : new Response('', {status: 503})
+      e.request.destination === 'document' ? caches.match('./index.html') : new Response('', {status: 503})
     ))
   );
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  e.waitUntil(clients.openWindow('/'));
+  e.waitUntil(clients.openWindow('./'));
 });

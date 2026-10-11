@@ -2,7 +2,7 @@
   "name": "LawnNotifier",
   "short_name": "LawnNotifier",
   "description": "Planifiez vos tontes intelligemment",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#09090f",
@@ -13,7 +13,7 @@
     { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Planifier", "url": "/?tab=plan",    "icons": [{"src":"./icon-192.png","sizes":"192x192"}] },
-    { "name": "Météo",     "url": "/?tab=weather", "icons": [{"src":"./icon-192.png","sizes":"192x192"}] }
+    { "name": "Planifier", "url": "./?tab=plan",    "icons": [{"src":"./icon-192.png","sizes":"192x192"}] },
+    { "name": "Météo",     "url": "./?tab=weather", "icons": [{"src":"./icon-192.png","sizes":"192x192"}] }
   ]
 }
