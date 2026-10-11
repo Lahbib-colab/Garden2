@@ -1344,15 +1344,23 @@ function updateLawn(){
 // ══════════════════════════════════════════
 
 function getWxClass(code){
-  if(code===0||code===1)return'wx-sun';
-  if(code===2||code===3)return'wx-cloud';
-  if(code===45||code===48)return'wx-fog';
-  if(code>=51&&code<=67)return'wx-rain';
-  if(code>=71&&code<=77)return'wx-snow';
-  if(code>=80&&code<=82)return'wx-rain';
-  if(code>=85&&code<=86)return'wx-snow';
-  if(code>=95)return'wx-storm';
-  return'wx-cloud';
+  code = Number(code) || 0;
+  // WMO codes complets
+  if(code===0)                    return 'wx-sun';   // Ciel dégagé
+  if(code===1)                    return 'wx-sun';   // Principalement dégagé
+  if(code===2)                    return 'wx-cloud'; // Partiellement nuageux
+  if(code===3)                    return 'wx-cloud'; // Couvert
+  if(code===45||code===48)        return 'wx-fog';   // Brouillard
+  if(code>=51&&code<=55)          return 'wx-rain';  // Bruine
+  if(code>=56&&code<=57)          return 'wx-snow';  // Bruine verglaçante
+  if(code>=61&&code<=65)          return 'wx-rain';  // Pluie
+  if(code>=66&&code<=67)          return 'wx-snow';  // Pluie verglaçante
+  if(code>=71&&code<=77)          return 'wx-snow';  // Neige
+  if(code>=80&&code<=82)          return 'wx-rain';  // Averses pluie
+  if(code===83||code===84)        return 'wx-snow';  // Averses neige/pluie mêlées
+  if(code===85||code===86)        return 'wx-snow';  // Averses neige
+  if(code>=95)                    return 'wx-storm'; // Orages
+  return 'wx-cloud';
 }
 
 let _wxAnimFrame=null, _leafInterval=null, _lightningInterval=null;
@@ -1426,45 +1434,72 @@ function startWxAnimations(cls){
   }
 }
 
+// Extrait les données current depuis n'importe quelle structure de cache
+function extractWxCurrent(cache){
+  if(!cache) return null;
+  // Structure normale API : { current: { temperature_2m, weather_code, ... } }
+  if(cache.current && cache.current.weather_code !== undefined) return cache.current;
+  // Structure aplatie (localStorage spread) : { temperature_2m, weather_code, ... }
+  if(cache.weather_code !== undefined) return cache;
+  // Structure partielle (refresh rapide) : { current_weather: { temperature, weathercode } }
+  if(cache.current_weather){
+    return {
+      temperature_2m: cache.current_weather.temperature,
+      weather_code:   cache.current_weather.weathercode||0,
+      wind_speed_10m: cache.current_weather.windspeed||0,
+      relative_humidity_2m: 0,
+      precipitation: 0,
+      uv_index: 0,
+    };
+  }
+  return null;
+}
+
 function updateLawnWeather(){
-  // Lire depuis cache ou localStorage
-  let cache=S.wxCache;
-  let city=S.wxCacheCity||safeGet('ln_wx_city','');
+  // 1. Source de données : S.wxCache en priorité, sinon localStorage
+  let cache = S.wxCache;
+  let city  = S.wxCacheCity || safeGet('ln_wx_city','');
 
   if(!cache){
-    // Restaurer depuis localStorage
-    const saved=safeGetJSON('ln_wx_widget','null');
-    if(saved){ cache=saved; city=saved._city||city; }
+    const saved = safeGetJSON('ln_wx_widget', null);
+    if(saved){ cache = saved; city = saved._city || city; }
   }
-  if(!cache)return;
+  if(!cache) return;
 
-  const c=cache.current||cache;
-  const code=c.weather_code||0;
-  const temp=cvt(c.temperature_2m||0);
-  const emoji=WX_ICONS[code]||'🌡';
-  const desc=(WX_DESC&&WX_DESC[code])||'—';
-  const wxClass=getWxClass(code);
+  // 2. Extraire les données current (robuste quelle que soit la structure)
+  const c = extractWxCurrent(cache);
+  if(!c) return;
 
-  // Widget Liquid Glass
-  const wx=$('lawnWx');
+  const code  = Number(c.weather_code) || 0;
+  const temp  = cvt(c.temperature_2m  || 0);
+  const emoji = WX_ICONS[code] || '🌡';
+  const desc  = (WX_DESC && WX_DESC[code]) || '—';
+  const wxCls = getWxClass(code);
+
+  // 3. Mettre à jour le widget Liquid Glass
+  const wx = $('lawnWx');
   if(wx){
-    wx.style.display='flex';
-    const em=$('lawnWxEmoji'),tp=$('lawnWxTemp'),dc=$('lawnWxDesc'),ci=$('lawnWxCity');
-    if(em)em.textContent=emoji;
-    if(tp)tp.textContent=temp+'°';
-    if(dc)dc.textContent=desc;
-    if(ci)ci.textContent=city;
+    wx.style.display = 'flex';
+    const el = (id) => $(id);
+    const em = el('lawnWxEmoji'), tp = el('lawnWxTemp'),
+          dc = el('lawnWxDesc'),  ci = el('lawnWxCity');
+    if(em) em.textContent = emoji;
+    if(tp) tp.textContent = temp + '°';
+    if(dc) dc.textContent = desc;
+    if(ci) ci.textContent = city || '';
   }
 
-  // Classe météo sur .lawn (déclenche teintures CSS + animations)
-  const lawn=$('lawn');
+  // 4. Appliquer la classe météo sur .lawn (CSS + animations)
+  const lawn = $('lawn');
   if(lawn){
-    lawn.className=lawn.className.replace(/wx-\w+/g,'').trim();
-    lawn.classList.add(wxClass);
+    // Retirer TOUTES les classes wx-* proprement
+    const classes = Array.from(lawn.classList).filter(cl => !cl.startsWith('wx-'));
+    lawn.className = classes.join(' ');
+    lawn.classList.add(wxCls);
   }
 
-  // Lancer animations JS
-  startWxAnimations(wxClass);
+  // 5. Démarrer les animations JS
+  startWxAnimations(wxCls);
 }
 
 // ══════════════════════════════════════════
@@ -1943,8 +1978,15 @@ async function fetchWeatherByCoords(lat, lon, cityName){
     safeSave('ln_wx_lon', lon);
     safeSave('ln_wx_city', city);
     // Sauvegarder les données météo pour restauration hors-ligne
-    const widgetData={...wx,_city:city,_savedAt:Date.now()};
-    safeSave('ln_wx_widget',JSON.stringify(widgetData));
+    // On garde la structure complète + métadonnées séparées
+    const widgetData = {
+      current:  wx.current,   // préserve la structure imbriquée
+      _city:    city,
+      _savedAt: Date.now(),
+      _code:    wx.current?.weather_code || 0,
+      _temp:    wx.current?.temperature_2m || 0,
+    };
+    safeSave('ln_wx_widget', JSON.stringify(widgetData));
     renderWeather(wx, city);
     updateLawnWeather();
   }catch(e){
@@ -2172,7 +2214,13 @@ document.addEventListener('DOMContentLoaded', function(){
       .then(r=>r.json())
       .then(wx=>{
         S.wxCache=wx; S.wxCacheCity=safeGet('ln_wx_city','');
-        const widgetData={...wx,_city:S.wxCacheCity,_savedAt:Date.now()};
+        const widgetData={
+          current:  wx.current,
+          _city:    S.wxCacheCity,
+          _savedAt: Date.now(),
+          _code:    wx.current?.weather_code||0,
+          _temp:    wx.current?.temperature_2m||0,
+        };
         safeSave('ln_wx_widget',JSON.stringify(widgetData));
         updateLawnWeather();
       }).catch(()=>{}); // silencieux si offline
