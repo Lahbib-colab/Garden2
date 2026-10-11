@@ -470,6 +470,32 @@ html, body {
 .toast { position: fixed; top: calc(var(--sat) + 10px); left: 50%; translate: -50% 0; z-index: 200; background: rgba(18,18,26,.94); border: 1px solid var(--border); border-radius: 13px; padding: 9px 16px; font-size: .78rem; font-weight: 600; backdrop-filter: blur(20px); white-space: nowrap; pointer-events: none; transform: translateY(-90px); transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
 .toast.show { transform: translateY(0); }
 
+/* ── Notif Test Modal ── */
+.nt-diag-row { display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05); }
+.nt-diag-row:last-child { border-bottom:none; }
+.nt-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--text3);transition:background .3s; }
+.nt-dot.ok   { background:var(--green);  box-shadow:0 0 6px var(--green); }
+.nt-dot.warn { background:var(--amber);  box-shadow:0 0 6px var(--amber); }
+.nt-dot.fail { background:var(--red);    box-shadow:0 0 6px var(--red); }
+.nt-diag-lbl { font-size:.78rem;font-weight:600;flex:1; }
+.nt-diag-val { font-size:.72rem;color:var(--text2);text-align:right; }
+.nt-test-btn {
+  display:flex;align-items:center;gap:12px;width:100%;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:12px 13px;
+  cursor:pointer;transition:background .15s;text-align:left;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+.nt-test-btn:hover { background:rgba(255,255,255,.08); }
+.nt-test-btn:disabled { opacity:.45;cursor:not-allowed; }
+.nt-test-btn.sent { border-color:var(--green-g);background:var(--green-t); }
+.nt-test-btn.sent .nt-btn-t { color:var(--green); }
+.nt-btn-icon { font-size:1.4rem;flex-shrink:0;width:28px;text-align:center; }
+.nt-btn-body { flex:1;min-width:0; }
+.nt-btn-t { font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:2px; }
+.nt-btn-s { font-size:.7rem;color:var(--text2); }
+.nt-btn-status { font-size:.7rem;font-weight:700;flex-shrink:0; }
+
 /* ── Utilities ── */
 .hidden { display: none !important; }
 .dots span { animation: blink 1.2s infinite; display: inline-block; }
@@ -669,6 +695,11 @@ html, body {
             </label>
           </div>
         </div>
+        <div class="sr" style="cursor:pointer" onclick="openNotifTest()">
+          <div class="sr-icon" style="background:#30d15820">🧪</div>
+          <div class="sr-body"><div class="sr-t">Tester les notifications</div><div class="sr-s" id="testNotifStatus">Vérifier que tout fonctionne</div></div>
+          <div class="sr-r" style="color:var(--text3)">›</div>
+        </div>
       </div>
 
       <div class="sg-lbl">Tonte</div>
@@ -760,6 +791,81 @@ html, body {
       </button>
     </div>
   </nav>
+</div>
+
+<!-- Notif Test Modal -->
+<div class="overlay" id="ntOverlay" onclick="closeNotifTest()"></div>
+<div class="sheet" id="ntSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">🧪 Test des notifications</div>
+  <div class="sheet-sub">Diagnostique et teste vos notifications push en temps réel.</div>
+
+  <!-- Diagnostic -->
+  <div style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--r-sm);padding:13px;margin-bottom:12px">
+    <div style="font-size:.67rem;font-weight:600;color:var(--text3);letter-spacing:.03em;margin-bottom:10px">DIAGNOSTIC</div>
+    <div class="nt-diag-row" id="diagPerm">
+      <span class="nt-dot" id="diagPermDot"></span>
+      <span class="nt-diag-lbl">Permission</span>
+      <span class="nt-diag-val" id="diagPermVal">—</span>
+    </div>
+    <div class="nt-diag-row" id="diagAPI">
+      <span class="nt-dot" id="diagAPIDot"></span>
+      <span class="nt-diag-lbl">API Notification</span>
+      <span class="nt-diag-val" id="diagAPIVal">—</span>
+    </div>
+    <div class="nt-diag-row" id="diagSW">
+      <span class="nt-dot" id="diagSWDot"></span>
+      <span class="nt-diag-lbl">Service Worker</span>
+      <span class="nt-diag-val" id="diagSWVal">—</span>
+    </div>
+    <div class="nt-diag-row" id="diagHTTPS">
+      <span class="nt-dot" id="diagHTTPSDot"></span>
+      <span class="nt-diag-lbl">Protocole</span>
+      <span class="nt-diag-val" id="diagHTTPSVal">—</span>
+    </div>
+  </div>
+
+  <!-- Test buttons -->
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+    <button class="nt-test-btn" id="testNowBtn" onclick="sendTestNotif('now')">
+      <span class="nt-btn-icon">⚡</span>
+      <div class="nt-btn-body">
+        <div class="nt-btn-t">Notification immédiate</div>
+        <div class="nt-btn-s">Reçue en moins d'1 seconde</div>
+      </div>
+      <span class="nt-btn-status" id="testNowStatus"></span>
+    </button>
+    <button class="nt-test-btn" id="test5sBtn" onclick="sendTestNotif('5s')">
+      <span class="nt-btn-icon">⏱</span>
+      <div class="nt-btn-body">
+        <div class="nt-btn-t">Notification dans 5 secondes</div>
+        <div class="nt-btn-s">Simule un rappel différé</div>
+      </div>
+      <span class="nt-btn-status" id="test5sStatus"></span>
+    </button>
+    <button class="nt-test-btn" id="testVeilleBtn" onclick="sendTestNotif('veille')">
+      <span class="nt-btn-icon">🌙</span>
+      <div class="nt-btn-body">
+        <div class="nt-btn-t">Simule "Veille de tonte"</div>
+        <div class="nt-btn-s">Message exact envoyé la veille à 20h</div>
+      </div>
+      <span class="nt-btn-status" id="testVeilleStatus"></span>
+    </button>
+    <button class="nt-test-btn" id="testJourBtn" onclick="sendTestNotif('jour')">
+      <span class="nt-btn-icon">🌿</span>
+      <div class="nt-btn-body">
+        <div class="nt-btn-t">Simule "Jour de tonte"</div>
+        <div class="nt-btn-s">Message exact envoyé le jour J</div>
+      </div>
+      <span class="nt-btn-status" id="testJourStatus"></span>
+    </button>
+  </div>
+
+  <div style="font-size:.72rem;color:var(--text3);line-height:1.55;padding:10px 12px;background:rgba(255,255,255,.03);border-radius:9px;margin-bottom:12px" id="ntHint">
+    💡 Sur iPhone : l'app doit être ajoutée à l'écran d'accueil et les notifications autorisées dans Réglages → Notifications.
+  </div>
+
+  <button class="btn-cl" style="width:100%;text-align:center" onclick="closeNotifTest()">Fermer</button>
 </div>
 
 <!-- ICS Sheet -->
@@ -938,7 +1044,6 @@ async function generate(){
   const freq=getFreq(),season=getSeason();
   S.schedule=buildSchedule(freq);fill.style.width='55%';
   let tip='';
-  // AI tip via Anthropic API
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -1062,6 +1167,170 @@ function scheduleWebPush(){
     if(msE>0&&msE<7*864e5)setTimeout(()=>{try{new Notification('🌿 LawnNotifier',{body:'Tonte demain — '+fmtDate(ev.date),tag:'lawn-eve-'+tag});}catch(e){}},msE);
   });
   showToast('Rappels push programmés ✓');
+}
+
+// ══════════════════════════════════════════
+// NOTIF TEST
+// ══════════════════════════════════════════
+function openNotifTest(){
+  runDiagnostic();
+  $('ntOverlay').classList.add('open');
+  $('ntSheet').classList.add('open');
+  // Reset buttons
+  ['testNow','test5s','testVeille','testJour'].forEach(id=>{
+    const btn=$(id+'Btn'),st=$(id+'Status');
+    if(btn){btn.classList.remove('sent');btn.disabled=false;}
+    if(st)st.textContent='';
+  });
+}
+function closeNotifTest(){
+  $('ntOverlay').classList.remove('open');
+  $('ntSheet').classList.remove('open');
+}
+
+function runDiagnostic(){
+  // 1. API disponible
+  const hasAPI='Notification' in window;
+  setDiag('API',hasAPI,'Disponible','Non supporté',hasAPI?'ok':'fail');
+
+  // 2. Permission
+  const perm=hasAPI?Notification.permission:'unavailable';
+  const permOk=perm==='granted';
+  const permWarn=perm==='default';
+  setDiag('Perm',permOk,
+    'Accordée ✓',
+    perm==='denied'?'Refusée — Réglages iOS':perm==='default'?'Non demandée':'Indisponible',
+    permOk?'ok':permWarn?'warn':'fail'
+  );
+
+  // 3. Service Worker
+  const hasSW='serviceWorker' in navigator;
+  navigator.serviceWorker?.getRegistration().then(reg=>{
+    const swOk=!!reg;
+    setDiag('SW',swOk,
+      'Enregistré (offline OK)','Non enregistré',
+      swOk?'ok':'warn'
+    );
+  }).catch(()=>setDiag('SW',false,'—','Erreur','warn'));
+  if(!hasSW)setDiag('SW',false,'Non supporté','—','warn');
+
+  // 4. Protocole HTTPS
+  const proto=location.protocol;
+  const isSecure=proto==='https:'||location.hostname==='localhost';
+  setDiag('HTTPS',isSecure,
+    proto==='https:'?'HTTPS ✓':proto==='file:'?'file:// ✗ (ouvrir via HTTPS)':'localhost ✓',
+    proto,
+    isSecure?'ok':'fail'
+  );
+
+  // Update hint based on state
+  const hint=$('ntHint');
+  if(!hasAPI){
+    hint.textContent='⚠️ Notifications non supportées sur ce navigateur.';
+  }else if(perm==='denied'){
+    hint.textContent='⛔ Notifications bloquées. Sur iPhone : Réglages → LawnNotifier → Notifications → Autoriser.';
+  }else if(perm==='default'){
+    hint.textContent='👆 Allez dans Réglages → Notifications push → Activer, puis revenez ici pour tester.';
+  }else if(!isSecure){
+    hint.textContent='⚠️ Fonctionne uniquement en HTTPS. Publiez sur GitHub Pages ou ouvrez depuis claude.ai.';
+  }else{
+    hint.textContent='✅ Tout est prêt. Appuyez sur un bouton ci-dessus pour envoyer une notification test.';
+  }
+
+  // Update settings row status
+  const ts=$('testNotifStatus');
+  if(ts)ts.textContent=!hasAPI?'Non supporté':perm==='granted'?'✅ Opérationnelles':perm==='denied'?'⛔ Bloquées':'⚠️ Non configurées';
+}
+
+function setDiag(key,ok,okLabel,failLabel,state){
+  const dot=$('diag'+key+'Dot'),val=$('diag'+key+'Val');
+  if(dot){dot.className='nt-dot '+state;}
+  if(val){val.textContent=ok?okLabel:failLabel;}
+}
+
+async function sendTestNotif(type){
+  // Check permission first
+  if(!('Notification' in window)){showToast('❌ Non supporté sur ce navigateur');return;}
+  if(Notification.permission!=='granted'){
+    showToast('⚠️ Activez d\'abord les notifications dans Réglages');
+    closeNotifTest();
+    setTimeout(()=>switchTab('settings'),300);
+    return;
+  }
+
+  const configs={
+    now:{
+      id:'testNow',
+      delay:0,
+      title:'🌿 LawnNotifier — Test',
+      body:'✅ Les notifications fonctionnent parfaitement !',
+      tag:'ln-test-now',
+      statusOk:'Envoyée ✓',
+    },
+    '5s':{
+      id:'test5s',
+      delay:5000,
+      title:'🌿 LawnNotifier — Test différé',
+      body:'⏱ Cette notification a été envoyée 5 secondes après le tap.',
+      tag:'ln-test-5s',
+      statusOk:'Envoi dans 5s…',
+    },
+    veille:{
+      id:'testVeille',
+      delay:0,
+      title:'🌿 LawnNotifier',
+      body:'Tonte demain — '+fmtDate(new Date(Date.now()+864e5))+' · Préparez la tondeuse',
+      tag:'ln-test-veille',
+      statusOk:'Envoyée ✓',
+    },
+    jour:{
+      id:'testJour',
+      delay:0,
+      title:'🌿 LawnNotifier',
+      body:'Jour de tonte — '+fmtDate(new Date())+' · Bonne tonte !',
+      tag:'ln-test-jour',
+      statusOk:'Envoyée ✓',
+    },
+  };
+
+  const cfg=configs[type];
+  if(!cfg)return;
+  const btn=$(cfg.id+'Btn'),st=$(cfg.id+'Status');
+  if(btn)btn.disabled=true;
+  if(st)st.textContent=cfg.delay>0?'Programmée…':'Envoi…';
+  vibrate(8);
+
+  const send=()=>{
+    try{
+      new Notification(cfg.title,{
+        body:cfg.body,
+        tag:cfg.tag,
+        icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text y="52" font-size="52">🌿</text></svg>',
+        badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text y="52" font-size="52">🌿</text></svg>',
+      });
+      if(btn){btn.classList.add('sent');}
+      if(st){st.textContent=cfg.statusOk;st.style.color='var(--green)';}
+      showToast('🔔 '+cfg.statusOk);
+    }catch(e){
+      if(st){st.textContent='❌ Erreur';st.style.color='var(--red)';}
+      if(btn)btn.disabled=false;
+      showToast('❌ Erreur: '+e.message);
+    }
+  };
+
+  if(cfg.delay>0){
+    if(st){st.textContent='dans '+(cfg.delay/1000)+'s…';st.style.color='var(--amber)';}
+    // Countdown
+    let remaining=cfg.delay/1000;
+    const interval=setInterval(()=>{
+      remaining--;
+      if(st&&remaining>0)st.textContent='dans '+remaining+'s…';
+      if(remaining<=0)clearInterval(interval);
+    },1000);
+    setTimeout(send,cfg.delay);
+  }else{
+    send();
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1254,7 +1523,6 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   switchTab('plan');
-  // Register Service Worker (only on HTTPS/localhost)
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
   }
