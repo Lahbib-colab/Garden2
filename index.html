@@ -412,6 +412,73 @@ html, body {
 .wx-day-temps { font-size: .79rem; font-weight: 600; display: flex; gap: 7px; }
 .wx-day-lo { color: var(--text3); }
 
+/* ── Weather search ── */
+.wx-search-wrap {
+  position: relative; margin-bottom: 10px;
+}
+.wx-search-row {
+  display: flex; gap: 8px; align-items: center;
+}
+.wx-search-box {
+  flex: 1; position: relative;
+  display: flex; align-items: center;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-sm); overflow: visible;
+  transition: border-color .2s, box-shadow .2s;
+}
+.wx-search-box:focus-within {
+  border-color: var(--green); box-shadow: 0 0 0 3px rgba(48,209,88,.13);
+}
+.wx-search-icon {
+  width: 16px; height: 16px; flex-shrink: 0;
+  color: var(--text3); margin-left: 12px;
+}
+.wx-search-input {
+  flex: 1; background: none; border: none; outline: none;
+  padding: 11px 10px; color: var(--text);
+  font-size: .9rem; font-weight: 500; font-family: inherit;
+}
+.wx-search-input::placeholder { color: var(--text3); }
+.wx-search-clear {
+  background: none; border: none; color: var(--text3);
+  font-size: .75rem; padding: 0 12px; cursor: pointer;
+  height: 100%; display: flex; align-items: center;
+  transition: color .15s;
+}
+.wx-search-clear:hover { color: var(--text); }
+.wx-loc-btn {
+  width: 42px; height: 42px; flex-shrink: 0;
+  background: var(--blue-t); border: 1px solid rgba(10,132,255,.3);
+  border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .15s; color: var(--blue);
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.wx-loc-btn svg { width: 18px; height: 18px; }
+.wx-loc-btn:hover { background: rgba(10,132,255,.2); }
+.wx-loc-btn:active { transform: scale(.93); }
+
+/* Suggestions dropdown */
+.wx-suggestions {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 50px;
+  background: rgba(22,22,30,.96); border: 1px solid var(--border);
+  border-radius: var(--r-sm); overflow: hidden; z-index: 50;
+  backdrop-filter: blur(40px); box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.wx-sug-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  transition: background .12s;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.wx-sug-item:last-child { border-bottom: none; }
+.wx-sug-item:hover, .wx-sug-item:active { background: rgba(255,255,255,.07); }
+.wx-sug-item.focused { background: var(--green-t); }
+.wx-sug-pin { font-size: .9rem; flex-shrink: 0; }
+.wx-sug-name { font-size: .83rem; font-weight: 600; color: var(--text); }
+.wx-sug-country { font-size: .72rem; color: var(--text2); margin-top: 1px; }
+.wx-sug-loading { padding: 14px; text-align: center; font-size: .78rem; color: var(--text3); display: flex; align-items: center; justify-content: center; gap: 8px; }
+
 .wx-load { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 0; gap: 12px; color: var(--text3); font-size: .8rem; }
 .wx-spin { width: 26px; height: 26px; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -630,12 +697,36 @@ html, body {
 
     <!-- ═══ MÉTÉO ═══ -->
     <div class="pane" id="pane-weather">
-      <div class="wx-load" id="wxLoad"><div class="wx-spin"></div>Localisation…</div>
+
+      <!-- Barre de recherche ville -->
+      <div class="wx-search-wrap">
+        <div class="wx-search-row">
+          <div class="wx-search-box">
+            <svg class="wx-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input
+              type="text" id="wxCityInput"
+              class="wx-search-input"
+              placeholder="Rechercher une ville…"
+              autocomplete="off" autocorrect="off" spellcheck="false"
+              oninput="onCityInput(this.value)"
+              onkeydown="onCityKey(event)"
+            >
+            <button class="wx-search-clear hidden" id="wxClearBtn" onclick="clearCitySearch()" aria-label="Effacer">✕</button>
+          </div>
+          <button class="wx-loc-btn" onclick="loadWeather()" title="Ma position">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><path d="M12 5a7 7 0 0 1 7 7 7 7 0 0 1-7 7 7 7 0 0 1-7-7 7 7 0 0 1 7-7z" opacity=".3"/></svg>
+          </button>
+        </div>
+        <!-- Suggestions -->
+        <div class="wx-suggestions hidden" id="wxSuggestions"></div>
+      </div>
+
+      <div class="wx-load" id="wxLoad"><div class="wx-spin"></div><span id="wxLoadMsg">Localisation…</span></div>
       <div class="hidden" id="wxErr">
         <div class="wx-err">
           <div class="wx-err-t">📍 Localisation requise</div>
-          <div class="wx-err-s" id="wxErrMsg">Autorisez l'accès pour la météo locale.</div>
-          <button class="btn-primary" style="margin-top:0;max-width:220px;margin:0 auto" onclick="loadWeather()">Autoriser</button>
+          <div class="wx-err-s" id="wxErrMsg">Autorisez l'accès ou saisissez une ville ci-dessus.</div>
+          <button class="btn-primary" style="margin-top:8px;max-width:220px;margin:8px auto 0" onclick="loadWeather()">📍 Utiliser ma position</button>
         </div>
       </div>
       <div class="hidden" id="wxContent">
@@ -966,8 +1057,23 @@ function switchTab(name){
   if(lbl){logo.style.display='none';page.style.display='block';page.textContent=lbl;}
   else{logo.style.display='';page.style.display='none';}
   // Side effects
-  if(name==='weather'&&!$('wxContent').classList.contains('hidden')===false&&!$('wxErr').classList.contains('hidden')===false)loadWeather();
-  if(name==='weather'&&$('wxLoad').style.display!=='none'||($('wxContent').classList.contains('hidden')&&$('wxErr').classList.contains('hidden')))loadWeather();
+  if(name==='weather'){
+    const wxReady=!$('wxContent').classList.contains('hidden');
+    const wxLoading=!$('wxLoad').classList.contains('hidden');
+    if(!wxReady&&!wxLoading){
+      // Restaurer la dernière ville mémorisée
+      const savedLat=safeGet('ln_wx_lat','');
+      const savedLon=safeGet('ln_wx_lon','');
+      const savedCity=safeGet('ln_wx_city','');
+      if(savedLat&&savedLon){
+        const input=$('wxCityInput');
+        if(input&&savedCity) input.value=savedCity;
+        fetchWeatherByCoords(parseFloat(savedLat), parseFloat(savedLon), savedCity||null);
+      } else {
+        loadWeather(); // géolocalisation par défaut
+      }
+    }
+  }
   if(name==='settings')updatePushUI();
 }
 
@@ -1057,6 +1163,21 @@ async function generate(){
   renderSchedule(season,tip);
   renderShareRow(freq);
   renderTips(season,tip);
+
+  // ── Sauvegarde du planning complet ──
+  safeSave('ln_sched', JSON.stringify({
+    events: S.schedule.map(e=>({
+      date: e.date.toISOString(),
+      type: e.type,
+      label: e.label,
+      diff: e.diff,
+    })),
+    tip,
+    seasonKey: season.key,
+    freq,
+    savedAt: Date.now(),
+  }));
+
   fill.style.width='100%';
   setTimeout(()=>{prog.style.display='none';fill.style.width='0%';},400);
   btn.disabled=false;
@@ -1440,24 +1561,149 @@ function renderTips(season,tip){
 // ══════════════════════════════════════════
 function showWxEl(id){['wxLoad','wxErr','wxContent'].forEach(i=>$(i).classList.add('hidden'));$(id).classList.remove('hidden');}
 
+// ── Chargement météo par coordonnées ──────────────────────────
+async function fetchWeatherByCoords(lat, lon, cityName){
+  showWxEl('wxLoad');
+  $('wxLoadMsg').textContent = 'Chargement météo…';
+  try{
+    const[wxRes,geoRes]=await Promise.all([
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,weather_code,uv_index&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&wind_speed_unit=kmh&timezone=auto&forecast_days=7`),
+      cityName ? Promise.resolve(null)
+               : fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=fr`)
+    ]);
+    const wx=await wxRes.json();
+    let city=cityName;
+    if(!city){
+      const geo=await geoRes.json().catch(()=>({}));
+      city=geo.address?.city||geo.address?.town||geo.address?.village||geo.address?.county||'Votre position';
+    }
+    S.wxCache=wx; S.wxCacheCity=city;
+    // Mémoriser la dernière ville recherchée
+    safeSave('ln_wx_lat', lat);
+    safeSave('ln_wx_lon', lon);
+    safeSave('ln_wx_city', city);
+    renderWeather(wx, city);
+  }catch(e){
+    $('wxErrMsg').textContent='Impossible de charger la météo. Vérifiez votre connexion.';
+    showWxEl('wxErr');
+  }
+}
+
+// ── Géolocalisation (bouton 📍) ───────────────────────────────
 async function loadWeather(){
   showWxEl('wxLoad');
-  if(!navigator.geolocation){$('wxErrMsg').textContent='Géolocalisation non disponible.';showWxEl('wxErr');return;}
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    try{
-      const{latitude:lat,longitude:lon}=pos.coords;
-      const[wxRes,geoRes]=await Promise.all([
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,weather_code,uv_index&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&wind_speed_unit=kmh&timezone=auto&forecast_days=7`),
-        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=fr`)
-      ]);
-      const wx=await wxRes.json();
-      const geo=await geoRes.json().catch(()=>({}));
-      const city=geo.address?.city||geo.address?.town||geo.address?.village||'Votre position';
-      S.wxCache=wx;S.wxCacheCity=city;
-      renderWeather(wx,city);
-    }catch(e){$('wxErrMsg').textContent='Impossible de charger la météo. Vérifiez votre connexion.';showWxEl('wxErr');}
-  },()=>{$('wxErrMsg').textContent='Localisation refusée. Autorisez dans les réglages.';showWxEl('wxErr');},{timeout:10000});
+  $('wxLoadMsg').textContent='Localisation…';
+  if(!navigator.geolocation){
+    $('wxErrMsg').textContent='Géolocalisation non disponible. Tapez le nom d\'une ville.';
+    showWxEl('wxErr'); return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => fetchWeatherByCoords(pos.coords.latitude, pos.coords.longitude, null),
+    ()  => { $('wxErrMsg').textContent='Localisation refusée. Saisissez une ville ci-dessus.'; showWxEl('wxErr'); },
+    { timeout:10000 }
+  );
 }
+
+// ── Recherche de ville ────────────────────────────────────────
+let _sugTimer=null, _sugFocused=-1, _sugResults=[];
+
+function onCityInput(val){
+  const clear=$('wxClearBtn');
+  if(clear) clear.classList.toggle('hidden', !val);
+  clearTimeout(_sugTimer);
+  if(!val.trim()){ hideSuggestions(); return; }
+  // Debounce 350ms
+  _sugTimer=setTimeout(()=>searchCity(val.trim()), 350);
+}
+
+function onCityKey(e){
+  const sug=$('wxSuggestions');
+  const items=sug?sug.querySelectorAll('.wx-sug-item'):[];
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    _sugFocused=Math.min(_sugFocused+1,items.length-1);
+    updateSugFocus(items);
+  }else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    _sugFocused=Math.max(_sugFocused-1,-1);
+    updateSugFocus(items);
+  }else if(e.key==='Enter'){
+    e.preventDefault();
+    if(_sugFocused>=0&&_sugResults[_sugFocused]){
+      pickCity(_sugResults[_sugFocused]);
+    }else if($('wxCityInput').value.trim()){
+      searchCity($('wxCityInput').value.trim(), true);
+    }
+  }else if(e.key==='Escape'){
+    hideSuggestions();
+    $('wxCityInput').blur();
+  }
+}
+
+function updateSugFocus(items){
+  items.forEach((el,i)=>el.classList.toggle('focused',i===_sugFocused));
+}
+
+async function searchCity(q, immediate=false){
+  const sug=$('wxSuggestions');
+  if(!sug)return;
+  // Show loading
+  sug.classList.remove('hidden');
+  sug.innerHTML='<div class="wx-sug-loading"><div class="wx-spin" style="width:16px;height:16px;border-width:1.5px"></div>Recherche…</div>';
+  _sugFocused=-1;
+  try{
+    const res=await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&accept-language=fr&featuretype=city,town,village`
+    );
+    const data=await res.json();
+    _sugResults=data;
+    if(!data.length){
+      sug.innerHTML='<div class="wx-sug-loading">Aucun résultat pour «&nbsp;'+q+'&nbsp;»</div>';
+      return;
+    }
+    sug.innerHTML=data.map((r,i)=>{
+      const name=r.display_name.split(',')[0];
+      const country=r.display_name.split(',').slice(1,3).join(',').trim();
+      return `<div class="wx-sug-item" onclick="pickCity(_sugResults[${i}])">
+        <span class="wx-sug-pin">📍</span>
+        <div><div class="wx-sug-name">${name}</div><div class="wx-sug-country">${country}</div></div>
+      </div>`;
+    }).join('');
+    // Si premier résultat unique et recherche immédiate (Enter)
+    if(immediate && data.length===1) pickCity(data[0]);
+  }catch(e){
+    sug.innerHTML='<div class="wx-sug-loading">Erreur réseau</div>';
+  }
+}
+
+function pickCity(result){
+  const name=result.display_name.split(',')[0];
+  const input=$('wxCityInput');
+  if(input){ input.value=name; input.blur(); }
+  const clear=$('wxClearBtn');
+  if(clear) clear.classList.remove('hidden');
+  hideSuggestions();
+  fetchWeatherByCoords(parseFloat(result.lat), parseFloat(result.lon), name);
+}
+
+function hideSuggestions(){
+  const sug=$('wxSuggestions');
+  if(sug) sug.classList.add('hidden');
+  _sugFocused=-1;
+}
+
+function clearCitySearch(){
+  const input=$('wxCityInput');
+  if(input){ input.value=''; input.focus(); }
+  const clear=$('wxClearBtn');
+  if(clear) clear.classList.add('hidden');
+  hideSuggestions();
+}
+
+// Fermer les suggestions en cliquant ailleurs
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.wx-search-wrap')) hideSuggestions();
+});
 
 function renderWeather(wx,city){
   const c=wx.current,hr=wx.hourly,d=wx.daily;
@@ -1520,7 +1766,7 @@ function exportData(){
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='lawnnotifier-export.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);showToast('Export téléchargé ✓');
 }
-function resetAll(){if(!confirm('Supprimer toutes les données ?'))return;['ln_date','ln_freq','ln_hist','ln_chk','ln_notifTime','ln_unit','ln_inApp','ln_season'].forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});S.history=[];S.checks={};S.lastDate='';S.freqDays=10;S.wxUnit='C';renderHistory();renderChecklist();buildFreqGrid();showToast('Données réinitialisées ✓');}
+function resetAll(){if(!confirm('Supprimer toutes les données ?'))return;['ln_date','ln_freq','ln_hist','ln_chk','ln_notifTime','ln_unit','ln_inApp','ln_season','ln_sched','ln_wx_lat','ln_wx_lon','ln_wx_city'].forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});S.history=[];S.checks={};S.lastDate='';S.freqDays=10;S.wxUnit='C';renderHistory();renderChecklist();buildFreqGrid();showToast('Données réinitialisées ✓');}
 
 // ══════════════════════════════════════════
 // INIT
@@ -1546,6 +1792,44 @@ document.addEventListener('DOMContentLoaded', function(){
   renderChecklist();
   renderTips(getSeason(),'');
   updatePushUI();
+
+  // ── Restauration du planning sauvegardé ──
+  const savedSched = safeGetJSON('ln_sched', null);
+  if(savedSched && savedSched.events && savedSched.events.length){
+    // Recalcule les diff par rapport à maintenant
+    const now = new Date();
+    S.schedule = savedSched.events.map(e=>{
+      const date = new Date(e.date);
+      const diff = Math.floor((date - now) / 864e5);
+      const type = diff < 0 ? 'done' : diff <= 2 ? 'urgent' : diff <= 5 ? 'soon' : 'normal';
+      return { date, type, label: e.label, diff };
+    });
+    // La première entrée est toujours "done" (dernière tonte)
+    if(S.schedule[0]) S.schedule[0].type = 'done';
+
+    const season = SEASONS[savedSched.seasonKey] ?
+      { ...SEASONS[savedSched.seasonKey], key: savedSched.seasonKey } : getSeason();
+    const tip = savedSched.tip || '';
+
+    renderSchedule(season, tip);
+    renderShareRow(savedSched.freq || getFreq());
+    renderTips(season, tip);
+
+    // Restaurer le style du bouton
+    const btn = $('genBtn');
+    if(btn){
+      btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg> Recalculer';
+      btn.style.background='linear-gradient(155deg,#166d2e,#1fa344)';
+    }
+    $('schedCard')?.classList.remove('hidden');
+    $('nextBox')?.classList.remove('hidden');
+
+    // Vérifier si le planning est périmé (> 48h depuis sauvegarde)
+    const age = Date.now() - (savedSched.savedAt || 0);
+    if(age > 48 * 3600 * 1000){
+      showToast('🔄 Planning ancien — pensez à recalculer', 4000);
+    }
+  }
 
   // Check in-app alert
   if(S.lastDate&&safeGet('ln_inApp','1')!=='0'){
