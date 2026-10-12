@@ -1616,18 +1616,26 @@ async function generate(){
   renderTips(season,tip);
 
   // ── Sauvegarde du planning complet ──
-  safeSave('ln_sched', JSON.stringify({
-    events: S.schedule.map(e=>({
-      date: e.date.toISOString(),
-      type: e.type,
-      label: e.label,
-      diff: e.diff,
-    })),
-    tip,
-    seasonKey: season.key,
-    freq,
+  // ── Sauvegarde du planning (structure explicite et vérifiée) ──
+  const schedData = {
+    v: 2,                          // version du format
     savedAt: Date.now(),
-  }));
+    lastDate: S.lastDate,
+    freq,
+    seasonKey: season.key,
+    tip: tip || '',
+    events: S.schedule.map(e => ({
+      iso:   e.date.toISOString(), // clé principale
+      label: e.label,
+    })),
+  };
+  const schedJson = JSON.stringify(schedData);
+  safeSave('ln_sched', schedJson);
+  // Vérification immédiate : re-lire pour s'assurer que c'est bien écrit
+  try{
+    const verify = JSON.parse(localStorage.getItem('ln_sched') || '{}');
+    if(!verify.events) console.warn('[LawnNotifier] Sauvegarde planning: vérification échouée');
+  }catch(e){ console.warn('[LawnNotifier] Sauvegarde planning: erreur JSON', e); }
 
   fill.style.width='100%';
   setTimeout(()=>{prog.style.display='none';fill.style.width='0%';},400);
@@ -2319,6 +2327,88 @@ function exportData(){
 function resetAll(){if(!confirm('Supprimer toutes les données ?'))return;['ln_date','ln_freq','ln_hist','ln_chk','ln_notifTime','ln_unit','ln_inApp','ln_season','ln_sched','ln_wx_lat','ln_wx_lon','ln_wx_city','ln_wx_widget'].forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});S.history=[];S.checks={};S.lastDate='';S.freqDays=10;S.wxUnit='C';renderHistory();renderChecklist();buildFreqGrid();showToast('Données réinitialisées ✓');}
 
 // ══════════════════════════════════════════
+// SAUVEGARDE / RESTAURATION PLANNING
+// ══════════════════════════════════════════
+function restoreSavedSchedule(){
+  // Lire le JSON brut depuis localStorage
+  let raw = '';
+  try { raw = localStorage.getItem('ln_sched') || ''; } catch(e){ return; }
+  if(!raw){ return; } // Rien de sauvegardé
+
+  // Parser avec protection
+  let saved;
+  try { saved = JSON.parse(raw); } catch(e){
+    console.warn('[LawnNotifier] Planning corrompu, suppression', e);
+    try{ localStorage.removeItem('ln_sched'); }catch(e2){}
+    return;
+  }
+
+  // Valider la structure (supporte v1 ancien et v2 nouveau format)
+  const events = saved.events;
+  if(!events || !Array.isArray(events) || events.length === 0){
+    console.warn('[LawnNotifier] Planning vide ou invalide');
+    return;
+  }
+
+  // Reconstruire le planning avec statuts frais
+  const now = new Date();
+  S.schedule = events.map((e, i) => {
+    // v2 : { iso, label } — v1 : { date, label }
+    const iso  = e.iso || e.date || '';
+    const date = new Date(iso);
+    if(isNaN(date.getTime())){
+      console.warn('[LawnNotifier] Date invalide à l\'index', i, iso);
+      return null;
+    }
+    const diff = Math.floor((date - now) / 864e5);
+    const type = i === 0   ? 'done'
+      : diff < 0           ? 'done'
+      : diff <= 2          ? 'urgent'
+      : diff <= 5          ? 'soon'
+      : 'normal';
+    return { date, type, label: e.label || ('Tonte #' + i), diff };
+  }).filter(Boolean); // retire les nulls
+
+  if(S.schedule.length === 0){ return; }
+
+  // Retrouver les métadonnées
+  const seasonKey = saved.seasonKey || '';
+  const season    = SEASONS[seasonKey]
+    ? { ...SEASONS[seasonKey], key: seasonKey }
+    : getSeason();
+  const freq = saved.freq || S.freqDays || 10;
+  const tip  = saved.tip  || '';
+
+  // Afficher
+  renderSchedule(season, tip);
+  renderShareRow(freq);
+  renderTips(season, tip);
+
+  // Mettre le bouton en mode "Recalculer"
+  const btn = $('genBtn');
+  if(btn){
+    const svg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>';
+    btn.innerHTML = svg + ' Recalculer';
+    btn.style.background = 'linear-gradient(155deg,#166d2e,#1fa344)';
+    btn.disabled = false;
+  }
+
+  // Afficher la carte — forcer la suppression de hidden
+  const card = $('schedCard');
+  if(card){ card.classList.remove('hidden'); card.style.display = ''; }
+  const nextBox = $('nextBox');
+  if(nextBox){ nextBox.classList.remove('hidden'); }
+
+  // Toast si planning périmé (> 48h)
+  const age = Date.now() - (saved.savedAt || 0);
+  if(age > 48 * 3600 * 1000){
+    setTimeout(() => showToast('🔄 Planning de ' + Math.round(age/3600000) + 'h — pensez à recalculer', 4000), 1500);
+  }
+
+  console.log('[LawnNotifier] Planning restauré :', S.schedule.length, 'entrées, âge:', Math.round(age/3600000)+'h');
+}
+
+// ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function(){
@@ -2371,50 +2461,7 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   // ── Restauration du planning sauvegardé ──
-  const savedSched = safeGetJSON('ln_sched', null);
-  if(savedSched && savedSched.events && savedSched.events.length){
-    const now = new Date();
-
-    // Recalcule les statuts en temps réel
-    S.schedule = savedSched.events.map((e, i) => {
-      const date = new Date(e.date);
-      const diff = Math.floor((date - now) / 864e5);
-      // Premier événement = toujours "done" (dernière tonte)
-      const type = i === 0 ? 'done'
-        : diff < 0  ? 'done'
-        : diff <= 2 ? 'urgent'
-        : diff <= 5 ? 'soon'
-        : 'normal';
-      return { date, type, label: e.label, diff };
-    });
-
-    const season = SEASONS[savedSched.seasonKey]
-      ? { ...SEASONS[savedSched.seasonKey], key: savedSched.seasonKey }
-      : getSeason();
-    const tip  = savedSched.tip  || '';
-    const freq = savedSched.freq || getFreq();
-
-    renderSchedule(season, tip);
-    renderShareRow(freq);
-    renderTips(season, tip);
-
-    // Bouton → "Recalculer"
-    const btn = $('genBtn');
-    if(btn){
-      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg> Recalculer';
-      btn.style.background = 'linear-gradient(155deg,#166d2e,#1fa344)';
-    }
-
-    // Toujours afficher la carte planning
-    $('schedCard')?.classList.remove('hidden');
-    $('nextBox')?.classList.remove('hidden');
-
-    // Toast si planning > 48h
-    const age = Date.now() - (savedSched.savedAt || 0);
-    if(age > 48 * 3600 * 1000){
-      setTimeout(() => showToast('🔄 Planning ancien — pensez à recalculer', 4000), 1200);
-    }
-  }
+  restoreSavedSchedule();
 
   // Check in-app alert
   if(S.lastDate&&safeGet('ln_inApp','1')!=='0'){
