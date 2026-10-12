@@ -1288,7 +1288,7 @@ const WX_DESC  = {0:'Ciel dégagé',1:'Principalement clair',2:'Partiellement nu
 // STATE — safe init
 // ══════════════════════════════════════════
 function safeGet(k,fb){try{const v=localStorage.getItem(k);return v!==null?v:fb;}catch(e){return fb;}}
-function safeGetJSON(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
+function safeGetJSON(k,fb=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
 function safeSave(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 
 const S = {
@@ -1804,7 +1804,7 @@ function runDiagnostic(){
         setDiag('SW',true,'Enregistré ✓ — '+state,'—','ok');
       } else {
         // Pas encore enregistré (premier chargement / délai) — tenter maintenant
-        navigator.serviceWorker.register('./sw.js?v=10',{scope:'./'})
+        navigator.serviceWorker.register('./sw.js',{scope:'./'})
           .then(reg=>{
             const state=reg.active?'actif':reg.installing?'installation…':'en attente';
             setDiag('SW',true,'Enregistré ✓ — '+state,'—','ok');
@@ -2393,11 +2393,22 @@ function restoreSavedSchedule(){
     btn.disabled = false;
   }
 
-  // Afficher la carte — forcer la suppression de hidden
-  const card = $('schedCard');
-  if(card){ card.classList.remove('hidden'); card.style.display = ''; }
-  const nextBox = $('nextBox');
-  if(nextBox){ nextBox.classList.remove('hidden'); }
+  // Afficher la carte — forcer display:block après l'animation pane (200ms)
+  const showCard = () => {
+    const card = $('schedCard');
+    if(card){
+      card.classList.remove('hidden');
+      card.style.display = 'block'; // force explicitement
+    }
+    const nextBox = $('nextBox');
+    if(nextBox){
+      nextBox.classList.remove('hidden');
+      nextBox.style.display = 'flex';
+    }
+  };
+  // Immédiat + après animation pane (200ms) pour être sûr
+  showCard();
+  setTimeout(showCard, 250);
 
   // Toast si planning périmé (> 48h)
   const age = Date.now() - (saved.savedAt || 0);
@@ -2460,16 +2471,20 @@ document.addEventListener('DOMContentLoaded', function(){
       }).catch(()=>{}); // silencieux si offline
   }
 
-  // ── Restauration du planning sauvegardé ──
-  restoreSavedSchedule();
-
   // Check in-app alert
   if(S.lastDate&&safeGet('ln_inApp','1')!=='0'){
     const ratio=daysSince(S.lastDate)/getFreq();
     if(ratio>=.85)setTimeout(()=>showToast(ratio>=1.1?'🔴 Tonte urgente !':'🟡 Tonte bientôt recommandée',5000),800);
   }
 
+  // switchTab EN PREMIER pour que le pane soit actif et visible
   switchTab('plan');
+
+  // Restauration du planning APRÈS switchTab, dans un rAF
+  // pour garantir que le DOM est peint avant d'afficher la carte
+  requestAnimationFrame(() => {
+    restoreSavedSchedule();
+  });
 
   // ── Enregistrement Service Worker au chargement ──
   // Obligatoire pour : offline, notifications en arrière-plan, install PWA
@@ -2478,13 +2493,11 @@ document.addEventListener('DOMContentLoaded', function(){
       .then(reg=>{
         console.log('[LawnNotifier] SW v10, scope:', reg.scope);
         reg.update();
-        // Quand le nouveau SW prend le contrôle → rechargement pour avoir index.html frais
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          console.log('[LawnNotifier] Nouveau SW actif — rechargement');
           window.location.reload();
         });
       })
-      .catch(err => console.warn('[LawnNotifier] SW erreur:', err.message));
+      .catch(err => console.warn('[LawnNotifier] SW:', err.message));
   }
 });
 </script>
