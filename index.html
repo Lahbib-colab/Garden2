@@ -1370,26 +1370,30 @@ function dbSave(key, data){
     .catch(e => console.warn('[CF] Hors ligne, localStorage utilisé'));
 }
 
-// Chargement : Cloudflare en priorité, localStorage en fallback
+// Chargement : Cloudflare KV en priorité, localStorage en fallback
 async function dbLoad(key){
+  // Toujours tenter Cloudflare d'abord (résout le problème standalone PWA)
   try{
     const r = await fetch(WORKER + '/load?key=' + encodeURIComponent(key), {
       headers: {'X-Device-ID': getDeviceId()},
-      signal: AbortSignal.timeout(4000) // timeout 4s
+      signal: AbortSignal.timeout(6000)
     });
     if(r.ok){
       const envelope = await r.json();
-      if(envelope && envelope[key]){
-        // Mettre à jour localStorage avec la version serveur
+      if(envelope && envelope[key] !== null && envelope[key] !== undefined){
+        // Synchroniser vers localStorage pour les accès suivants
         safeSave(key, JSON.stringify(envelope[key]));
-        console.log('[CF] Chargé depuis Cloudflare ✓');
+        console.log('[CF] dbLoad ✓', key);
         return envelope[key];
       }
     }
   }catch(e){
-    console.warn('[CF] Cloudflare indisponible, fallback localStorage');
+    console.warn('[CF] dbLoad fallback localStorage pour', key, e.message);
   }
-  return safeGetJSON(key, null);
+  // Fallback localStorage
+  const local = safeGetJSON(key, null);
+  if(local) console.log('[LS] dbLoad fallback ✓', key);
+  return local;
 }
     
 
@@ -2791,11 +2795,17 @@ document.addEventListener('DOMContentLoaded', function(){
   // switchTab EN PREMIER pour que le pane soit actif et visible
   switchTab('plan');
 
-  // Restauration après switchTab — attendre que db soit prêt si possible
-  // Restauration async depuis Cloudflare KV + localStorage fallback
+  // Restauration depuis Cloudflare KV — laisser le réseau s'établir
   setTimeout(async () => {
     await restoreSavedSchedule();
-  }, 80);
+    // Retry après 3s si rien affiché (réseau lent au démarrage PWA)
+    setTimeout(async () => {
+      if(!S.schedule || S.schedule.length === 0){
+        console.log('[LawnNotifier] Retry restauration planning...');
+        await restoreSavedSchedule();
+      }
+    }, 3000);
+  }, 200);
 
   // ── Enregistrement Service Worker + restauration KV ──
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
