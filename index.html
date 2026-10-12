@@ -1804,7 +1804,7 @@ function runDiagnostic(){
         setDiag('SW',true,'Enregistré ✓ — '+state,'—','ok');
       } else {
         // Pas encore enregistré (premier chargement / délai) — tenter maintenant
-        navigator.serviceWorker.register('./sw.js',{scope:'./'})
+        navigator.serviceWorker.register('./sw.js?v=10',{scope:'./'})
           .then(reg=>{
             const state=reg.active?'actif':reg.installing?'installation…':'en attente';
             setDiag('SW',true,'Enregistré ✓ — '+state,'—','ok');
@@ -2474,15 +2474,17 @@ document.addEventListener('DOMContentLoaded', function(){
   // ── Enregistrement Service Worker au chargement ──
   // Obligatoire pour : offline, notifications en arrière-plan, install PWA
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
-    navigator.serviceWorker.register('./sw.js', {scope:'./'})
+    navigator.serviceWorker.register('./sw.js?v=10', {scope:'./'})
       .then(reg=>{
-        console.log('[LawnNotifier] SW enregistré, scope:', reg.scope);
-        // Force update si nouvelle version disponible
+        console.log('[LawnNotifier] SW v10, scope:', reg.scope);
         reg.update();
+        // Quand le nouveau SW prend le contrôle → rechargement pour avoir index.html frais
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          console.log('[LawnNotifier] Nouveau SW actif — rechargement');
+          window.location.reload();
+        });
       })
-      .catch(err=>{
-        console.warn('[LawnNotifier] SW erreur:', err.message);
-      });
+      .catch(err => console.warn('[LawnNotifier] SW erreur:', err.message));
   }
 });
 </script>

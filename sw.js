@@ -1,9 +1,7 @@
-// LawnNotifier — Service Worker v9
-// Compatible GitHub Pages sous-dossier (ex: /Garden2/)
+// LawnNotifier — Service Worker v10
+// IMPORTANT : changer CACHE_VERSION force le remplacement de l'ancien cache
 
-const CACHE = 'lawnnotifier-v9';
-
-// Détermine le scope dynamiquement (fonctionne avec /Garden2/ ou /)
+const CACHE_VERSION = 'lawnnotifier-v10';
 const BASE = self.registration.scope;
 
 const ASSETS = [
@@ -17,59 +15,80 @@ const ASSETS = [
 
 // ── Install : mise en cache des assets ──
 self.addEventListener('install', event => {
+  console.log('[SW] Install v10');
   event.waitUntil(
-    caches.open(CACHE).then(cache =>
-      // addAll échoue si un asset manque — on utilise add individuel pour être tolérant
+    caches.open(CACHE_VERSION).then(cache =>
       Promise.allSettled(ASSETS.map(url => cache.add(url)))
     )
   );
-  self.skipWaiting(); // active immédiatement sans attendre la fermeture des onglets
+  // Activation immédiate sans attendre la fermeture des onglets
+  self.skipWaiting();
 });
 
-// ── Activate : suppression des vieux caches ──
+// ── Activate : suppression FORCÉE de tous les vieux caches ──
 self.addEventListener('activate', event => {
+  console.log('[SW] Activate v10 — nettoyage des anciens caches');
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
+    caches.keys().then(keys => {
+      return Promise.all(
         keys
-          .filter(k => k !== CACHE)
-          .map(k => caches.delete(k))
-      )
-    )
+          .filter(k => k !== CACHE_VERSION) // garder seulement la version courante
+          .map(k => {
+            console.log('[SW] Suppression cache:', k);
+            return caches.delete(k);
+          })
+      );
+    }).then(() => {
+      // Prendre le contrôle de tous les onglets ouverts immédiatement
+      return self.clients.claim();
+    })
   );
-  self.clients.claim(); // contrôle immédiat de tous les onglets ouverts
 });
 
-// ── Fetch : stratégie cache-first pour assets, network-only pour APIs ──
+// ── Fetch : network-first pour HTML, cache-first pour assets ──
 self.addEventListener('fetch', event => {
-  if(event.request.method !== 'GET') return;
+  if (event.request.method !== 'GET') return;
 
   const url = event.request.url;
 
-  // Ne jamais mettre en cache les appels API externes
-  if(url.includes('api.anthropic.com')  ||
-     url.includes('open-meteo.com')     ||
-     url.includes('nominatim.openstreetmap.org')) {
-    return; // laisse le navigateur gérer directement
+  // Ne jamais mettre en cache les APIs externes
+  if (url.includes('api.anthropic.com')   ||
+      url.includes('open-meteo.com')       ||
+      url.includes('nominatim.openstreetmap.org')) return;
+
+  // Pour index.html : network-first pour toujours avoir la dernière version
+  if (url.endsWith('/') || url.endsWith('/index.html') ||
+      url === BASE || url === BASE + 'index.html') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_VERSION).then(c => c.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request)
+          .then(r => r || caches.match(BASE + 'index.html'))
+        )
+    );
+    return;
   }
 
+  // Pour les autres assets : cache-first
   event.respondWith(
     caches.match(event.request).then(cached => {
-      if(cached) return cached;
+      if (cached) return cached;
       return fetch(event.request).then(response => {
-        // Mettre en cache les nouvelles ressources du même domaine
-        if(response.ok && url.startsWith(self.location.origin)){
+        if (response.ok && url.startsWith(self.location.origin)) {
           const clone = response.clone();
-          caches.open(CACHE).then(c => c.put(event.request, clone));
+          caches.open(CACHE_VERSION).then(c => c.put(event.request, clone));
         }
         return response;
       }).catch(() => {
-        // Offline fallback : renvoyer index.html pour les navigations
-        if(event.request.destination === 'document'){
-          return caches.match(BASE + 'index.html') ||
-                 caches.match(BASE);
-        }
-        return new Response('', { status: 503, statusText: 'Offline' });
+        if (event.request.destination === 'document')
+          return caches.match(BASE + 'index.html');
+        return new Response('', { status: 503 });
       });
     })
   );
@@ -80,24 +99,23 @@ self.addEventListener('notificationclick', event => {
   event.notification.close();
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      // Ouvre l'app si déjà ouverte, sinon nouvelle fenêtre
       const existing = list.find(c => c.url.startsWith(BASE));
-      if(existing) return existing.focus();
+      if (existing) return existing.focus();
       return clients.openWindow(BASE);
     })
   );
 });
 
-// ── Push events (Web Push API) ──
+// ── Push ──
 self.addEventListener('push', event => {
   let data = { title: '🌿 LawnNotifier', body: 'Rappel de tonte' };
-  try { if(event.data) data = event.data.json(); } catch(e) {}
+  try { if (event.data) data = event.data.json(); } catch(e) {}
   event.waitUntil(
     self.registration.showNotification(data.title, {
-      body:    data.body,
-      tag:     data.tag || 'lawnnotifier',
-      icon:    BASE + 'icon-192.png',
-      badge:   BASE + 'icon-192.png',
+      body:  data.body,
+      tag:   data.tag || 'lawnnotifier',
+      icon:  BASE + 'icon-192.png',
+      badge: BASE + 'icon-192.png',
     })
   );
 });
