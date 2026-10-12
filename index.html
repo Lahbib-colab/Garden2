@@ -1241,10 +1241,18 @@ html, body {
 
   <!-- Test buttons -->
   <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+    <button class="nt-test-btn" id="testServerBtn" onclick="sendServerTestPush()">
+      <span class="nt-btn-icon">🌐</span>
+      <div class="nt-btn-body">
+        <div class="nt-btn-t">Test Push serveur (Cloudflare)</div>
+        <div class="nt-btn-s">Notification même app fermée</div>
+      </div>
+      <span class="nt-btn-status" id="testServerStatus"></span>
+    </button>
     <button class="nt-test-btn" id="testNowBtn" onclick="sendTestNotif('now')">
       <span class="nt-btn-icon">⚡</span>
       <div class="nt-btn-body">
-        <div class="nt-btn-t">Notification immédiate</div>
+        <div class="nt-btn-t">Notification locale immédiate</div>
         <div class="nt-btn-s">Reçue en moins d'1 seconde</div>
       </div>
       <span class="nt-btn-status" id="testNowStatus"></span>
@@ -1730,7 +1738,7 @@ async function generate(){
   // ── Ajouter la tonte de départ dans l'historique si absente ──
   if(S.lastDate && !S.history.some(h=>h.date===S.lastDate)){
     S.history.unshift({date:S.lastDate, note:'Planning créé (✂️ '+freq+'j)', source:'planned'});
-    safeSave('ln_hist', JSON.stringify(S.history));
+    dbSave('ln_hist', S.history);
     renderHistory();
   }
 
@@ -1741,7 +1749,7 @@ async function generate(){
   btn.style.background='linear-gradient(155deg,#166d2e,#1fa344)';
   vibrate([8,50,8]);
   $('schedCard').classList.remove('hidden');$('nextBox').classList.remove('hidden');
-  scheduleWebPush();
+  scheduleServerPush().catch(()=>scheduleLocalPush());
 }
 
 function buildSchedule(freq){
@@ -1849,44 +1857,158 @@ function updateNotifBanner(){
   }
 }
 
-function updatePushUI(){
-  const perm=('Notification' in window)?Notification.permission:'default';
-  const btn=$('pushBtn'),status=$('pushStatus');
-  if(perm==='granted'){if(btn){btn.textContent='Activé ✓';btn.disabled=true;}if(status)status.textContent='Activées ✓';}
-  else if(perm==='denied'){if(btn){btn.textContent='Bloqué';btn.disabled=true;}if(status)status.textContent='Bloquées — voir Réglages iOS';}
-  else{if(btn){btn.textContent='Activer';btn.disabled=false;}if(status)status.textContent='Non activées';}
+async function updatePushUI(){
+  const perm = ('Notification' in window) ? Notification.permission : 'default';
+  const btn    = $('pushBtn');
+  const status = $('pushStatus');
+  const sub    = await getPushSubscription().catch(()=>null);
+
+  if(perm === 'granted' && sub){
+    if(btn){btn.textContent='Push actif ✓';btn.disabled=true;}
+    if(status)status.textContent='Push serveur actif ✓';
+  } else if(perm === 'granted' && !sub){
+    if(btn){btn.textContent='Abonner';btn.disabled=false;}
+    if(status)status.textContent='Permission OK — abonnement manquant';
+  } else if(perm === 'denied'){
+    if(btn){btn.textContent='Bloqué';btn.disabled=true;}
+    if(status)status.textContent='Bloquées — voir Réglages iOS';
+  } else {
+    if(btn){btn.textContent='Activer';btn.disabled=false;}
+    if(status)status.textContent='Non activées';
+  }
   updateNotifBanner();
 }
 
-async function requestPush(){
-  if(!('Notification' in window)){showToast('Non supporté ici');return;}
-  if(Notification.permission==='granted'){scheduleWebPush();return;}
-  if(Notification.permission==='denied'){showToast('Bloquées dans Réglages iOS');return;}
-  try{
-    const perm=await new Promise(res=>{
-      const r=Notification.requestPermission(p=>res(p));
-      if(r instanceof Promise)r.then(res).catch(()=>res('default'));
-    });
-    updatePushUI();
-    if(perm==='granted'){showToast('Notifications activées ✓');scheduleWebPush();}
-    else showToast('Permission refusée');
-  }catch(e){showToast('Notifications non disponibles ici');}
+// ══════════════════════════════════════════════════════════════════
+// WEB PUSH — VAPID (clé publique configurée côté Worker)
+// ══════════════════════════════════════════════════════════════════
+
+// Clé publique VAPID — doit correspondre à VAPID_PUBLIC_KEY dans le Worker
+// Générée une fois : https://web-push-codelab.glitch.me/ ou commande ci-dessous
+// openssl ecparam -genkey -name prime256v1 | openssl pkcs8 -topk8 -nocrypt | openssl ec -pubout
+const VAPID_PUBLIC_KEY = safeGet('ln_vapid_pub', '');
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
-function scheduleWebPush(){
-  if(Notification?.permission!=='granted')return;
-  const[hh,mm]=(safeGet('ln_notifTime','09:00')).split(':').map(Number),now=Date.now();
-  S.schedule.filter(e=>e.type!=='done'&&e.diff>=0).forEach(ev=>{
-    const tag=ev.date.toISOString().split('T')[0];
-    const dayOf=new Date(ev.date);dayOf.setHours(hh,mm,0,0);
-    const ms=dayOf.getTime()-now;
-    if(ms>0&&ms<7*864e5)setTimeout(()=>{try{new Notification('🌿 LawnNotifier',{body:'Jour de tonte — '+fmtDate(ev.date),tag:'lawn-'+tag});}catch(e){}},ms);
-    const eve=new Date(ev.date);eve.setDate(eve.getDate()-1);eve.setHours(20,0,0,0);
-    const msE=eve.getTime()-now;
-    if(msE>0&&msE<7*864e5)setTimeout(()=>{try{new Notification('🌿 LawnNotifier',{body:'Tonte demain — '+fmtDate(ev.date),tag:'lawn-eve-'+tag});}catch(e){}},msE);
-  });
-  showToast('Rappels push programmés ✓');
+async function getPushSubscription() {
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    return await reg.pushManager.getSubscription();
+  } catch(e) { return null; }
 }
+
+async function requestPush(){
+  if(!('Notification' in window)){showToast('Non supporté sur ce navigateur');return;}
+  if(!('PushManager' in window)){
+    showToast('Web Push non supporté — iOS 16.4+ requis');return;
+  }
+  if(Notification.permission==='denied'){showToast('Bloquées dans Réglages iOS');return;}
+
+  try{
+    // 1. Demander la permission
+    const perm = await new Promise(res=>{
+      const r = Notification.requestPermission(p=>res(p));
+      if(r instanceof Promise) r.then(res).catch(()=>res('default'));
+    });
+    if(perm !== 'granted'){showToast('Permission refusée');updatePushUI();return;}
+
+    // 2. Récupérer la clé VAPID depuis le Worker
+    let vapidKey = safeGet('ln_vapid_pub','');
+    if(!vapidKey){
+      try{
+        const kr = await fetch(WORKER+'/vapid-key');
+        if(kr.ok){ const kd = await kr.json(); vapidKey = kd.publicKey||''; safeSave('ln_vapid_pub',vapidKey); }
+      }catch(e){}
+    }
+    if(!vapidKey){
+      // Fallback : notifications locales si pas de VAPID configuré
+      updatePushUI();
+      showToast('Notifications locales activées ✓ (VAPID non configuré)');
+      scheduleLocalPush();
+      return;
+    }
+
+    // 3. S'abonner via PushManager
+    const reg  = await navigator.serviceWorker.ready;
+    let   sub  = await reg.pushManager.getSubscription();
+    if(!sub){
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey)
+      });
+    }
+
+    // 4. Enregistrer l'abonnement sur le Worker
+    await fetch(WORKER+'/push/subscribe', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-Device-ID':getDeviceId()},
+      body: JSON.stringify({subscription: sub.toJSON()})
+    });
+
+    updatePushUI();
+    showToast('Notifications push activées ✓');
+    if(S.schedule.length) scheduleServerPush();
+
+  }catch(e){
+    console.error('[Push]',e);
+    showToast('Erreur: '+e.message);
+  }
+}
+
+// Planifier les notifications via le serveur Cloudflare
+async function scheduleServerPush(){
+  const sub = await getPushSubscription();
+  if(!sub) return scheduleLocalPush();
+
+  const notifTime = safeGet('ln_notifTime','09:00');
+  const reminders = S.schedule
+    .filter(e=>e.type!=='done' && e.diff>=0)
+    .slice(0,8)
+    .map(ev=>({
+      date:     ev.date.toISOString().split('T')[0],
+      label:    ev.label,
+      notifTime
+    }));
+
+  try{
+    await fetch(WORKER+'/push/schedule', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-Device-ID':getDeviceId()},
+      body: JSON.stringify({subscription: sub.toJSON(), reminders})
+    });
+    showToast('Rappels programmés côté serveur ✓');
+  }catch(e){
+    scheduleLocalPush(); // fallback
+  }
+}
+
+// Notifications locales (fallback quand pas de VAPID ou hors ligne)
+function scheduleLocalPush(){
+  if(Notification?.permission!=='granted') return;
+  const[hh,mm]=(safeGet('ln_notifTime','09:00')).split(':').map(Number),now=Date.now();
+  S.schedule.filter(e=>e.type!=='done'&&e.diff>=0).slice(0,8).forEach(ev=>{
+    const tag=ev.date.toISOString().split('T')[0];
+    const dayOf=new Date(ev.date); dayOf.setHours(hh,mm,0,0);
+    const ms=dayOf.getTime()-now;
+    if(ms>0&&ms<14*864e5) setTimeout(()=>{
+      try{new Notification('🌿 LawnNotifier',{body:'Jour de tonte — '+fmtDate(ev.date),tag:'lawn-'+tag,icon:'/Garden2/icon-192.png'});}catch(e){}
+    },ms);
+    const eve=new Date(ev.date); eve.setDate(eve.getDate()-1); eve.setHours(20,0,0,0);
+    const msE=eve.getTime()-now;
+    if(msE>0&&msE<14*864e5) setTimeout(()=>{
+      try{new Notification('🌿 LawnNotifier',{body:'Tonte demain — '+fmtDate(ev.date),tag:'lawn-eve-'+tag,icon:'/Garden2/icon-192.png'});}catch(e){}
+    },msE);
+  });
+}
+
+// Alias pour compatibilité avec les appels existants
+const scheduleWebPush = scheduleServerPush;
 
 // ══════════════════════════════════════════
 // NOTIF TEST
@@ -2172,6 +2294,57 @@ function deleteSchedule(){
   showToast('Planning supprimé');
 }
 
+// Tester push depuis le serveur
+async function sendServerTestPush(){
+  const btn = $('testServerBtn'), st = $('testServerStatus');
+  if(btn) btn.disabled = true;
+  if(st)  st.textContent = 'Envoi…';
+
+  const sub = await getPushSubscription();
+  if(!sub){
+    if(st){ st.textContent='Pas d'abonnement';st.style.color='var(--amber)'; }
+    if(btn) btn.disabled = false;
+    showToast('Activez d'abord les notifications push ↑');
+    return;
+  }
+  try{
+    const r = await fetch(WORKER+'/push/test', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-Device-ID':getDeviceId()},
+      body: JSON.stringify({subscription: sub.toJSON()})
+    });
+    if(r.ok){
+      if(st){ st.textContent='Envoyée ✓'; st.style.color='var(--green)'; }
+      if(btn) btn.classList.add('sent');
+      showToast('🔔 Push serveur envoyé ✓');
+    } else {
+      const err = await r.json().catch(()=>({}));
+      if(st){ st.textContent='Erreur '+r.status; st.style.color='var(--red)'; }
+      if(btn) btn.disabled = false;
+      showToast('Erreur: '+(err.error||r.status));
+    }
+  }catch(e){
+    if(st){ st.textContent='Réseau KO'; st.style.color='var(--red)'; }
+    if(btn) btn.disabled = false;
+    showToast('Hors ligne — test local uniquement');
+    // Fallback local
+    sendTestNotif('now');
+  }
+}
+
+// Restauration de l'historique depuis KV (appelé au démarrage)
+async function restoreHistoryFromKV(){
+  try{
+    const hist = await dbLoad('ln_hist');
+    if(hist && Array.isArray(hist) && hist.length > S.history.length){
+      S.history = hist;
+      safeSave('ln_hist', JSON.stringify(hist));
+      renderHistory();
+      console.log('[CF] Historique restauré depuis KV:', hist.length, 'entrées');
+    }
+  }catch(e){}
+}
+
 // ══════════════════════════════════════════
 // ICS
 // ══════════════════════════════════════════
@@ -2209,7 +2382,7 @@ function logTonte(){
   const today=new Date().toISOString().split('T')[0];
   const note=prompt('Note optionnelle (facultatif)','')??'';
   S.history.unshift({date:today, note, source:'manual'});
-  safeSave('ln_hist',JSON.stringify(S.history));
+  dbSave('ln_hist', S.history);
   safeSave('ln_date',today); S.lastDate=today;
   $('lastDate').value=today; updateLawn(); renderHistory();
   showToast('Tonte enregistrée ✓');
@@ -2482,8 +2655,9 @@ function resetAll(){if(!confirm('Supprimer toutes les données ?'))return;['ln_d
 // ══════════════════════════════════════════
 // SAUVEGARDE / RESTAURATION PLANNING
 // ══════════════════════════════════════════
-function restoreSavedSchedule(){
-  const saved = safeGetJSON('ln_sched', null);
+async function restoreSavedSchedule(){
+  // Priorité : Cloudflare KV (cross-context), fallback localStorage
+  const saved = await dbLoad('ln_sched');
 
   if(!saved){
     console.log('[LawnNotifier] Aucun planning sauvegardé');
@@ -2618,17 +2792,28 @@ document.addEventListener('DOMContentLoaded', function(){
   switchTab('plan');
 
   // Restauration après switchTab — attendre que db soit prêt si possible
-  requestAnimationFrame(() => {
-    restoreSavedSchedule();
-  });
+  // Restauration async depuis Cloudflare KV + localStorage fallback
+  setTimeout(async () => {
+    await restoreSavedSchedule();
+  }, 80);
 
-  // ── Enregistrement Service Worker au chargement ──
-  // Obligatoire pour : offline, notifications en arrière-plan, install PWA
+  // ── Enregistrement Service Worker + restauration KV ──
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
     navigator.serviceWorker.register('./sw.js?v=10',{scope:'./'})
-      .then(r=>{ console.log('[LawnNotifier] SW v10:',r.scope); r.update(); })
+      .then(r=>{
+        console.log('[LawnNotifier] SW v10:',r.scope);
+        r.update();
+      })
       .catch(e=>console.warn('[LawnNotifier] SW:',e.message));
   }
+
+  // Restaurer l'historique depuis KV en arrière-plan
+  setTimeout(async () => {
+    await restoreHistoryFromKV();
+    // Re-programmer les push serveur si abonnement actif
+    const sub = await getPushSubscription().catch(()=>null);
+    if(sub && S.schedule.length) scheduleServerPush().catch(()=>{});
+  }, 1500);
 });
 </script>
 </body>
