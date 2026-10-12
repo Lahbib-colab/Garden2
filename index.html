@@ -307,6 +307,41 @@ html, body {
 .lawn-wx-desc  { font-size: .7rem; color: rgba(255,255,255,.85); font-weight: 500; }
 .lawn-wx-city  { font-size: .62rem; color: rgba(255,255,255,.65); font-weight: 400; }
 
+/* ── Prochaine tonte — Liquid Glass badge bas droite ── */
+.lawn-next-badge {
+  position: absolute; bottom: 12px; right: 12px; z-index: 10;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.32);
+  border-radius: 16px; padding: 8px 12px 8px 9px;
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 4px 20px rgba(0,0,0,.3);
+  transition: background .3s, border-color .3s;
+}
+.lawn-next-badge.urgent { background: rgba(255,69,58,.22);  border-color: rgba(255,69,58,.45); }
+.lawn-next-badge.soon   { background: rgba(255,214,10,.18); border-color: rgba(255,214,10,.45); }
+.lawn-next-badge.ok     { background: rgba(48,209,88,.18);  border-color: rgba(48,209,88,.4); }
+.lawn-next-icon  { font-size: 1.3rem; line-height: 1; flex-shrink: 0; }
+.lawn-next-body  { display: flex; flex-direction: column; }
+.lawn-next-label { font-size: .56rem; font-weight: 600; color: rgba(255,255,255,.65);
+                   letter-spacing: .04em; text-transform: uppercase; }
+.lawn-next-date  { font-size: .82rem; font-weight: 700; color: #fff;
+                   line-height: 1.25; letter-spacing: -.01em; }
+.lawn-next-days  { font-size: .68rem; font-weight: 600; color: rgba(255,255,255,.75); }
+.lawn-next-badge.urgent .lawn-next-days { color: #ff6b63; }
+.lawn-next-badge.soon   .lawn-next-days { color: #ffd60a; }
+.lawn-next-badge.ok     .lawn-next-days { color: #4cd964; }
+
+/* ── Historique — tags source ── */
+.hist-source {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: .62rem; font-weight: 700; padding: 2px 7px;
+  border-radius: 10px; margin-left: 5px;
+}
+.hist-source.planned { background: var(--green-t); border: 1px solid var(--green-g); color: var(--green); }
+.hist-source.manual  { background: var(--blue-t);  border: 1px solid rgba(10,132,255,.3); color: var(--blue); }
+
 /* ── Statut tonte — badge haut ── */
 .lawn-badge {
   position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
@@ -865,7 +900,7 @@ html, body {
         <!-- Badge statut tonte (haut centre) -->
         <div class="lawn-badge" id="lawnBadge">— Entrez votre dernière tonte</div>
 
-        <!-- Ring + badge jours (droite) -->
+        <!-- Ring (bas droite) -->
         <div class="ring" id="ring">
           <svg viewBox="0 0 50 50">
             <circle cx="25" cy="25" r="21" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="3.5"/>
@@ -874,7 +909,16 @@ html, body {
           </svg>
           <div class="ring-ctr"><span id="ringNum">0</span><span class="ring-lbl">jours</span></div>
         </div>
-        <div class="lawn-mow-badge hidden" id="lawnMowBadge"></div>
+
+        <!-- Prochaine tonte — badge Liquid Glass (bas droite) -->
+        <div class="lawn-next-badge hidden" id="lawnNextBadge">
+          <div class="lawn-next-icon">✂️</div>
+          <div class="lawn-next-body">
+            <div class="lawn-next-label">Prochaine tonte</div>
+            <div class="lawn-next-date" id="lawnNextDate">—</div>
+            <div class="lawn-next-days" id="lawnNextDays">—</div>
+          </div>
+        </div>
 
         <!-- Onboarding -->
         <div class="lawn-onboard" id="onboard">
@@ -1287,15 +1331,12 @@ const WX_DESC  = {0:'Ciel dégagé',1:'Principalement clair',2:'Partiellement nu
 // ══════════════════════════════════════════
 // STATE — safe init
 // ══════════════════════════════════════════
-// ── Couche de stockage : localStorage + db artifact (double persistance) ──
+// ── Couche de stockage localStorage ──
 function safeGet(k,fb){try{const v=localStorage.getItem(k);return v!==null?v:fb;}catch(e){return fb;}}
-function safeGetJSON(k,fb=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
-function safeSave(k,v){try{localStorage.setItem(k,String(v));}catch(e){}}
-
-// DB artifact — initialisé au démarrage
-// Sauvegarde localStorage
-function dbSave(key, data){ safeSave(key, JSON.stringify(data)); }
-function dbLoad(key){ return safeGetJSON(key, null); }
+function safeSave(k,v){try{localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v));}catch(e){}}
+function dbSave(key,data){ safeSave(key,JSON.stringify(data)); }
+function dbLoad(key){ return safeGetJSON(key,null); }
+    
 
 const S = {
   lastDate: safeGet('ln_date',''),
@@ -1635,9 +1676,16 @@ async function generate(){
       label: e.label,
     })),
   };
-  // Sauvegarder dans localStorage
+  // Sauvegarder dans db + localStorage
   safeSave('ln_sched', JSON.stringify(schedData));
   console.log('[LawnNotifier] Planning sauvegardé :', schedData.events.length, 'événements');
+
+  // ── Ajouter la tonte de départ dans l'historique si absente ──
+  if(S.lastDate && !S.history.some(h=>h.date===S.lastDate)){
+    S.history.unshift({date:S.lastDate, note:'Planning créé (✂️ '+freq+'j)', source:'planned'});
+    safeSave('ln_hist', JSON.stringify(S.history));
+    renderHistory();
+  }
 
   fill.style.width='100%';
   setTimeout(()=>{prog.style.display='none';fill.style.width='0%';},400);
@@ -1671,7 +1719,49 @@ function renderSchedule(season,tip){
   });
   if(tip){$('aiTipTxt').textContent=tip;$('aiTip').classList.remove('hidden');}
   const next=S.schedule.find(e=>e.type!=='done');
-  if(next){$('nextTxt').textContent='Prochaine tonte : '+fmtDate(next.date)+(next.diff>=0?' — dans '+next.diff+'j':'');$('nextBox').classList.remove('hidden');}
+  if(next){
+    // Bandeau bas de page
+    $('nextTxt').textContent='Prochaine tonte : '+fmtDate(next.date)+(next.diff>=0?' — dans '+next.diff+'j':'');
+    $('nextBox').classList.remove('hidden');
+    // Badge Liquid Glass sur la photo
+    updateLawnNextBadge(next);
+  }
+}
+
+function updateLawnNextBadge(next){
+  const badge = $('lawnNextBadge');
+  const dateEl = $('lawnNextDate');
+  const daysEl = $('lawnNextDays');
+  if(!badge) return;
+
+  if(!next){
+    badge.classList.add('hidden');
+    return;
+  }
+  badge.classList.remove('hidden');
+
+  // Date formatée
+  if(dateEl) dateEl.textContent = fmtDate(next.date);
+
+  // Jours restants + couleur urgence
+  const diff = next.diff;
+  badge.className = 'lawn-next-badge';
+  if(diff === 0){
+    badge.classList.add('urgent');
+    if(daysEl) daysEl.textContent = "Aujourd'hui !";
+  } else if(diff < 0){
+    badge.classList.add('urgent');
+    if(daysEl) daysEl.textContent = 'Il y a '+Math.abs(diff)+'j';
+  } else if(diff <= 2){
+    badge.classList.add('urgent');
+    if(daysEl) daysEl.textContent = 'Dans '+diff+' jour'+(diff>1?'s':'');
+  } else if(diff <= 5){
+    badge.classList.add('soon');
+    if(daysEl) daysEl.textContent = 'Dans '+diff+' jours';
+  } else {
+    badge.classList.add('ok');
+    if(daysEl) daysEl.textContent = 'Dans '+diff+' jours';
+  }
 }
 
 function renderShareRow(freq){
@@ -2070,17 +2160,31 @@ async function downloadICS(){
 // ══════════════════════════════════════════
 function logTonte(){
   const today=new Date().toISOString().split('T')[0];
-  const note=prompt('Note optionnelle','')??'';
-  S.history.unshift({date:today,note});
+  const note=prompt('Note optionnelle (facultatif)','')??'';
+  S.history.unshift({date:today, note, source:'manual'});
   safeSave('ln_hist',JSON.stringify(S.history));
-  safeSave('ln_date',today);S.lastDate=today;
-  $('lastDate').value=today;updateLawn();renderHistory();showToast('Tonte enregistrée ✓');
+  safeSave('ln_date',today); S.lastDate=today;
+  $('lastDate').value=today; updateLawn(); renderHistory();
+  showToast('Tonte enregistrée ✓');
 }
 function delHist(i){S.history.splice(i,1);safeSave('ln_hist',JSON.stringify(S.history));renderHistory();}
 function renderHistory(){
   const list=$('histList');
-  if(!S.history.length){list.innerHTML='<div class="hist-empty">Aucune tonte enregistrée.<br>Appuyez ci-dessous pour commencer.</div>';renderStats();return;}
-  list.innerHTML=S.history.map((h,i)=>`<div class="hist-row"><div class="hist-date">🌿 ${fmtDate(new Date(h.date+'T12:00'))}</div><div class="hist-note">${h.note||'—'}</div><button class="hist-del" onclick="delHist(${i})">✕</button></div>`).join('');
+  if(!S.history.length){
+    list.innerHTML='<div class="hist-empty">Aucune tonte enregistrée.<br>Appuyez ci-dessous pour commencer.</div>';
+    renderStats();return;
+  }
+  list.innerHTML=S.history.map((h,i)=>{
+    const srcTag = h.source==='planned'
+      ? '<span class="hist-source planned">📅 Planifiée</span>'
+      : '<span class="hist-source manual">✋ Manuelle</span>';
+    const note = h.note ? `<span style="color:var(--text3)"> · ${h.note}</span>` : '';
+    return `<div class="hist-row">
+      <div class="hist-date">🌿 ${fmtDate(new Date(h.date+'T12:00'))}${srcTag}</div>
+      <div class="hist-note">${note}</div>
+      <button class="hist-del" onclick="delHist(${i})">✕</button>
+    </div>`;
+  }).join('');
   renderStats();
 }
 function renderStats(){
@@ -2332,7 +2436,6 @@ function resetAll(){if(!confirm('Supprimer toutes les données ?'))return;['ln_d
 // SAUVEGARDE / RESTAURATION PLANNING
 // ══════════════════════════════════════════
 function restoreSavedSchedule(){
-  // Charger depuis localStorage
   const saved = safeGetJSON('ln_sched', null);
 
   if(!saved){
@@ -2382,6 +2485,10 @@ function restoreSavedSchedule(){
     btn.style.background = 'linear-gradient(155deg,#166d2e,#1fa344)';
     btn.disabled = false;
   }
+
+  // Mettre à jour le badge photo "prochaine tonte"
+  const nextEv = S.schedule.find(e=>e.type!=='done');
+  if(nextEv) updateLawnNextBadge(nextEv);
 
   // Afficher la carte (forcer display + délai post-animation)
   const showCard = () => {
@@ -2463,7 +2570,7 @@ document.addEventListener('DOMContentLoaded', function(){
   // switchTab EN PREMIER pour que le pane soit actif et visible
   switchTab('plan');
 
-  // Restauration après switchTab — rAF pour laisser le DOM se peindre
+  // Restauration après switchTab — attendre que db soit prêt si possible
   requestAnimationFrame(() => {
     restoreSavedSchedule();
   });
@@ -2471,15 +2578,9 @@ document.addEventListener('DOMContentLoaded', function(){
   // ── Enregistrement Service Worker au chargement ──
   // Obligatoire pour : offline, notifications en arrière-plan, install PWA
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
-    navigator.serviceWorker.register('./sw.js', {scope:'./'})
-      .then(reg=>{
-        console.log('[LawnNotifier] SW enregistré, scope:', reg.scope);
-        // Force update si nouvelle version disponible
-        reg.update();
-      })
-      .catch(err=>{
-        console.warn('[LawnNotifier] SW erreur:', err.message);
-      });
+    navigator.serviceWorker.register('./sw.js?v=10',{scope:'./'})
+      .then(r=>{ console.log('[LawnNotifier] SW v10:',r.scope); r.update(); })
+      .catch(e=>console.warn('[LawnNotifier] SW:',e.message));
   }
 });
 </script>
