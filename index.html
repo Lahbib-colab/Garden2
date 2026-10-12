@@ -1708,13 +1708,19 @@ async function generate(){
   S.schedule=buildSchedule(freq);fill.style.width='55%';
   let tip='';
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
+    // Timeout 5s max pour le conseil IA — ne bloque jamais la génération
+    const aiPromise = fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,
         messages:[{role:'user',content:'Expert jardinier. Saison '+season.name+', tonte il y a '+daysSince(S.lastDate)+'j, fréquence '+freq+'j. 2 phrases pratiques en français, direct, sans intro.'}]})
     });
+    const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000));
+    const res = await Promise.race([aiPromise, timeoutPromise]);
     if(res.ok){const d=await res.json();tip=(d.content?.[0]?.text||'').trim();}
-  }catch(e){}
+  }catch(e){
+    console.warn('[IA] Conseil non disponible:', e.message);
+  }
   if(!tip)tip='Adaptez la hauteur : 5–6 cm en été pour protéger des racines, 4 cm au printemps pour densifier.';
   fill.style.width='95%';
   renderSchedule(season,tip);
@@ -1735,8 +1741,9 @@ async function generate(){
       label: e.label,
     })),
   };
-  // Sauvegarder dans db + localStorage
+  // Sauvegarder localStorage (immédiat) + Cloudflare KV (arrière-plan)
   safeSave('ln_sched', JSON.stringify(schedData));
+  dbSave('ln_sched', schedData); // → Cloudflare KV pour persistance cross-context
   console.log('[LawnNotifier] Planning sauvegardé :', schedData.events.length, 'événements');
 
   // ── Ajouter la tonte de départ dans l'historique si absente ──
