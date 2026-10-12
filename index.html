@@ -1331,12 +1331,58 @@ const WX_DESC  = {0:'Ciel dégagé',1:'Principalement clair',2:'Partiellement nu
 // ══════════════════════════════════════════
 // STATE — safe init
 // ══════════════════════════════════════════
-// ── Couche de stockage localStorage ──
+// ── Couche de stockage : Cloudflare KV (primaire) + localStorage (fallback) ──
+const WORKER = 'https://lawnnotifier-api.lahbib78.workers.dev';
+
+// Générer ou récupérer un identifiant unique par appareil
+function getDeviceId(){
+  let id = localStorage.getItem('ln_device_id');
+  if(!id){
+    id = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem('ln_device_id', id);
+  }
+  return id;
+}
+
 function safeGet(k,fb){try{const v=localStorage.getItem(k);return v!==null?v:fb;}catch(e){return fb;}}
 function safeSave(k,v){try{localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v));}catch(e){}}
 function safeGetJSON(k,fb=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
-function dbSave(key,data){ safeSave(key,JSON.stringify(data)); }
-function dbLoad(key){ return safeGetJSON(key,null); }
+
+// Sauvegarde : localStorage IMMÉDIAT + Cloudflare en arrière-plan
+function dbSave(key, data){
+  // 1. localStorage immédiat (UI ne bloque pas)
+  safeSave(key, JSON.stringify(data));
+  // 2. Cloudflare KV en arrière-plan
+  const payload = JSON.stringify({key, data, ts: Date.now()});
+  fetch(WORKER + '/save', {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json', 'X-Device-ID': getDeviceId()},
+    body: payload
+  }).then(r => r.ok && console.log('[CF] Sauvegardé ✓'))
+    .catch(e => console.warn('[CF] Hors ligne, localStorage utilisé'));
+}
+
+// Chargement : Cloudflare en priorité, localStorage en fallback
+async function dbLoad(key){
+  try{
+    const r = await fetch(WORKER + '/load?key=' + encodeURIComponent(key), {
+      headers: {'X-Device-ID': getDeviceId()},
+      signal: AbortSignal.timeout(4000) // timeout 4s
+    });
+    if(r.ok){
+      const envelope = await r.json();
+      if(envelope && envelope[key]){
+        // Mettre à jour localStorage avec la version serveur
+        safeSave(key, JSON.stringify(envelope[key]));
+        console.log('[CF] Chargé depuis Cloudflare ✓');
+        return envelope[key];
+      }
+    }
+  }catch(e){
+    console.warn('[CF] Cloudflare indisponible, fallback localStorage');
+  }
+  return safeGetJSON(key, null);
+}
     
 
 const S = {
