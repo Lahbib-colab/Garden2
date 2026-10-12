@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>LawnNotifier</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icon-180.png">
@@ -355,7 +355,8 @@ html, body {
 .field {
   width: 100%; background: rgba(255,255,255,.07); border: 1px solid var(--border);
   border-radius: var(--r-sm); padding: 11px 13px; color: var(--text);
-  font-size: .9rem; font-weight: 500; font-family: inherit; outline: none;
+  /* iOS zoome si font-size < 16px — on force 16px pour bloquer */
+  font-size: 16px; font-weight: 500; font-family: inherit; outline: none;
   transition: border-color .2s, box-shadow .2s; color-scheme: dark;
   -webkit-appearance: none;
 }
@@ -399,7 +400,7 @@ html, body {
 .time-field {
   background: rgba(255,255,255,.07); border: 1px solid var(--border);
   border-radius: 9px; padding: 7px 10px; color: var(--text);
-  font-size: .86rem; font-weight: 600; font-family: inherit; outline: none;
+  font-size: 16px; font-weight: 600; font-family: inherit; outline: none;
   color-scheme: dark; -webkit-appearance: none;
 }
 .time-field:focus { border-color: var(--green); }
@@ -506,6 +507,44 @@ html, body {
 
 /* Next box */
 .next-box { display: flex; align-items: center; gap: 8px; padding: 10px 13px; background: var(--blue-t); border: 1px solid rgba(10,132,255,.2); border-radius: var(--r-sm); margin-top: 8px; font-size: .79rem; font-weight: 600; color: var(--blue); }
+
+/* Schedule action buttons */
+.sched-action-btn {
+  width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
+  background: rgba(255,255,255,.06); color: var(--text2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .15s; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.sched-action-btn:hover { background: rgba(255,255,255,.12); color: var(--text); }
+.sched-delete-btn { color: var(--red); border-color: rgba(255,69,58,.25); background: var(--red-t); }
+.sched-delete-btn:hover { background: rgba(255,69,58,.25); }
+
+/* Edit modal */
+.edit-modal {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 0 0 var(--sab);
+}
+.edit-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(12px);
+}
+.edit-sheet {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 600px;
+  background: rgba(18,18,26,.96); border: 1px solid var(--border);
+  border-bottom: none; border-radius: 22px 22px 0 0;
+  padding: 10px 18px 28px;
+  backdrop-filter: blur(40px);
+  animation: sheet-up .35s cubic-bezier(.34,1.36,.64,1) forwards;
+}
+@keyframes sheet-up { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.edit-handle { width:32px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 14px; }
+.edit-title { font-size:.95rem;font-weight:700;letter-spacing:-.02em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between; }
+.edit-row { display:flex;align-items:center;gap:10px;margin-bottom:10px; }
+.edit-label { font-size:.8rem;color:var(--text2);min-width:100px;font-weight:500; }
+.edit-close { background:rgba(255,255,255,.08);border:none;border-radius:8px;padding:5px 10px;color:var(--text2);cursor:pointer;font-size:.8rem; }
 
 /* ── History ── */
 .hist-empty { text-align: center; padding: 28px 0; color: var(--text3); font-size: .82rem; line-height: 1.6; }
@@ -627,7 +666,7 @@ html, body {
 .wx-search-input {
   flex: 1; background: none; border: none; outline: none;
   padding: 11px 10px; color: var(--text);
-  font-size: .9rem; font-weight: 500; font-family: inherit;
+  font-size: 16px; font-weight: 500; font-family: inherit;
 }
 .wx-search-input::placeholder { color: var(--text3); }
 .wx-search-clear {
@@ -694,7 +733,15 @@ html, body {
 .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; background: #fff; border-radius: 50%; transition: transform .22s cubic-bezier(.34,1.56,.64,1); box-shadow: 0 2px 5px rgba(0,0,0,.35); }
 .toggle input:checked + .toggle-track { background: var(--green); }
 .toggle input:checked + .toggle-track + .toggle-thumb { transform: translateX(20px); }
-.sr-sel { background: rgba(255,255,255,.07); border: 1px solid var(--border); border-radius: 8px; padding: 5px 9px; color: var(--text); font-size: .77rem; font-weight: 600; font-family: inherit; outline: none; cursor: pointer; -webkit-appearance: none; color-scheme: dark; }
+.sr-sel { background: rgba(255,255,255,.07); border: 1px solid var(--border); border-radius: 8px; padding: 5px 9px; color: var(--text); font-size: 16px; font-weight: 600; font-family: inherit; outline: none; cursor: pointer; -webkit-appearance: none; color-scheme: dark; }
+
+/* ── Règle universelle anti-zoom iOS ── */
+/* iOS Safari zoome sur tout input/select/textarea < 16px */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
 .seg { display: flex; background: rgba(255,255,255,.08); border-radius: 9px; padding: 2px; border: 1px solid var(--border); }
 .seg-o { flex: 1; padding: 4px 9px; border-radius: 7px; border: none; background: none; font-size: .7rem; font-weight: 600; color: var(--text2); cursor: pointer; transition: all .15s; text-align: center; font-family: inherit; }
 .seg-o.on { background: var(--bg2); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.3); }
@@ -873,7 +920,15 @@ html, body {
       <div class="card hidden" id="schedCard">
         <div class="sched-hdr">
           <div class="sec-title">Planning</div>
-          <div class="season-tag" id="seasonTag">—</div>
+          <div style="display:flex;align-items:center;gap:7px">
+            <div class="season-tag" id="seasonTag">—</div>
+            <button class="sched-action-btn" onclick="editSchedule()" title="Modifier">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="sched-action-btn sched-delete-btn" onclick="deleteSchedule()" title="Supprimer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
+          </div>
         </div>
         <div id="evList"></div>
         <div class="ai-tip hidden" id="aiTip">
@@ -1882,6 +1937,95 @@ async function sendTestNotif(type){
 }
 
 // ══════════════════════════════════════════
+// EDIT / DELETE SCHEDULE
+// ══════════════════════════════════════════
+function editSchedule(){
+  // Ouvre un panneau pour modifier la date et la fréquence
+  const modal = document.createElement('div');
+  modal.className = 'edit-modal';
+  modal.id = 'editModal';
+
+  const saved = safeGetJSON('ln_sched', null);
+  const curDate  = S.lastDate || safeGet('ln_date','');
+  const curFreq  = S.freqDays || parseInt(safeGet('ln_freq','10'));
+  const curTime  = safeGet('ln_notifTime','09:00');
+
+  modal.innerHTML = `
+    <div class="edit-backdrop" onclick="closeEditModal()"></div>
+    <div class="edit-sheet">
+      <div class="edit-handle"></div>
+      <div class="edit-title">
+        ✏️ Modifier le planning
+        <button class="edit-close" onclick="closeEditModal()">✕</button>
+      </div>
+      <div class="edit-row">
+        <div class="edit-label">Dernière tonte</div>
+        <input type="date" class="field" id="editDate" value="${curDate}"
+          max="${new Date().toISOString().split('T')[0]}" style="flex:1;padding:9px 12px">
+      </div>
+      <div class="edit-row">
+        <div class="edit-label">Fréquence</div>
+        <select class="sr-sel" id="editFreq" style="flex:1">
+          ${[7,10,14,21,30].map(d=>`<option value="${d}" ${d===curFreq?'selected':''}>${d === 30 ? '1 mois' : d+' jours'}</option>`).join('')}
+        </select>
+      </div>
+      <div class="edit-row">
+        <div class="edit-label">Heure rappel</div>
+        <input type="time" class="time-field" id="editTime" value="${curTime}">
+      </div>
+      <button class="btn-primary" style="margin-top:6px" onclick="applyEdit()">
+        Recalculer le planning
+      </button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function closeEditModal(){
+  const m = document.getElementById('editModal');
+  if(m) m.remove();
+}
+
+function applyEdit(){
+  const date  = document.getElementById('editDate')?.value;
+  const freq  = parseInt(document.getElementById('editFreq')?.value || '10');
+  const time  = document.getElementById('editTime')?.value || '09:00';
+  closeEditModal();
+  if(date){
+    S.lastDate  = date;
+    S.freqDays  = freq;
+    safeSave('ln_date',  date);
+    safeSave('ln_freq',  freq);
+    safeSave('ln_notifTime', time);
+    const notifTimeEl = $('notifTime');
+    if(notifTimeEl) notifTimeEl.value = time;
+    const lastDateEl = $('lastDate');
+    if(lastDateEl) lastDateEl.value = date;
+    // Resync freq grid
+    document.querySelectorAll('.fc').forEach(c=>c.classList.toggle('on', parseInt(c.dataset.d)===freq));
+    updateLawn();
+    generate();
+    showToast('Planning mis à jour ✓');
+  }
+}
+
+function deleteSchedule(){
+  if(!confirm('Supprimer le planning en cours ?')) return;
+  try{ localStorage.removeItem('ln_sched'); }catch(e){}
+  S.schedule = [];
+  $('schedCard').classList.add('hidden');
+  $('nextBox').classList.add('hidden');
+  $('aiTip').classList.add('hidden');
+  $('shareRow').innerHTML = '';
+  // Reset button
+  const btn = $('genBtn');
+  if(btn){
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg> Créer mon planning';
+    btn.style.background = '';
+  }
+  showToast('Planning supprimé');
+}
+
+// ══════════════════════════════════════════
 // ICS
 // ══════════════════════════════════════════
 function openSheet(){$('sheetTime').textContent=safeGet('ln_notifTime','09:00');$('overlay').classList.add('open');$('sheet').classList.add('open');}
@@ -2229,38 +2373,46 @@ document.addEventListener('DOMContentLoaded', function(){
   // ── Restauration du planning sauvegardé ──
   const savedSched = safeGetJSON('ln_sched', null);
   if(savedSched && savedSched.events && savedSched.events.length){
-    // Recalcule les diff par rapport à maintenant
     const now = new Date();
-    S.schedule = savedSched.events.map(e=>{
+
+    // Recalcule les statuts en temps réel
+    S.schedule = savedSched.events.map((e, i) => {
       const date = new Date(e.date);
       const diff = Math.floor((date - now) / 864e5);
-      const type = diff < 0 ? 'done' : diff <= 2 ? 'urgent' : diff <= 5 ? 'soon' : 'normal';
+      // Premier événement = toujours "done" (dernière tonte)
+      const type = i === 0 ? 'done'
+        : diff < 0  ? 'done'
+        : diff <= 2 ? 'urgent'
+        : diff <= 5 ? 'soon'
+        : 'normal';
       return { date, type, label: e.label, diff };
     });
-    // La première entrée est toujours "done" (dernière tonte)
-    if(S.schedule[0]) S.schedule[0].type = 'done';
 
-    const season = SEASONS[savedSched.seasonKey] ?
-      { ...SEASONS[savedSched.seasonKey], key: savedSched.seasonKey } : getSeason();
-    const tip = savedSched.tip || '';
+    const season = SEASONS[savedSched.seasonKey]
+      ? { ...SEASONS[savedSched.seasonKey], key: savedSched.seasonKey }
+      : getSeason();
+    const tip  = savedSched.tip  || '';
+    const freq = savedSched.freq || getFreq();
 
     renderSchedule(season, tip);
-    renderShareRow(savedSched.freq || getFreq());
+    renderShareRow(freq);
     renderTips(season, tip);
 
-    // Restaurer le style du bouton
+    // Bouton → "Recalculer"
     const btn = $('genBtn');
     if(btn){
-      btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg> Recalculer';
-      btn.style.background='linear-gradient(155deg,#166d2e,#1fa344)';
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg> Recalculer';
+      btn.style.background = 'linear-gradient(155deg,#166d2e,#1fa344)';
     }
+
+    // Toujours afficher la carte planning
     $('schedCard')?.classList.remove('hidden');
     $('nextBox')?.classList.remove('hidden');
 
-    // Vérifier si le planning est périmé (> 48h depuis sauvegarde)
+    // Toast si planning > 48h
     const age = Date.now() - (savedSched.savedAt || 0);
     if(age > 48 * 3600 * 1000){
-      showToast('🔄 Planning ancien — pensez à recalculer', 4000);
+      setTimeout(() => showToast('🔄 Planning ancien — pensez à recalculer', 4000), 1200);
     }
   }
 
