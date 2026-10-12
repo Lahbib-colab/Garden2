@@ -1669,10 +1669,12 @@ function updateLawnWeather(){
 function setRelDate(daysAgo){
   const d=new Date();d.setDate(d.getDate()-daysAgo);
   const str=d.toISOString().split('T')[0];
+  _dateSetByCode = false; // changement volontaire de l'utilisateur
   $('lastDate').value=str;
   S.lastDate=str;safeSave('ln_date',str);
   updateLawn();
   $('schedCard').classList.add('hidden');$('nextBox').classList.add('hidden');
+  try{ localStorage.removeItem('ln_sched'); }catch(e){}
 }
 
 // ══════════════════════════════════════════
@@ -2746,12 +2748,29 @@ async function restoreSavedSchedule(){
 // ══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function(){
   // Restore saved values
-  if(S.lastDate){$('lastDate').value=S.lastDate;$('onboard').classList.add('gone');}
-  $('lastDate').max=new Date().toISOString().split('T')[0];
-  $('lastDate').addEventListener('change',function(e){
-    S.lastDate=e.target.value;safeSave('ln_date',e.target.value);
-    updateLawn();$('schedCard').classList.add('hidden');$('nextBox').classList.add('hidden');
-  });
+  // Assigner la valeur AVANT d'attacher le listener pour éviter un faux déclenchement
+  let _dateSetByCode = true; // flag : true = assignation programmatique
+  if(S.lastDate){
+    $('lastDate').value = S.lastDate;
+    $('onboard').classList.add('gone');
+  }
+  $('lastDate').max = new Date().toISOString().split('T')[0];
+  // Utiliser 'input' + 'change' — cacher la carte SEULEMENT si l'utilisateur change la date
+  const onDateChange = function(e){
+    if(_dateSetByCode){ _dateSetByCode = false; return; } // ignorer les changements programmatiques
+    S.lastDate = e.target.value;
+    safeSave('ln_date', e.target.value);
+    updateLawn();
+    // Cacher la carte seulement si l'utilisateur change vraiment la date
+    $('schedCard').classList.add('hidden');
+    $('nextBox').classList.add('hidden');
+    // Effacer le planning sauvegardé pour éviter d'afficher un planning périmé
+    try{ localStorage.removeItem('ln_sched'); }catch(ex){}
+  };
+  $('lastDate').addEventListener('change', onDateChange);
+  $('lastDate').addEventListener('input',  onDateChange);
+  // Réinitialiser le flag après le premier cycle d'événements
+  setTimeout(()=>{ _dateSetByCode = false; }, 300);
   const savedTime=safeGet('ln_notifTime','09:00');
   if($('notifTime'))$('notifTime').value=savedTime;
   if($('notifTimeSetting'))$('notifTimeSetting').value=savedTime;
