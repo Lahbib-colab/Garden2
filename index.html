@@ -1287,9 +1287,15 @@ const WX_DESC  = {0:'Ciel dégagé',1:'Principalement clair',2:'Partiellement nu
 // ══════════════════════════════════════════
 // STATE — safe init
 // ══════════════════════════════════════════
+// ── Couche de stockage : localStorage + db artifact (double persistance) ──
 function safeGet(k,fb){try{const v=localStorage.getItem(k);return v!==null?v:fb;}catch(e){return fb;}}
 function safeGetJSON(k,fb=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
-function safeSave(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function safeSave(k,v){try{localStorage.setItem(k,String(v));}catch(e){}}
+
+// DB artifact — initialisé au démarrage
+// Sauvegarde localStorage
+function dbSave(key, data){ safeSave(key, JSON.stringify(data)); }
+function dbLoad(key){ return safeGetJSON(key, null); }
 
 const S = {
   lastDate: safeGet('ln_date',''),
@@ -1629,13 +1635,9 @@ async function generate(){
       label: e.label,
     })),
   };
-  const schedJson = JSON.stringify(schedData);
-  safeSave('ln_sched', schedJson);
-  // Vérification immédiate : re-lire pour s'assurer que c'est bien écrit
-  try{
-    const verify = JSON.parse(localStorage.getItem('ln_sched') || '{}');
-    if(!verify.events) console.warn('[LawnNotifier] Sauvegarde planning: vérification échouée');
-  }catch(e){ console.warn('[LawnNotifier] Sauvegarde planning: erreur JSON', e); }
+  // Sauvegarder dans localStorage
+  safeSave('ln_sched', JSON.stringify(schedData));
+  console.log('[LawnNotifier] Planning sauvegardé :', schedData.events.length, 'événements');
 
   fill.style.width='100%';
   setTimeout(()=>{prog.style.display='none';fill.style.width='0%';},400);
@@ -2330,36 +2332,26 @@ function resetAll(){if(!confirm('Supprimer toutes les données ?'))return;['ln_d
 // SAUVEGARDE / RESTAURATION PLANNING
 // ══════════════════════════════════════════
 function restoreSavedSchedule(){
-  // Lire le JSON brut depuis localStorage
-  let raw = '';
-  try { raw = localStorage.getItem('ln_sched') || ''; } catch(e){ return; }
-  if(!raw){ return; } // Rien de sauvegardé
+  // Charger depuis localStorage
+  const saved = safeGetJSON('ln_sched', null);
 
-  // Parser avec protection
-  let saved;
-  try { saved = JSON.parse(raw); } catch(e){
-    console.warn('[LawnNotifier] Planning corrompu, suppression', e);
-    try{ localStorage.removeItem('ln_sched'); }catch(e2){}
+  if(!saved){
+    console.log('[LawnNotifier] Aucun planning sauvegardé');
     return;
   }
 
-  // Valider la structure (supporte v1 ancien et v2 nouveau format)
   const events = saved.events;
   if(!events || !Array.isArray(events) || events.length === 0){
-    console.warn('[LawnNotifier] Planning vide ou invalide');
+    console.warn('[LawnNotifier] Planning vide');
     return;
   }
 
-  // Reconstruire le planning avec statuts frais
+  // Reconstruire avec statuts frais
   const now = new Date();
   S.schedule = events.map((e, i) => {
-    // v2 : { iso, label } — v1 : { date, label }
     const iso  = e.iso || e.date || '';
     const date = new Date(iso);
-    if(isNaN(date.getTime())){
-      console.warn('[LawnNotifier] Date invalide à l\'index', i, iso);
-      return null;
-    }
+    if(isNaN(date.getTime())) return null;
     const diff = Math.floor((date - now) / 864e5);
     const type = i === 0   ? 'done'
       : diff < 0           ? 'done'
@@ -2367,56 +2359,47 @@ function restoreSavedSchedule(){
       : diff <= 5          ? 'soon'
       : 'normal';
     return { date, type, label: e.label || ('Tonte #' + i), diff };
-  }).filter(Boolean); // retire les nulls
+  }).filter(Boolean);
 
-  if(S.schedule.length === 0){ return; }
+  if(S.schedule.length === 0) return;
 
-  // Retrouver les métadonnées
   const seasonKey = saved.seasonKey || '';
-  const season    = SEASONS[seasonKey]
+  const season = SEASONS[seasonKey]
     ? { ...SEASONS[seasonKey], key: seasonKey }
     : getSeason();
   const freq = saved.freq || S.freqDays || 10;
   const tip  = saved.tip  || '';
 
-  // Afficher
   renderSchedule(season, tip);
   renderShareRow(freq);
   renderTips(season, tip);
 
-  // Mettre le bouton en mode "Recalculer"
+  // Bouton Recalculer
   const btn = $('genBtn');
   if(btn){
-    const svg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>';
+    const svg='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>';
     btn.innerHTML = svg + ' Recalculer';
     btn.style.background = 'linear-gradient(155deg,#166d2e,#1fa344)';
     btn.disabled = false;
   }
 
-  // Afficher la carte — forcer display:block après l'animation pane (200ms)
+  // Afficher la carte (forcer display + délai post-animation)
   const showCard = () => {
     const card = $('schedCard');
-    if(card){
-      card.classList.remove('hidden');
-      card.style.display = 'block'; // force explicitement
-    }
-    const nextBox = $('nextBox');
-    if(nextBox){
-      nextBox.classList.remove('hidden');
-      nextBox.style.display = 'flex';
-    }
+    if(card){ card.classList.remove('hidden'); card.style.display='block'; }
+    const nb = $('nextBox');
+    if(nb){ nb.classList.remove('hidden'); nb.style.display='flex'; }
   };
-  // Immédiat + après animation pane (200ms) pour être sûr
   showCard();
-  setTimeout(showCard, 250);
+  setTimeout(showCard, 300);
 
-  // Toast si planning périmé (> 48h)
   const age = Date.now() - (saved.savedAt || 0);
-  if(age > 48 * 3600 * 1000){
-    setTimeout(() => showToast('🔄 Planning de ' + Math.round(age/3600000) + 'h — pensez à recalculer', 4000), 1500);
+  if(age > 48*3600*1000){
+    setTimeout(()=>showToast('🔄 Planning de '+Math.round(age/3600000)+'h — recalculer ?',4000),1500);
   }
 
-  console.log('[LawnNotifier] Planning restauré :', S.schedule.length, 'entrées, âge:', Math.round(age/3600000)+'h');
+  console.log('[LawnNotifier] Planning restauré depuis', _db?'db':'localStorage',
+    '—', S.schedule.length, 'entrées, âge:', Math.round(age/3600000)+'h');
 }
 
 // ══════════════════════════════════════════
@@ -2480,8 +2463,7 @@ document.addEventListener('DOMContentLoaded', function(){
   // switchTab EN PREMIER pour que le pane soit actif et visible
   switchTab('plan');
 
-  // Restauration du planning APRÈS switchTab, dans un rAF
-  // pour garantir que le DOM est peint avant d'afficher la carte
+  // Restauration après switchTab — rAF pour laisser le DOM se peindre
   requestAnimationFrame(() => {
     restoreSavedSchedule();
   });
@@ -2489,15 +2471,15 @@ document.addEventListener('DOMContentLoaded', function(){
   // ── Enregistrement Service Worker au chargement ──
   // Obligatoire pour : offline, notifications en arrière-plan, install PWA
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
-    navigator.serviceWorker.register('./sw.js?v=10', {scope:'./'})
+    navigator.serviceWorker.register('./sw.js', {scope:'./'})
       .then(reg=>{
-        console.log('[LawnNotifier] SW v10, scope:', reg.scope);
+        console.log('[LawnNotifier] SW enregistré, scope:', reg.scope);
+        // Force update si nouvelle version disponible
         reg.update();
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          window.location.reload();
-        });
       })
-      .catch(err => console.warn('[LawnNotifier] SW:', err.message));
+      .catch(err=>{
+        console.warn('[LawnNotifier] SW erreur:', err.message);
+      });
   }
 });
 </script>
