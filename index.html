@@ -2302,9 +2302,9 @@ async function sendServerTestPush(){
 
   const sub = await getPushSubscription();
   if(!sub){
-    if(st){ st.textContent='Pas d'abonnement';st.style.color='var(--amber)'; }
+    if(st){ st.textContent="Pas d'abonnement";st.style.color='var(--amber)'; }
     if(btn) btn.disabled = false;
-    showToast('Activez d'abord les notifications push ↑');
+    showToast("Activez d'abord les notifications push ↑");
     return;
   }
   try{
