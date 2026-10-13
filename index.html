@@ -1109,6 +1109,11 @@ html, body {
             </label>
           </div>
         </div>
+        <div class="sr" style="cursor:pointer" onclick="resetPushSubscription()">
+          <div class="sr-icon" style="background:rgba(255,69,58,.15)">🔄</div>
+          <div class="sr-body"><div class="sr-t">Réinitialiser l'abonnement push</div><div class="sr-s">Si les notifications ne fonctionnent plus</div></div>
+          <div class="sr-r" style="color:var(--text3)">›</div>
+        </div>
         <div class="sr" style="cursor:pointer" onclick="openNotifTest()">
           <div class="sr-icon" style="background:#30d15820">🧪</div>
           <div class="sr-body"><div class="sr-t">Tester les notifications</div><div class="sr-s" id="testNotifStatus">Vérifier que tout fonctionne</div></div>
@@ -1870,6 +1875,29 @@ function updateNotifBanner(){
   }
 }
 
+// Réinitialiser abonnement push + clé VAPID en cache
+async function resetPushSubscription(){
+  if(!confirm('Réinitialiser l\'abonnement push ?\nTu devras réactiver les notifications après.')) return;
+  try{
+    // 1. Désabonner du PushManager
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if(sub) await sub.unsubscribe();
+    // 2. Supprimer la clé VAPID en cache
+    try{ localStorage.removeItem('ln_vapid_pub'); }catch(e){}
+    // 3. Supprimer l'abonnement côté Cloudflare
+    await fetch(WORKER+'/push/subscribe',{
+      method:'DELETE',
+      headers:{'X-Device-ID':getDeviceId()}
+    }).catch(()=>{});
+    // 4. Mettre à jour l'UI
+    updatePushUI();
+    showToast('Abonnement réinitialisé — réactivez les notifications ✓');
+  }catch(e){
+    showToast('Erreur: '+e.message);
+  }
+}
+
 async function updatePushUI(){
   const perm = ('Notification' in window) ? Notification.permission : 'default';
   const btn    = $('pushBtn');
@@ -1931,14 +1959,12 @@ async function requestPush(){
     });
     if(perm !== 'granted'){showToast('Permission refusée');updatePushUI();return;}
 
-    // 2. Récupérer la clé VAPID depuis le Worker
-    let vapidKey = safeGet('ln_vapid_pub','');
-    if(!vapidKey){
-      try{
-        const kr = await fetch(WORKER+'/vapid-key');
-        if(kr.ok){ const kd = await kr.json(); vapidKey = kd.publicKey||''; safeSave('ln_vapid_pub',vapidKey); }
-      }catch(e){}
-    }
+    // 2. Toujours récupérer la clé VAPID fraîche depuis le Worker (jamais le cache)
+    let vapidKey = '';
+    try{
+      const kr = await fetch(WORKER+'/vapid-key', {cache:'no-store'});
+      if(kr.ok){ const kd = await kr.json(); vapidKey = kd.publicKey||''; safeSave('ln_vapid_pub',vapidKey); }
+    }catch(e){ vapidKey = safeGet('ln_vapid_pub',''); } // fallback cache si hors ligne
     if(!vapidKey){
       // Fallback : notifications locales si pas de VAPID configuré
       updatePushUI();
