@@ -1713,22 +1713,27 @@ async function generate(){
   prog.style.display='block';fill.style.width='15%';
   const freq=getFreq(),season=getSeason();
   S.schedule=buildSchedule(freq);fill.style.width='55%';
-  let tip='';
-  try{
-    // Timeout 5s max pour le conseil IA — ne bloque jamais la génération
-    const aiPromise = fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:200,
-        messages:[{role:'user',content:'Expert jardinier. Saison '+season.name+', tonte il y a '+daysSince(S.lastDate)+'j, fréquence '+freq+'j. 2 phrases pratiques en français, direct, sans intro.'}]})
-    });
-    const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000));
-    const res = await Promise.race([aiPromise, timeoutPromise]);
-    if(res.ok){const d=await res.json();tip=(d.content?.[0]?.text||'').trim();}
-  }catch(e){
-    console.warn('[IA] Conseil non disponible:', e.message);
-  }
-  if(!tip)tip='Adaptez la hauteur : 5–6 cm en été pour protéger des racines, 4 cm au printemps pour densifier.';
+  // Conseil saisonnier instantané — aucun appel réseau
+  const TIPS_SAISON = {
+    spring: [
+      'Commencez à '+freq+'j de fréquence — la pousse est rapide au printemps. Coupez à 4 cm pour densifier le gazon.',
+      'Tondez tôt le matin quand l\'herbe est sèche. Laissez les tontes au sol les 2 premières fois pour enrichir le sol.',
+    ],
+    summer: [
+      'Remontez la hauteur de coupe à 6 cm pour protéger les racines de la chaleur et conserver l\'humidité.',
+      'Tondez en fin de journée pour éviter le stress hydrique. Arrosez le soir après la tonte.',
+    ],
+    autumn: [
+      'Réduisez progressivement la fréquence — la croissance ralentit. Profitez-en pour scarifier avant l\'hiver.',
+      'Coupez court lors de la dernière tonte (3–4 cm) pour limiter les maladies fongiques hivernales.',
+    ],
+    winter: [
+      'Évitez de tondre si le sol est gelé ou gorgé d\'eau. Une tonte légère en période douce suffit.',
+      'Profitez de la pause hivernale pour affûter les lames et vidanger le moteur de la tondeuse.',
+    ],
+  };
+  const seasonTips = TIPS_SAISON[season.key] || TIPS_SAISON.spring;
+  const tip = seasonTips[daysSince(S.lastDate) % 2] || seasonTips[0];
   fill.style.width='95%';
   renderSchedule(season,tip);
   renderShareRow(freq);
