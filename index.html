@@ -614,10 +614,27 @@ html, body {
 .hist-del:hover { opacity: 1; }
 .log-btn { width: 100%; margin-top: 10px; background: var(--green-t); border: 1px solid var(--green-g); border-radius: var(--r-sm); padding: 11px; color: var(--green); font-size: .83rem; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background .15s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .log-btn:hover { background: rgba(48,209,88,.2); }
-.stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 14px; }
 .stat { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 13px; padding: 12px 8px; text-align: center; }
 .stat-v { font-size: 1.35rem; font-weight: 700; letter-spacing: -.03em; }
 .stat-l { font-size: .61rem; color: var(--text3); margin-top: 2px; }
+
+/* ── Graphique stats ── */
+.stat-chart-wrap { position:relative; margin-top: 4px; }
+.stat-chart-wrap canvas { width:100%!important; border-radius:8px; }
+.stat-chart-legend { display:flex;gap:14px;margin-top:8px;justify-content:center; }
+.stat-leg-item { display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--text2); }
+.stat-leg-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+.stat-chart-empty { text-align:center;color:var(--text3);font-size:.78rem;padding:24px 0; }
+
+/* ── Signature Lahbib.AI ── */
+.lahbib-brand {
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  margin:6px 0 2px;padding:10px;
+  font-size:.72rem;color:var(--text3);letter-spacing:.01em;
+}
+.lahbib-brand svg { opacity:.5; }
+.lahbib-brand strong { color:var(--green);font-weight:700;letter-spacing:.02em; }
 
 /* ── Conseils ── */
 .tips-body { font-size: .8rem; color: var(--text2); line-height: 1.7; }
@@ -1016,12 +1033,27 @@ html, body {
         <button class="log-btn" onclick="logTonte()">✂️ Enregistrer une tonte aujourd'hui</button>
       </div>
       <div class="card">
-        <div class="lbl">Statistiques</div>
+        <div class="lbl" style="margin-bottom:10px">Statistiques</div>
         <div class="stats-grid">
           <div class="stat"><div class="stat-v" id="stTotal">0</div><div class="stat-l">Tontes</div></div>
           <div class="stat"><div class="stat-v" id="stAvg">—</div><div class="stat-l">Intervalle moy.</div></div>
           <div class="stat"><div class="stat-v" id="stSeason">0</div><div class="stat-l">Cette saison</div></div>
         </div>
+        <!-- Graphique tontes + météo -->
+        <div class="stat-chart-wrap">
+          <canvas id="statChart" height="110"></canvas>
+          <div class="stat-chart-legend">
+            <span class="stat-leg-item"><span class="stat-leg-dot" style="background:var(--green)"></span>Tontes</span>
+            <span class="stat-leg-item"><span class="stat-leg-dot" style="background:#64b5f6"></span>Temp. °C</span>
+          </div>
+          <div class="stat-chart-empty hidden" id="statChartEmpty">Enregistrez des tontes pour voir le graphique</div>
+        </div>
+      </div>
+
+      <!-- Signature Lahbib.AI -->
+      <div class="lahbib-brand">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Developed by <strong>Lahbib.AI</strong>
       </div>
     </div>
 
@@ -1201,7 +1233,8 @@ html, body {
       <div class="about">
         <div class="about-icon">🌿</div>
         <div class="about-n">Lawn<em>Notifier</em></div>
-        <div class="about-v">Version 9.0 · iOS 27 Design</div>
+        <div class="about-v">Version 9.1 · iOS 27 Design</div>
+        <div class="about-v" style="margin-top:4px;color:var(--green);font-weight:600">✦ Developed by Lahbib.AI</div>
         <div style="font-size:.7rem;color:var(--text3);margin-top:4px">Météo : Open-Meteo · IA : Claude · Calendrier : RFC 5545</div>
       </div>
     </div>
@@ -1211,24 +1244,50 @@ html, body {
   <!-- Tab bar -->
   <nav class="tabbar">
     <div class="pill">
+      <!-- Planifier — calendrier avec éclair -->
       <button class="tab active" data-tab="plan" onclick="switchTab('plan')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8 13h.01M12 13h.01M8 17h.01M12 17h.01"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="5" width="18" height="16" rx="2.5"/>
+          <path d="M3 10h18"/>
+          <path d="M8 3v4M16 3v4"/>
+          <path d="M13 14l-2 3h3l-2 3" stroke-width="1.4"/>
+        </svg>
         Planifier
       </button>
+      <!-- Historique — horloge avec feuille -->
       <button class="tab" data-tab="history" onclick="switchTab('history')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 7v5l3 3"/>
+          <path d="M5.5 5.5C7 4 9 3 12 3" stroke-width="1.3" opacity=".6"/>
+        </svg>
         Historique
       </button>
+      <!-- Conseils — feuille / plante -->
       <button class="tab" data-tab="tips" onclick="switchTab('tips')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 21V11"/>
+          <path d="M12 11C12 7 9 4 5 3c0 4 2 7 7 8"/>
+          <path d="M12 11C12 7 15 4 19 3c0 4-2 7-7 8"/>
+          <path d="M9 21h6"/>
+        </svg>
         Conseils
       </button>
+      <!-- Météo — soleil + nuage épuré -->
       <button class="tab" data-tab="weather" onclick="switchTab('weather')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="10" cy="9" r="3"/>
+          <path d="M10 3V2M10 16v-1M3 9H2M18 9h-1M5.2 4.2l-.7-.7M15.5 4.2l.7-.7"/>
+          <path d="M7 16a4 4 0 0 1 0-8h1a5 5 0 1 1 9 4.5A3.5 3.5 0 0 1 17 19H7z"/>
+        </svg>
         Météo
       </button>
+      <!-- Réglages — engrenage épuré -->
       <button class="tab" data-tab="settings" onclick="switchTab('settings')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 2v2.5M12 19.5V22M4.22 4.22l1.77 1.77M18.01 18.01l1.77 1.77M2 12h2.5M19.5 12H22M4.22 19.78l1.77-1.77M18.01 5.99l1.77-1.77"/>
+        </svg>
         Réglages
       </button>
     </div>
@@ -2519,6 +2578,130 @@ function renderStats(){
   $('stTotal').textContent=S.history.length;
   if(S.history.length>=2){let s=0;for(let i=0;i<S.history.length-1;i++)s+=Math.abs(daysSince(S.history[i+1].date)-daysSince(S.history[i].date));$('stAvg').textContent=Math.round(s/(S.history.length-1))+'j';}
   const sm=getSeason().months;$('stSeason').textContent=S.history.filter(h=>sm.includes(new Date(h.date+'T12:00').getMonth())).length;
+  renderStatChart();
+}
+
+function renderStatChart(){
+  const canvas=$('statChart');
+  const empty=$('statChartEmpty');
+  if(!canvas) return;
+
+  // Pas assez de données
+  if(S.history.length<2){
+    canvas.style.display='none';
+    if(empty) empty.classList.remove('hidden');
+    return;
+  }
+  canvas.style.display='block';
+  if(empty) empty.classList.add('hidden');
+
+  // Préparer les données — 8 dernières tontes max, ordre chronologique
+  const data = [...S.history].reverse().slice(-8);
+  const labels = data.map(h=>{ const d=new Date(h.date+'T12:00'); return (d.getDate())+'/'+(d.getMonth()+1); });
+  const tontes = data.map((_,i)=>i+1); // cumul
+
+  // Températures depuis le cache météo (si disponible)
+  const wxCache = S.wxCache;
+  let temps = data.map(()=>null);
+  if(wxCache && wxCache.daily && wxCache.daily.time){
+    const dailyTimes = wxCache.daily.time;
+    const dailyTemps = wxCache.daily.temperature_2m_max || wxCache.daily.temperature_2m_min || [];
+    data.forEach((h,i)=>{
+      const idx = dailyTimes.indexOf(h.date);
+      if(idx>=0 && dailyTemps[idx]!==undefined) temps[i]=Math.round(dailyTemps[idx]);
+    });
+  }
+  const hasTemps = temps.some(t=>t!==null);
+
+  // Canvas setup
+  const dpr = window.devicePixelRatio||1;
+  const W = canvas.offsetWidth||320;
+  const H = 110;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+
+  const isDark = document.documentElement.classList.contains('light') ? false : true;
+  const textCol = isDark ? 'rgba(255,255,255,.4)' : 'rgba(0,0,0,.4)';
+  const gridCol = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+
+  const pad = {t:10,r:hasTemps?30:8,b:26,l:28};
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+  const n = data.length;
+  const xStep = n>1 ? cW/(n-1) : cW/2;
+
+  // Grille horizontale
+  ctx.strokeStyle=gridCol; ctx.lineWidth=1;
+  for(let g=0;g<=3;g++){
+    const y=pad.t+(cH/3)*g;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cW,y);ctx.stroke();
+  }
+
+  // Axe x — labels dates
+  ctx.fillStyle=textCol; ctx.font='500 9px -apple-system,sans-serif'; ctx.textAlign='center';
+  data.forEach((_,i)=>{
+    const x=pad.l+i*xStep;
+    ctx.fillText(labels[i], x, H-pad.b+12);
+  });
+
+  // Courbe tontes (barres)
+  const maxT=tontes[tontes.length-1]||1;
+  data.forEach((_,i)=>{
+    const x=pad.l+i*xStep;
+    const bH=(tontes[i]/maxT)*cH*0.7;
+    const y=pad.t+cH-bH;
+    const bW=Math.min(xStep*.45,14);
+    // Gradient vert
+    const grd=ctx.createLinearGradient(x,y,x,y+bH);
+    grd.addColorStop(0,'rgba(48,209,88,.9)');
+    grd.addColorStop(1,'rgba(48,209,88,.25)');
+    ctx.fillStyle=grd;
+    const r=4;
+    ctx.beginPath();
+    ctx.roundRect(x-bW/2,y,bW,bH,r);
+    ctx.fill();
+    // Valeur
+    ctx.fillStyle='rgba(48,209,88,.9)';
+    ctx.font='bold 9px -apple-system,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(tontes[i], x, y-3);
+  });
+
+  // Courbe températures
+  if(hasTemps){
+    const validTemps = temps.filter(t=>t!==null);
+    const minT=Math.min(...validTemps)-2, maxTmp=Math.max(...validTemps)+2;
+    const tempY=t=>pad.t+cH-((t-minT)/(maxTmp-minT||1))*cH*.85;
+
+    ctx.strokeStyle='rgba(100,181,246,.85)';
+    ctx.lineWidth=2;
+    ctx.lineJoin='round';
+    ctx.lineCap='round';
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    let started=false;
+    temps.forEach((t,i)=>{
+      if(t===null) return;
+      const x=pad.l+i*xStep, y=tempY(t);
+      if(!started){ ctx.moveTo(x,y); started=true; } else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    // Points + labels temp
+    temps.forEach((t,i)=>{
+      if(t===null) return;
+      const x=pad.l+i*xStep, y=tempY(t);
+      ctx.fillStyle='rgba(100,181,246,.9)';
+      ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+    });
+
+    // Axe Y droite température
+    ctx.fillStyle='rgba(100,181,246,.6)';
+    ctx.font='9px -apple-system,sans-serif'; ctx.textAlign='right';
+    ctx.fillText(Math.round(maxTmp)+'°', W-2, pad.t+8);
+    ctx.fillText(Math.round(minT)+'°', W-2, pad.t+cH);
+  }
 }
 
 // ══════════════════════════════════════════
