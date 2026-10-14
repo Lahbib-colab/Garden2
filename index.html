@@ -1959,19 +1959,16 @@ async function requestPush(){
     });
     if(perm !== 'granted'){showToast('Permission refusée');updatePushUI();return;}
 
-    // 2. Toujours récupérer la clé VAPID fraîche depuis le Worker (jamais le cache)
-    let vapidKey = '';
+    // 2. Clé publique VAPID — intégrée directement (mise à jour : 2026-10-14)
+    // Si tu regeneres les cles, remplace VAPID_PUBLIC_KEY ci-dessous
+    const VAPID_PUBLIC_KEY = 'BCheHH-rOZLsHw1B3Sle5tHj3bCexmejwR8Cc5oPksWdXX63Rxk-cinbnbHWkkqEFtLprSsbtpGihbQqscL4p_w';
+    let vapidKey = VAPID_PUBLIC_KEY;
+    // Tentative de mise à jour depuis le serveur (silencieuse)
     try{
-      const kr = await fetch(WORKER+'/vapid-key', {cache:'no-store'});
-      if(kr.ok){ const kd = await kr.json(); vapidKey = kd.publicKey||''; safeSave('ln_vapid_pub',vapidKey); }
-    }catch(e){ vapidKey = safeGet('ln_vapid_pub',''); } // fallback cache si hors ligne
-    if(!vapidKey){
-      // Fallback : notifications locales si pas de VAPID configuré
-      updatePushUI();
-      showToast('Notifications locales activées ✓ (VAPID non configuré)');
-      scheduleLocalPush();
-      return;
-    }
+      const kr = await fetch(WORKER+'/vapid-key', {cache:'no-store', signal:AbortSignal.timeout(3000)});
+      if(kr.ok){ const kd = await kr.json(); if(kd.publicKey) vapidKey = kd.publicKey; }
+    }catch(e){ /* utilise la clé intégrée */ }
+    safeSave('ln_vapid_pub', vapidKey);
 
     // 3. S'abonner via PushManager
     const reg  = await navigator.serviceWorker.ready;
@@ -2038,12 +2035,12 @@ function scheduleLocalPush(){
     const dayOf=new Date(ev.date); dayOf.setHours(hh,mm,0,0);
     const ms=dayOf.getTime()-now;
     if(ms>0&&ms<14*864e5) setTimeout(()=>{
-      try{new Notification('🌿 LawnNotifier',{body:'Jour de tonte — '+fmtDate(ev.date),tag:'lawn-'+tag,icon:'/Garden2/icon-192.png'});}catch(e){}
+      try{new Notification('🌿 LawnNotifier',{body:'Jour de tonte — '+fmtDate(ev.date),tag:'lawn-'+tag,icon:'./icon-192.png'});}catch(e){}
     },ms);
     const eve=new Date(ev.date); eve.setDate(eve.getDate()-1); eve.setHours(20,0,0,0);
     const msE=eve.getTime()-now;
     if(msE>0&&msE<14*864e5) setTimeout(()=>{
-      try{new Notification('🌿 LawnNotifier',{body:'Tonte demain — '+fmtDate(ev.date),tag:'lawn-eve-'+tag,icon:'/Garden2/icon-192.png'});}catch(e){}
+      try{new Notification('🌿 LawnNotifier',{body:'Tonte demain — '+fmtDate(ev.date),tag:'lawn-eve-'+tag,icon:'./icon-192.png'});}catch(e){}
     },msE);
   });
 }
