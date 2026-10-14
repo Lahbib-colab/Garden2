@@ -333,6 +333,29 @@ html, body {
 .lawn-next-badge.soon   .lawn-next-days { color: #ffd60a; }
 .lawn-next-badge.ok     .lawn-next-days { color: #4cd964; }
 
+/* ── Modal note tonte (remplace prompt() bloqué sur iOS PWA) ── */
+.note-modal { position:fixed;inset:0;z-index:300;display:flex;align-items:flex-end;justify-content:center; }
+.note-backdrop { position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(10px); }
+.note-sheet {
+  position:relative;z-index:1;width:100%;max-width:600px;
+  background:rgba(18,18,26,.97);border:1px solid var(--border);
+  border-bottom:none;border-radius:22px 22px 0 0;
+  padding:10px 18px calc(28px + var(--sab));
+  animation:sheet-up .3s cubic-bezier(.34,1.2,.64,1) forwards;
+}
+.note-handle { width:32px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 14px; }
+.note-title { font-size:.95rem;font-weight:700;margin-bottom:12px; }
+.note-input {
+  width:100%;background:rgba(255,255,255,.07);border:1px solid var(--border);
+  border-radius:10px;padding:11px 13px;color:var(--text);
+  font-size:16px;font-family:inherit;outline:none;resize:none;
+  color-scheme:dark;
+}
+.note-input:focus { border-color:var(--green); }
+.note-actions { display:flex;gap:10px;margin-top:12px; }
+.note-skip { flex:1;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:12px;padding:12px;color:var(--text2);font-size:.9rem;cursor:pointer;touch-action:manipulation; }
+.note-save { flex:2;background:var(--green);border:none;border-radius:12px;padding:12px;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;touch-action:manipulation; }
+
 /* ── Historique — tags source ── */
 .hist-source {
   display: inline-flex; align-items: center; gap: 3px;
@@ -2428,19 +2451,41 @@ async function downloadICS(){
 // HISTORY
 // ══════════════════════════════════════════
 function logTonte(){
-  const today=new Date().toISOString().split('T')[0];
-  const note=prompt('Note optionnelle (facultatif)','')??'';
-  // S'assurer que S.history est bien un tableau
-  if(!Array.isArray(S.history)) S.history=[];
-  S.history.unshift({date:today, note, source:'manual'});
+  const today = new Date().toISOString().split('T')[0];
+  // Modal natif — prompt() est bloqué sur iOS PWA standalone
+  const modal = document.createElement('div');
+  modal.className = 'note-modal';
+  modal.innerHTML = `
+    <div class="note-backdrop"></div>
+    <div class="note-sheet">
+      <div class="note-handle"></div>
+      <div class="note-title">✂️ Tonte du ${fmtDate(new Date(today+'T12:00'))}</div>
+      <textarea class="note-input" id="noteInput" rows="2"
+        placeholder="Note optionnelle (facultatif)…"></textarea>
+      <div class="note-actions">
+        <button class="note-skip" onclick="saveLogTonte('${today}','')">Sans note</button>
+        <button class="note-save" onclick="saveLogTonte('${today}', document.getElementById('noteInput').value)">Enregistrer ✓</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  // Focus sur le champ texte
+  setTimeout(()=>{ const inp = document.getElementById('noteInput'); if(inp) inp.focus(); }, 100);
+}
+
+function saveLogTonte(date, note){
+  // Fermer le modal
+  document.querySelectorAll('.note-modal').forEach(m => m.remove());
+  // S'assurer que S.history est un tableau
+  if(!Array.isArray(S.history)) S.history = [];
+  S.history.unshift({date, note: note||'', source:'manual'});
   // Sauvegarder dans localStorage ET Cloudflare KV
   safeSave('ln_hist', JSON.stringify(S.history));
   dbSave('ln_hist', S.history);
   // Mettre à jour la date sans déclencher le listener change
   _dateSetByCode = true;
-  safeSave('ln_date',today); S.lastDate=today;
-  $('lastDate').value=today;
-  setTimeout(()=>{ _dateSetByCode=false; }, 300);
+  safeSave('ln_date', date); S.lastDate = date;
+  $('lastDate').value = date;
+  setTimeout(()=>{ _dateSetByCode = false; }, 300);
   updateLawn();
   renderHistory();
   showToast('Tonte enregistrée ✓');
