@@ -1,7 +1,7 @@
 // LawnNotifier — Service Worker v10
 // IMPORTANT : changer CACHE_VERSION force le remplacement de l'ancien cache
 
-const CACHE_VERSION = 'lawnnotifier-v10';
+const CACHE_VERSION = 'lawnnotifier-v11';
 const BASE = self.registration.scope;
 
 const ASSETS = [
@@ -15,7 +15,7 @@ const ASSETS = [
 
 // ── Install : mise en cache des assets ──
 self.addEventListener('install', event => {
-  console.log('[SW] Install v10');
+  console.log('[SW] Install v11');
   event.waitUntil(
     caches.open(CACHE_VERSION).then(cache =>
       Promise.allSettled(ASSETS.map(url => cache.add(url)))
@@ -27,7 +27,7 @@ self.addEventListener('install', event => {
 
 // ── Activate : suppression FORCÉE de tous les vieux caches ──
 self.addEventListener('activate', event => {
-  console.log('[SW] Activate v10 — nettoyage des anciens caches');
+  console.log('[SW] Activate v11 — nettoyage des anciens caches');
   event.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(

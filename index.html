@@ -2106,7 +2106,7 @@ function runDiagnostic(){
         setDiag('SW',true,'Enregistré ✓ — '+state,'—','ok');
       } else {
         // Pas encore enregistré (premier chargement / délai) — tenter maintenant
-        navigator.serviceWorker.register('./sw.js',{scope:'./'})
+        navigator.serviceWorker.register('./sw.js?v=11',{scope:'./'})
           .then(reg=>{
             const state=reg.active?'actif':reg.installing?'installation…':'en attente';
             setDiag('SW',true,'Enregistré ✓ — '+state,'—','ok');
@@ -2869,7 +2869,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // ── Enregistrement Service Worker + restauration KV ──
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
-    navigator.serviceWorker.register('./sw.js?v=10',{scope:'./'})
+    navigator.serviceWorker.register('./sw.js?v=11',{scope:'./'})
       .then(r=>{
         console.log('[LawnNotifier] SW v10:',r.scope);
         r.update();

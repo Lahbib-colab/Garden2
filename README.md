@@ -2,7 +2,7 @@
 
 PWA de planification de tonte · iOS 27 Design · Météo · IA Claude
 
-**→ [Ouvrir l'app](https://TON_USER.github.io/lawnnotifier)**
+**→ [Ouvrir l'app](https://lahbib-colab.github.io/lawnnotifier)**
 
 ## Fonctionnalités
 
@@ -32,7 +32,7 @@ git init
 git add .
 git commit -m "🌿 LawnNotifier v9 — iOS 27 Design"
 
-git remote add origin https://github.com/TON_USER/lawnnotifier.git
+git remote add origin https://github.com/lahbib-colab/lawnnotifier.git
 git push -u origin main
 ```
 
@@ -45,7 +45,7 @@ Dans ton repo → **Settings** → **Pages** :
 
 L'app est live en ~2 min sur :
 ```
-https://TON_USER.github.io/lawnnotifier
+https://lahbib-colab.github.io/lawnnotifier
 ```
 
 ## Ajouter à l'écran d'accueil iPhone
