@@ -1406,7 +1406,7 @@ const S = {
   lastDate: safeGet('ln_date',''),
   freqDays: parseInt(safeGet('ln_freq','10')),
   schedule: [],
-  history:  safeGetJSON('ln_hist','[]'),
+  history:  (()=>{ const h=safeGetJSON('ln_hist',null); return Array.isArray(h)?h:[]; })(),
   checks:   safeGetJSON('ln_chk','{}'),
   wxUnit:   safeGet('ln_unit','C'),
   wxCache:  null,
@@ -2430,13 +2430,27 @@ async function downloadICS(){
 function logTonte(){
   const today=new Date().toISOString().split('T')[0];
   const note=prompt('Note optionnelle (facultatif)','')??'';
+  // S'assurer que S.history est bien un tableau
+  if(!Array.isArray(S.history)) S.history=[];
   S.history.unshift({date:today, note, source:'manual'});
+  // Sauvegarder dans localStorage ET Cloudflare KV
+  safeSave('ln_hist', JSON.stringify(S.history));
   dbSave('ln_hist', S.history);
+  // Mettre à jour la date sans déclencher le listener change
+  _dateSetByCode = true;
   safeSave('ln_date',today); S.lastDate=today;
-  $('lastDate').value=today; updateLawn(); renderHistory();
+  $('lastDate').value=today;
+  setTimeout(()=>{ _dateSetByCode=false; }, 300);
+  updateLawn();
+  renderHistory();
   showToast('Tonte enregistrée ✓');
 }
-function delHist(i){S.history.splice(i,1);safeSave('ln_hist',JSON.stringify(S.history));renderHistory();}
+function delHist(i){
+  S.history.splice(i,1);
+  safeSave('ln_hist', JSON.stringify(S.history));
+  dbSave('ln_hist', S.history);
+  renderHistory();
+}
 function renderHistory(){
   const list=$('histList');
   if(!S.history.length){
