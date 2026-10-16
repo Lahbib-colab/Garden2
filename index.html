@@ -356,6 +356,16 @@ html, body {
 .note-skip { flex:1;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:12px;padding:12px;color:var(--text2);font-size:.9rem;cursor:pointer;touch-action:manipulation; }
 .note-save { flex:2;background:var(--green);border:none;border-radius:12px;padding:12px;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;touch-action:manipulation; }
 
+/* ── HTCWeatherRainOverlay — Rain on Glass ── */
+.rain-glass-canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  opacity: 0; transition: opacity .6s ease;
+  z-index: 6; border-radius: var(--r);
+}
+.rain-glass-canvas.active { opacity: 1; }
+
 /* ── Historique — tags source ── */
 .hist-source {
   display: inline-flex; align-items: center; gap: 3px;
@@ -938,6 +948,8 @@ html, body {
           <div class="wx-cloud wx-cloud-3"></div>
         </div>
         <div class="wx-rain-overlay"></div>
+        <!-- HTCWeatherRainOverlay — composant isolé, activé uniquement en pluie/orage -->
+        <canvas id="rainGlassCanvas" class="rain-glass-canvas"></canvas>
         <div class="wx-mist"></div>
         <div class="wx-fog-layer"></div>
         <div class="wx-snow-layer" id="wxSnowLayer"></div>
@@ -1459,6 +1471,15 @@ html, body {
     </button>
   </div>
 
+  <!-- Test Rain on Glass -->
+  <button class="nt-test-btn" onclick="testRainGlass()" style="border-color:rgba(100,181,246,.4)">
+    <span class="nt-btn-icon">🌧️</span>
+    <div class="nt-btn-body">
+      <div class="nt-btn-t" style="color:#64b5f6">Tester Rain on Glass</div>
+      <div class="nt-btn-s">Active l'effet pluie sur la photo + essuie-glace</div>
+    </div>
+  </button>
+
   <div style="font-size:.72rem;color:var(--text3);line-height:1.55;padding:10px 12px;background:rgba(255,255,255,.03);border-radius:9px;margin-bottom:12px" id="ntHint">
     💡 Sur iPhone : l'app doit être ajoutée à l'écran d'accueil et les notifications autorisées dans Réglages → Notifications.
   </div>
@@ -1837,6 +1858,13 @@ function updateLawnWeather(){
 
   // 5. Démarrer les animations JS
   startWxAnimations(wxCls);
+
+  // 6. Rain on Glass — activé uniquement en pluie / orage
+  if (wxCls === 'wx-rain' || wxCls === 'wx-storm') {
+    HTCWeatherRainOverlay.activate();
+  } else {
+    HTCWeatherRainOverlay.deactivate();
+  }
 }
 
 // ══════════════════════════════════════════
@@ -3085,6 +3113,22 @@ function confirmReset(){
   setTimeout(()=>{ modal.querySelector('#resetCode').focus(); }, 100);
 }
 
+// Test Rain on Glass depuis le panneau de test
+function testRainGlass(){
+  closeNotifTest();
+  // Activer l'overlay + déclencher un passage d'essuie-glace après 1s
+  HTCWeatherRainOverlay.activate();
+  showToast('🌧 Rain on Glass activé — glisse vers Planifier');
+  setTimeout(() => HTCWeatherRainOverlay.triggerWiper(), 1200);
+  // Auto-désactiver après 15s si la météo n'est pas pluie/orage
+  setTimeout(() => {
+    const lawn = document.getElementById('lawn');
+    if (!lawn.classList.contains('wx-rain') && !lawn.classList.contains('wx-storm')) {
+      HTCWeatherRainOverlay.deactivate();
+    }
+  }, 15000);
+}
+
 function closeResetModal(){
   document.getElementById('resetModal')?.remove();
 }
@@ -3280,6 +3324,175 @@ document.addEventListener('DOMContentLoaded', function(){
     if(sub && S.schedule.length) scheduleServerPush().catch(()=>{});
   }, 1500);
 });
+
+// ── HTCWeatherRainOverlay — Rain on Glass (composant isolé) ────────
+const HTCWeatherRainOverlay = (() => {
+  const CVS = document.getElementById('rainGlassCanvas');
+  const CTX = CVS ? CVS.getContext('2d') : null;
+  if (!CVS || !CTX) return { activate:()=>{}, deactivate:()=>{}, triggerWiper:()=>{} };
+
+  const CFG = {
+    maxDrops: 55, spawnRate: 0.18, gravity: 0.07, gravityVariance: 0.06,
+    minSize: 3, maxSize: 11, wobble: 0.9, trailOpacity: 0.35,
+    condensation: 18, wiperDuration: 1400, wiperPause: 3200,
+    wiperColor: 'rgba(255,255,255,0.18)', wiperWidth: 12, autoWiper: true,
+  };
+
+  let drops = [], condensDrops = [], raf = null, active = false, W = 0, H = 0;
+  let wiper = { sweeping: false, dir: 1, progress: 0, autoTimer: null };
+
+  function resize() {
+    const r = window.devicePixelRatio || 1;
+    const rect = CVS.parentElement.getBoundingClientRect();
+    W = rect.width; H = rect.height;
+    CVS.width = W * r; CVS.height = H * r;
+    CVS.style.width = W + 'px'; CVS.style.height = H + 'px';
+    CTX.setTransform(1, 0, 0, 1, 0, 0);
+    CTX.scale(r, r);
+    initCondensation();
+  }
+
+  function initCondensation() {
+    condensDrops = [];
+    for (let i = 0; i < CFG.condensation; i++) {
+      condensDrops.push({
+        x: Math.random() * W, y: Math.random() * H * 0.85,
+        r: 0.8 + Math.random() * 2.5, a: 0.15 + Math.random() * 0.25, wiped: false,
+      });
+    }
+  }
+
+  function spawnDrop() {
+    const r = CFG.minSize + Math.random() * (CFG.maxSize - CFG.minSize);
+    drops.push({
+      x: Math.random() * W, y: -r, r,
+      vx: (Math.random() - 0.5) * CFG.wobble,
+      vy: CFG.gravity + Math.random() * CFG.gravityVariance,
+      trail: [], alpha: 0.55 + Math.random() * 0.35, wiped: false,
+    });
+  }
+
+  function drawDrop(d) {
+    if (d.trail.length > 1) {
+      CTX.save();
+      CTX.strokeStyle = 'rgba(180,210,255,' + (CFG.trailOpacity * d.alpha) + ')';
+      CTX.lineWidth = d.r * 0.55; CTX.lineCap = 'round';
+      CTX.beginPath(); CTX.moveTo(d.trail[0].x, d.trail[0].y);
+      for (let i = 1; i < d.trail.length; i++) CTX.lineTo(d.trail[i].x, d.trail[i].y);
+      CTX.stroke(); CTX.restore();
+    }
+    const grd = CTX.createRadialGradient(
+      d.x - d.r * 0.3, d.y - d.r * 0.3, d.r * 0.05, d.x, d.y, d.r);
+    grd.addColorStop(0,   'rgba(255,255,255,' + (d.alpha * 0.9) + ')');
+    grd.addColorStop(0.4, 'rgba(180,220,255,' + (d.alpha * 0.55) + ')');
+    grd.addColorStop(1,   'rgba(80,140,220,' + (d.alpha * 0.20) + ')');
+    CTX.save();
+    CTX.beginPath();
+    CTX.ellipse(d.x, d.y + d.r * 0.2, d.r * 0.85, d.r, 0, 0, Math.PI * 2);
+    CTX.fillStyle = grd; CTX.fill();
+    CTX.beginPath();
+    CTX.ellipse(d.x - d.r * 0.28, d.y - d.r * 0.22, d.r * 0.3, d.r * 0.18, -0.4, 0, Math.PI * 2);
+    CTX.fillStyle = 'rgba(255,255,255,' + (d.alpha * 0.65) + ')'; CTX.fill();
+    CTX.restore();
+  }
+
+  function drawCondensation() {
+    condensDrops.forEach(c => {
+      if (c.wiped) return;
+      const grd = CTX.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.r);
+      grd.addColorStop(0, 'rgba(255,255,255,' + c.a + ')');
+      grd.addColorStop(1, 'rgba(160,200,255,' + (c.a * 0.3) + ')');
+      CTX.beginPath(); CTX.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+      CTX.fillStyle = grd; CTX.fill();
+    });
+  }
+
+  function drawWiper() {
+    if (!wiper.sweeping) return;
+    const cx = 0, cy = H * 1.05, arm = Math.hypot(W * 1.1, H);
+    const angleStart = -0.05, angleEnd = 1.32;
+    const angle = wiper.dir > 0
+      ? angleStart + wiper.progress * (angleEnd - angleStart)
+      : angleEnd - wiper.progress * (angleEnd - angleStart);
+    const x2 = cx + Math.cos(angle) * arm;
+    const y2 = cy - Math.sin(angle) * arm;
+    CTX.save();
+    CTX.strokeStyle = CFG.wiperColor;
+    CTX.lineWidth = CFG.wiperWidth + 8; CTX.lineCap = 'round';
+    CTX.beginPath(); CTX.moveTo(cx, cy); CTX.lineTo(x2, y2); CTX.stroke();
+    CTX.strokeStyle = 'rgba(255,255,255,0.22)';
+    CTX.lineWidth = CFG.wiperWidth;
+    CTX.shadowColor = 'rgba(255,255,255,0.35)'; CTX.shadowBlur = 6;
+    CTX.stroke(); CTX.restore();
+  }
+
+  function wipeAtAngle(angle) {
+    const cx = 0, cy = H * 1.05, margin = 0.13;
+    drops.forEach(d => {
+      if (d.wiped) return;
+      if (Math.abs(Math.atan2(cy - d.y, d.x - cx) - angle) < margin)
+        { d.wiped = true; d.trail = []; }
+    });
+    condensDrops.forEach(c => {
+      if (c.wiped) return;
+      if (Math.abs(Math.atan2(cy - c.y, c.x - cx) - angle) < margin) c.wiped = true;
+    });
+  }
+
+  function triggerWiper() {
+    if (wiper.sweeping || !active) return;
+    wiper.sweeping = true; wiper.progress = 0;
+    const start = performance.now();
+    function step(now) {
+      if (!active) { wiper.sweeping = false; return; }
+      wiper.progress = Math.min(1, (now - start) / CFG.wiperDuration);
+      const a = wiper.dir > 0
+        ? -0.05 + wiper.progress * 1.37
+        : 1.32 - wiper.progress * 1.37;
+      wipeAtAngle(a);
+      if (wiper.progress < 1) requestAnimationFrame(step);
+      else {
+        wiper.sweeping = false; wiper.dir *= -1;
+        setTimeout(() => { if (active) initCondensation(); }, 500);
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  function loop() {
+    if (!active) return;
+    raf = requestAnimationFrame(loop);
+    CTX.clearRect(0, 0, W, H);
+    if (drops.length < CFG.maxDrops && Math.random() < CFG.spawnRate) spawnDrop();
+    drops = drops.filter(d => {
+      if (d.wiped) return false;
+      d.trail.push({ x: d.x, y: d.y });
+      if (d.trail.length > 8) d.trail.shift();
+      d.x += d.vx + Math.sin(d.y * 0.04) * 0.3;
+      d.y += d.vy; d.vy = Math.min(d.vy + 0.012, 2.2);
+      return d.y < H + d.r * 2;
+    });
+    drawCondensation();
+    drops.forEach(drawDrop);
+    drawWiper();
+  }
+
+  function activate() {
+    if (active) return;
+    active = true; resize(); CVS.classList.add('active'); loop();
+    if (CFG.autoWiper) wiper.autoTimer = setInterval(triggerWiper, CFG.wiperPause);
+  }
+
+  function deactivate() {
+    active = false; CVS.classList.remove('active');
+    if (raf) { cancelAnimationFrame(raf); raf = null; }
+    clearInterval(wiper.autoTimer); drops = []; wiper.sweeping = false;
+    CTX.clearRect(0, 0, W, H);
+  }
+
+  new ResizeObserver(() => { if (active) resize(); }).observe(CVS.parentElement);
+  return { activate, deactivate, triggerWiper };
+})();
 </script>
 </body>
 </html>
