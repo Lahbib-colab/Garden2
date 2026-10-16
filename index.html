@@ -141,6 +141,35 @@ html, body {
   object-fit: cover; object-position: center 62%;
   filter: saturate(1.1) brightness(.9);
   transition: filter 1.5s ease;
+  z-index: 1;          /* toujours visible en dessous de tout */
+  will-change: filter; /* optimisation GPU pour les transitions */
+}
+
+/* ── Image météo PNG flottante ── */
+.wx-img {
+  position: absolute; z-index: 4; pointer-events: none;
+  width: 90px; opacity: 0;
+  transition: opacity .8s ease, transform .8s ease;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.4));
+  transform: translateY(6px);
+  animation: wx-float 4s ease-in-out infinite alternate;
+}
+.wx-img.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* Positions selon le type */
+.wx-img-sun   { top:10px; right:14px; width:80px; }
+.wx-img-cloud { top:8px;  right:10px; width:96px; }
+.wx-img-rain  { top:6px;  right:8px;  width:100px; }
+.wx-img-storm { top:4px;  right:6px;  width:110px; }
+.wx-img-fog   { top:10px; right:8px;  width:100px; opacity:.0; }
+.wx-img-fog.visible { opacity:.85; }
+.wx-img-snow  { top:8px;  right:10px; width:96px; }
+
+@keyframes wx-float {
+  from { transform: translateY(0px) rotate(-1deg); }
+  to   { transform: translateY(-6px) rotate(1deg); }
 }
 /* Teinture dynamique selon météo */
 .lawn.wx-rain  .lawn-photo { filter: saturate(.85) brightness(.72) hue-rotate(10deg); }
@@ -156,6 +185,26 @@ html, body {
   transition: background 1s;
 }
 .lawn.wx-storm .lawn-vignette { background: linear-gradient(180deg,rgba(0,0,20,.3),transparent 35%,rgba(0,0,0,.6) 100%); }
+
+/* ── Z-index stacking du lawn — ordre fixe ── */
+/* z1: photo | z2: wx-canvas | z3: wx-overlays | z4: wx-img PNG | z5: rain-glass | z6: UI badges */
+.lawn-vignette      { z-index: 2; }
+.wx-sun-halo        { z-index: 3; }
+.wx-sun-rays        { z-index: 3; }
+.wx-cloud-layer     { z-index: 3; }
+.wx-rain-overlay    { z-index: 3; }
+.wx-mist            { z-index: 3; }
+.wx-fog-layer       { z-index: 3; }
+.wx-snow-layer      { z-index: 3; }
+.wx-snow-ground     { z-index: 3; }
+.wx-leaf-layer      { z-index: 3; }
+.wx-lightning       { z-index: 3; }
+.rain-glass-canvas  { z-index: 5; }
+.lawn-wx            { z-index: 6; }
+.lawn-badge         { z-index: 6; }
+.ring               { z-index: 6; }
+.lawn-next-badge    { z-index: 6; }
+.rain-test-btn      { z-index: 7; }
 
 /* ── Canvas animations météo ── */
 .wx-canvas {
@@ -355,6 +404,18 @@ html, body {
 .note-actions { display:flex;gap:10px;margin-top:12px; }
 .note-skip { flex:1;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:12px;padding:12px;color:var(--text2);font-size:.9rem;cursor:pointer;touch-action:manipulation; }
 .note-save { flex:2;background:var(--green);border:none;border-radius:12px;padding:12px;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;touch-action:manipulation; }
+
+/* ── Bouton test pluie sur la photo ── */
+.rain-test-btn {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(0,0,0,.35); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 50%; width: 32px; height: 32px;
+  font-size: .95rem; cursor: pointer; z-index: 7;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: manipulation; transition: background .15s;
+}
+.rain-test-btn:active { background: rgba(100,181,246,.35); }
 
 /* ── HTCWeatherRainOverlay — Rain on Glass ── */
 .rain-glass-canvas {
@@ -948,6 +1009,16 @@ html, body {
           <div class="wx-cloud wx-cloud-3"></div>
         </div>
         <div class="wx-rain-overlay"></div>
+
+
+
+        <!-- Images météo PNG flottantes -->
+        <img class="wx-img wx-img-sun" id="wxImgSun" src="./wx-sun.png" alt="sun">
+        <img class="wx-img wx-img-cloud" id="wxImgCloud" src="./wx-cloud.png" alt="cloud">
+        <img class="wx-img wx-img-rain" id="wxImgRain" src="./wx-rain.png" alt="rain">
+        <img class="wx-img wx-img-storm" id="wxImgStorm" src="./wx-storm.png" alt="storm">
+        <img class="wx-img wx-img-fog" id="wxImgFog" src="./wx-fog.png" alt="fog">
+        <img class="wx-img wx-img-snow" id="wxImgSnow" src="./wx-snow.png" alt="snow">
         <!-- HTCWeatherRainOverlay — composant isolé, activé uniquement en pluie/orage -->
         <canvas id="rainGlassCanvas" class="rain-glass-canvas"></canvas>
         <div class="wx-mist"></div>
@@ -966,6 +1037,11 @@ html, body {
             <div class="lawn-wx-city" id="lawnWxCity">—</div>
           </div>
         </div>
+
+        <!-- Bouton test Rain on Glass (coin haut-droite, discret) -->
+        <button class="rain-test-btn" id="rainTestBtn" onclick="testRainGlass()" title="Tester la pluie">
+          🌧
+        </button>
 
         <!-- Badge statut tonte (haut centre) -->
         <div class="lawn-badge" id="lawnBadge">— Entrez votre dernière tonte</div>
@@ -1471,15 +1547,6 @@ html, body {
     </button>
   </div>
 
-  <!-- Test Rain on Glass -->
-  <button class="nt-test-btn" onclick="testRainGlass()" style="border-color:rgba(100,181,246,.4)">
-    <span class="nt-btn-icon">🌧️</span>
-    <div class="nt-btn-body">
-      <div class="nt-btn-t" style="color:#64b5f6">Tester Rain on Glass</div>
-      <div class="nt-btn-s">Active l'effet pluie sur la photo + essuie-glace</div>
-    </div>
-  </button>
-
   <div style="font-size:.72rem;color:var(--text3);line-height:1.55;padding:10px 12px;background:rgba(255,255,255,.03);border-radius:9px;margin-bottom:12px" id="ntHint">
     💡 Sur iPhone : l'app doit être ajoutée à l'écran d'accueil et les notifications autorisées dans Réglages → Notifications.
   </div>
@@ -1864,6 +1931,35 @@ function updateLawnWeather(){
     HTCWeatherRainOverlay.activate();
   } else {
     HTCWeatherRainOverlay.deactivate();
+  }
+
+  // 7. Afficher l'image météo PNG correspondante
+  showWxImage(wxCls);
+}
+
+// Contrôleur d'image météo PNG flottante
+function showWxImage(wxCls) {
+  // Mapping wx-class → id de l'image
+  const map = {
+    'wx-sun':   'wxImgSun',
+    'wx-cloud': 'wxImgCloud',
+    'wx-rain':  'wxImgRain',
+    'wx-storm': 'wxImgStorm',
+    'wx-fog':   'wxImgFog',
+    'wx-snow':  'wxImgSnow',
+  };
+  // Cacher toutes
+  Object.values(map).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('visible');
+  });
+  // Afficher la bonne après un court délai (transition CSS)
+  const targetId = map[wxCls];
+  if (targetId) {
+    setTimeout(() => {
+      const el = document.getElementById(targetId);
+      if (el) el.classList.add('visible');
+    }, 200);
   }
 }
 
