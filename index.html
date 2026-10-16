@@ -141,32 +141,29 @@ html, body {
   object-fit: cover; object-position: center 62%;
   filter: saturate(1.1) brightness(.9);
   transition: filter 1.5s ease;
-  z-index: 1;          /* toujours visible en dessous de tout */
-  will-change: filter; /* optimisation GPU pour les transitions */
+  /* PAS de will-change ni z-index — crée un stacking context parasite */
 }
 
 /* ── Image météo PNG flottante ── */
+/* IMPORTANT : pas d'animation sur cet élément — crée un stacking context
+   qui interfère avec les badges .lawn-wx et .lawn-next-badge */
 .wx-img {
-  position: absolute; z-index: 4; pointer-events: none;
-  width: 90px; opacity: 0;
-  transition: opacity .8s ease, transform .8s ease;
+  position: absolute;
+  pointer-events: none;
+  width: 90px;
+  opacity: 0;
+  transition: opacity .8s ease;
   filter: drop-shadow(0 4px 12px rgba(0,0,0,.4));
-  transform: translateY(6px);
-  animation: wx-float 4s ease-in-out infinite alternate;
+  /* L'animation float est appliquée uniquement quand visible, via une classe */
 }
-.wx-img.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-/* Positions selon le type */
+.wx-img.visible { opacity: 1; animation: wx-float 4s ease-in-out infinite alternate; }
 .wx-img-sun   { top:10px; right:14px; width:80px; }
 .wx-img-cloud { top:8px;  right:10px; width:96px; }
 .wx-img-rain  { top:6px;  right:8px;  width:100px; }
 .wx-img-storm { top:4px;  right:6px;  width:110px; }
-.wx-img-fog   { top:10px; right:8px;  width:100px; opacity:.0; }
+.wx-img-fog   { top:10px; right:8px;  width:100px; }
 .wx-img-fog.visible { opacity:.85; }
 .wx-img-snow  { top:8px;  right:10px; width:96px; }
-
 @keyframes wx-float {
   from { transform: translateY(0px) rotate(-1deg); }
   to   { transform: translateY(-6px) rotate(1deg); }
@@ -186,25 +183,9 @@ html, body {
 }
 .lawn.wx-storm .lawn-vignette { background: linear-gradient(180deg,rgba(0,0,20,.3),transparent 35%,rgba(0,0,0,.6) 100%); }
 
-/* ── Z-index stacking du lawn — ordre fixe ── */
-/* z1: photo | z2: wx-canvas | z3: wx-overlays | z4: wx-img PNG | z5: rain-glass | z6: UI badges */
-.lawn-vignette      { z-index: 2; }
-.wx-sun-halo        { z-index: 3; }
-.wx-sun-rays        { z-index: 3; }
-.wx-cloud-layer     { z-index: 3; }
-.wx-rain-overlay    { z-index: 3; }
-.wx-mist            { z-index: 3; }
-.wx-fog-layer       { z-index: 3; }
-.wx-snow-layer      { z-index: 3; }
-.wx-snow-ground     { z-index: 3; }
-.wx-leaf-layer      { z-index: 3; }
-.wx-lightning       { z-index: 3; }
-.rain-glass-canvas  { z-index: 5; }
-.lawn-wx            { z-index: 6; }
-.lawn-badge         { z-index: 6; }
-.ring               { z-index: 6; }
-.lawn-next-badge    { z-index: 6; }
-.rain-test-btn      { z-index: 7; }
+/* ── Z-index stacking du lawn ── */
+/* Tous les éléments enfants de .lawn sont position:absolute,
+   donc z-index fonctionne dans le stacking context de .lawn (position:relative) */
 
 /* ── Canvas animations météo ── */
 .wx-canvas {
@@ -423,7 +404,8 @@ html, body {
   width: 100%; height: 100%;
   pointer-events: none;
   opacity: 0; transition: opacity .6s ease;
-  z-index: 6; border-radius: var(--r);
+  z-index: 4; /* sous les badges z-index:10 de .lawn-wx et .lawn-next-badge */
+  border-radius: var(--r);
 }
 .rain-glass-canvas.active { opacity: 1; }
 
