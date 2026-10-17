@@ -321,63 +321,111 @@ html, body {
 .lawn.wx-storm .wx-lightning { display:block; }
 
 /* ── Widget Liquid Glass météo — AGRANDI ── */
-/* ── Variables communes Liquid Glass badges ── */
-:root {
-  --lg-bg:     rgba(0,0,0,.35);
-  --lg-border: rgba(255,255,255,.22);
-  --lg-blur:   blur(40px) saturate(180%);
-  --lg-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 4px 20px rgba(0,0,0,.35);
-  --lg-r:      16px;
-  --lg-pad:    8px 13px;
+/* ══ WIDGET UNIFIÉ LIQUID GLASS ══
+   Un seul panneau bas de photo, iOS 27 style
+   ──────────────────────────────────────────── */
+.lawn-widget {
+  position: absolute; bottom: 10px; left: 10px; right: 10px;
+  display: none; align-items: stretch;
+  background: rgba(0,0,0,.38);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 20px;
+  backdrop-filter: blur(50px) saturate(200%);
+  -webkit-backdrop-filter: blur(50px) saturate(200%);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255,255,255,.3),
+    inset 0 -1px 0 rgba(0,0,0,.2),
+    0 8px 32px rgba(0,0,0,.45);
+  overflow: hidden;
+  z-index: 10;
+  transition: opacity .4s ease;
 }
 
-/* ── Météo bas gauche — sans emoji (l'image PNG le remplace) ── */
-.lawn-wx {
-  position: absolute; bottom: 12px; left: 12px;
-  display: none; align-items: flex-end; gap: 0;
-  background: var(--lg-bg);
-  border: 1px solid var(--lg-border);
-  border-radius: var(--lg-r); padding: var(--lg-pad);
-  backdrop-filter: var(--lg-blur);
-  -webkit-backdrop-filter: var(--lg-blur);
-  box-shadow: var(--lg-shadow);
-  z-index: 10; max-width: 48%;
+/* Reflet spéculaire haut */
+.lawn-widget::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none; border-radius: 20px 20px 0 0;
 }
-/* Emoji caché — remplacé par l'image PNG flottante */
-.lawn-wx-emoji { display: none; }
-.lawn-wx-body  { display: flex; flex-direction: column; gap: 1px; }
-.lawn-wx-temp  {
-  font-size: 1.45rem; font-weight: 200; color: #fff;
-  line-height: 1; letter-spacing: -.04em;
-}
-.lawn-wx-desc  { font-size: .68rem; color: rgba(255,255,255,.85); font-weight: 500; }
-.lawn-wx-city  { font-size: .6rem;  color: rgba(255,255,255,.6);  font-weight: 400; }
 
-/* ── Prochaine tonte bas droite — harmonisé ── */
-.lawn-next-badge {
-  position: absolute; bottom: 12px; right: 12px; z-index: 10;
-  display: flex; align-items: center; gap: 8px;
-  background: var(--lg-bg);
-  border: 1px solid var(--lg-border);
-  border-radius: var(--lg-r); padding: var(--lg-pad);
-  backdrop-filter: var(--lg-blur);
-  -webkit-backdrop-filter: var(--lg-blur);
-  box-shadow: var(--lg-shadow);
-  transition: background .3s, border-color .3s;
-  max-width: 48%;
+/* Colonne météo — gauche */
+.lw-weather {
+  flex: 1; padding: 11px 14px 11px 16px;
+  display: flex; flex-direction: column; justify-content: center; gap: 1px;
 }
-.lawn-next-badge.urgent { background: rgba(255,69,58,.25);  border-color: rgba(255,69,58,.4); }
-.lawn-next-badge.soon   { background: rgba(255,214,10,.2);  border-color: rgba(255,214,10,.4); }
-.lawn-next-badge.ok     { background: rgba(48,209,88,.2);   border-color: rgba(48,209,88,.38); }
-.lawn-next-icon  { font-size: 1.2rem; line-height: 1; flex-shrink: 0; }
-.lawn-next-body  { display: flex; flex-direction: column; gap: 1px; }
-.lawn-next-label { font-size: .56rem; font-weight: 600; color: rgba(255,255,255,.6);
-                   letter-spacing: .05em; text-transform: uppercase; }
-.lawn-next-date  { font-size: .82rem; font-weight: 700; color: #fff; line-height: 1.2; }
-.lawn-next-days  { font-size: .67rem; font-weight: 600; color: rgba(255,255,255,.7); }
-.lawn-next-badge.urgent .lawn-next-days { color: #ff6b63; }
-.lawn-next-badge.soon   .lawn-next-days { color: #ffd60a; }
-.lawn-next-badge.ok     .lawn-next-days { color: #4cd964; }
+.lw-temp {
+  font-size: 2rem; font-weight: 100; color: #fff;
+  line-height: 1; letter-spacing: -.06em;
+}
+.lw-desc {
+  font-size: .72rem; font-weight: 500;
+  color: rgba(255,255,255,.82); margin-top: 1px;
+}
+.lw-city {
+  font-size: .6rem; font-weight: 400;
+  color: rgba(255,255,255,.5);
+}
+
+/* Conseil tonte — inline sous météo */
+.lw-conseil {
+  display: flex; align-items: center; gap: 5px; margin-top: 5px;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 12px; padding: 3px 8px;
+  width: fit-content;
+}
+.lw-conseil.hidden { display: none; }
+.lw-conseil-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  background: #30d158;
+}
+.lw-conseil-dot.wait { background: #ffd60a; }
+.lw-conseil-dot.stop { background: #ff453a; }
+.lw-conseil-txt {
+  font-size: .61rem; font-weight: 600;
+  color: rgba(255,255,255,.88); white-space: nowrap;
+}
+
+/* Séparateur vertical */
+.lw-sep {
+  width: 1px;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,.2) 30%,
+    rgba(255,255,255,.2) 70%,
+    rgba(255,255,255,0) 100%);
+  flex-shrink: 0; margin: 10px 0;
+}
+
+/* Colonne prochaine tonte — droite */
+.lw-next {
+  flex: 1.1; padding: 11px 16px 11px 14px;
+  display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  transition: background .3s;
+}
+.lw-next.hidden { display: none; }
+.lw-next.urgent { background: rgba(255,69,58,.15); }
+.lw-next.soon   { background: rgba(255,214,10,.12); }
+.lw-next.ok     { background: rgba(48,209,88,.12); }
+.lw-next-label {
+  font-size: .52rem; font-weight: 700; letter-spacing: .06em;
+  color: rgba(255,255,255,.55); text-transform: uppercase;
+}
+.lw-next-date {
+  font-size: .95rem; font-weight: 700; color: #fff;
+  line-height: 1.2; letter-spacing: -.01em;
+}
+.lw-next-days {
+  font-size: .7rem; font-weight: 600;
+  color: rgba(255,255,255,.65);
+}
+.lw-next.urgent .lw-next-days { color: #ff6b63; }
+.lw-next.soon   .lw-next-days { color: #ffd60a; }
+.lw-next.ok     .lw-next-days { color: #4cd964; }
+
+/* ── Alignement vertical badges bas (legacy, conservé pour ring) ── */
+.lawn-next-badge, .lawn-wx-body, .lawn-wx-emoji { display: none !important; }
 
 /* ── Modal note tonte (remplace prompt() bloqué sur iOS PWA) ── */
 .note-modal { position:fixed;inset:0;z-index:300;display:flex;align-items:flex-end;justify-content:center; }
@@ -510,10 +558,8 @@ html, body {
   z-index:10;
 }
 
-/* ── Alignement vertical badges bas ── */
-/* Les deux badges partagent bottom:12px et même min-height → même ligne */
-.lawn-wx,
-.lawn-next-badge { min-height: 56px; }
+/* ── Anciens badges (conservés pour compatibilité JS, cachés) ── */
+.lawn-next-badge { display: none !important; }
 
 /* Onboarding */
 .lawn-onboard {
@@ -1078,27 +1124,11 @@ html, body {
         <div class="wx-leaf-layer" id="wxLeafLayer"></div>
         <div class="wx-lightning" id="wxLightning"></div>
 
-        <!-- Conseil météo tonte (haut gauche, Liquid Glass) -->
-        <div class="lawn-conseil hidden" id="lawnConseil">
-          <span class="lawn-conseil-dot" id="lawnConseilDot"></span>
-          <span class="lawn-conseil-txt" id="lawnConseilTxt">—</span>
-        </div>
+        <!-- Badge statut (haut centre) - gardé pour onboarding uniquement -->
+        <div class="lawn-badge" id="lawnBadge" style="display:none">— Entrez votre dernière tonte</div>
 
-        <!-- Liquid Glass météo widget (bas gauche) -->
-        <div class="lawn-wx" id="lawnWx">
-          <div class="lawn-wx-emoji" id="lawnWxEmoji">—</div>
-          <div class="lawn-wx-body">
-            <div class="lawn-wx-temp" id="lawnWxTemp">—°</div>
-            <div class="lawn-wx-desc" id="lawnWxDesc">—</div>
-            <div class="lawn-wx-city" id="lawnWxCity">—</div>
-          </div>
-        </div>
-
-        <!-- Badge statut tonte (haut centre) -->
-        <div class="lawn-badge" id="lawnBadge">— Entrez votre dernière tonte</div>
-
-        <!-- Ring (bas droite) -->
-        <div class="ring" id="ring">
+        <!-- Ring (caché - logique conservée) -->
+        <div class="ring" id="ring" style="display:none">
           <svg viewBox="0 0 50 50">
             <circle cx="25" cy="25" r="21" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="3.5"/>
             <circle cx="25" cy="25" r="21" fill="none" stroke="#fff" stroke-width="3.5"
@@ -1107,15 +1137,36 @@ html, body {
           <div class="ring-ctr"><span id="ringNum">0</span><span class="ring-lbl">jours</span></div>
         </div>
 
-        <!-- Prochaine tonte — badge Liquid Glass (bas droite) -->
-        <div class="lawn-next-badge hidden" id="lawnNextBadge">
-          <div class="lawn-next-icon">✂️</div>
-          <div class="lawn-next-body">
-            <div class="lawn-next-label">Prochaine tonte</div>
-            <div class="lawn-next-date" id="lawnNextDate">—</div>
-            <div class="lawn-next-days" id="lawnNextDays">—</div>
+        <!-- ══ WIDGET UNIFIÉ Liquid Glass ══
+             Un seul panneau bas de photo : météo + conseil + prochaine tonte -->
+        <div class="lawn-widget" id="lawnWx">
+
+          <!-- Colonne gauche : météo -->
+          <div class="lw-weather">
+            <div class="lw-temp" id="lawnWxTemp">—°</div>
+            <div class="lw-desc" id="lawnWxDesc">—</div>
+            <div class="lw-city" id="lawnWxCity">—</div>
+            <!-- Conseil inline sous la météo -->
+            <div class="lw-conseil hidden" id="lawnConseil">
+              <span class="lw-conseil-dot" id="lawnConseilDot"></span>
+              <span class="lw-conseil-txt" id="lawnConseilTxt">—</span>
+            </div>
           </div>
+
+          <!-- Séparateur vertical -->
+          <div class="lw-sep"></div>
+
+          <!-- Colonne droite : prochaine tonte -->
+          <div class="lw-next hidden" id="lawnNextBadge">
+            <div class="lw-next-label">PROCHAINE TONTE</div>
+            <div class="lw-next-date" id="lawnNextDate">—</div>
+            <div class="lw-next-days" id="lawnNextDays">—</div>
+          </div>
+
         </div>
+
+        <!-- Emoji météo caché (logique JS conservée) -->
+        <div id="lawnWxEmoji" style="display:none">—</div>
 
         <!-- Onboarding -->
         <div class="lawn-onboard" id="onboard">
@@ -1967,7 +2018,7 @@ function updateLawnWeather(){
   const desc  = (WX_DESC && WX_DESC[code]) || '—';
   const wxCls = getWxClass(code);
 
-  // 3. Mettre à jour le widget Liquid Glass
+  // 3. Mettre à jour le widget unifié
   const wx = $('lawnWx');
   if(wx){
     wx.style.display = 'flex';
@@ -2230,9 +2281,9 @@ function updateLawnNextBadge(next){
   // Date formatée
   if(dateEl) dateEl.textContent = fmtDate(next.date);
 
-  // Jours restants + couleur urgence
+  // Jours restants + couleur urgence — nouveau widget lw-next
   const diff = next.diff;
-  badge.className = 'lawn-next-badge';
+  badge.className = 'lw-next'; // classe de base du nouveau widget
   if(diff === 0){
     badge.classList.add('urgent');
     if(daysEl) daysEl.textContent = "Aujourd'hui !";
