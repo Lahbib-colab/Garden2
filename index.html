@@ -2020,40 +2020,12 @@ function switchTab(name){
   else{logo.style.display='';page.style.display='none';}
   // Side effects
   if(name==='weather'){
-    const savedLat  = safeGet('ln_wx_lat','');
-    const savedLon  = safeGet('ln_wx_lon','');
+    // Restaurer la ville dans le champ
     const savedCity = safeGet('ln_wx_city','');
     const inp = $('wxCityInput');
     if(inp && savedCity) inp.value = savedCity;
-
-    // Flag : S.wxLoaded = true dès le premier affichage réussi
-    // On ne recharge jamais si les données sont déjà là
-    if(S.wxLoaded && S.wxCache){
-      showWxEl('wxContent'); // réafficher le contenu sans recharger
-      return;
-    }
-
-    // Données en cache récentes (< 3h) → afficher immédiatement, refresh silencieux
-    const cached = safeGetJSON('ln_wx_widget', null);
-    const cacheAge = cached?._savedAt ? Date.now() - cached._savedAt : Infinity;
-    if(cached?.current && cacheAge < 3*60*60*1000){
-      S.wxCache = cached; S.wxCacheCity = cached._city || savedCity;
-      renderWeather(cached, S.wxCacheCity); // pas de loader
-      updateLawnWeather();
-      S.wxLoaded = true;
-      // Refresh silencieux en arrière-plan SANS loader visible
-      if(savedLat && savedLon){
-        _silentRefresh(parseFloat(savedLat), parseFloat(savedLon), savedCity||null);
-      }
-      return;
-    }
-
-    // Pas de cache → charger normalement (avec loader)
-    if(savedLat && savedLon){
-      fetchWeatherByCoords(parseFloat(savedLat), parseFloat(savedLon), savedCity||null);
-    } else {
-      loadWeather();
-    }
+    // Toujours appeler initWeatherPane — elle gère elle-même le cache/reload
+    setTimeout(initWeatherPane, 0);
   }
   if(name==='settings')updatePushUI();
 }
@@ -3458,7 +3430,53 @@ function showWxEl(id){['wxLoad','wxErr','wxContent'].forEach(i=>$(i).classList.a
 
 // ── Chargement météo par coordonnées ──────────────────────────
 // Rafraîchissement silencieux — AUCUN loader, AUCUNE perturbation de l'UI
-// Réinitialiser le flag météo quand on change de ville
+// ── Initialisation du panneau météo ─────────────────────────────────
+// Appelé à chaque switchTab('weather'). Gère cache, refresh, et loader.
+function initWeatherPane(){
+  const savedLat  = safeGet('ln_wx_lat','');
+  const savedLon  = safeGet('ln_wx_lon','');
+  const savedCity = safeGet('ln_wx_city','');
+
+  // Cas 1 : données déjà en mémoire + affichées → juste s'assurer que wxContent est visible
+  if(S.wxCache && S.wxLoaded){
+    showWxEl('wxContent');
+    return;
+  }
+
+  // Cas 2 : cache localStorage récent (< 6h) → afficher immédiatement
+  const cached  = safeGetJSON('ln_wx_widget', null);
+  const cacheOk = cached?.current &&
+                  cached._savedAt &&
+                  (Date.now() - cached._savedAt) < 6 * 60 * 60 * 1000;
+
+  if(cacheOk){
+    S.wxCache     = cached;
+    S.wxCacheCity = cached._city || savedCity;
+    // Mettre à jour input
+    const inp = $('wxCityInput');
+    if(inp && S.wxCacheCity) inp.value = S.wxCacheCity;
+    // Afficher le contenu sans aucun loader
+    renderWeather(cached, S.wxCacheCity);
+    updateLawnWeather();
+    S.wxLoaded = true;
+    // Refresh silencieux si les coords sont disponibles
+    if(savedLat && savedLon){
+      _silentRefresh(parseFloat(savedLat), parseFloat(savedLon), savedCity || null);
+    }
+    return;
+  }
+
+  // Cas 3 : pas de cache → charger avec les coords mémorisées
+  if(savedLat && savedLon){
+    fetchWeatherByCoords(parseFloat(savedLat), parseFloat(savedLon), savedCity || null);
+    return;
+  }
+
+  // Cas 4 : aucune information → afficher le formulaire de recherche vide
+  showWxEl('wxSearch');
+}
+
+// Réinitialiser quand on change de ville (force un rechargement au prochain switchTab)
 function resetWxLoaded(){ S.wxLoaded = false; }
 
 async function _silentRefresh(lat, lon, cityName){
@@ -3482,12 +3500,16 @@ async function _silentRefresh(lat, lon, cityName){
       _savedAt:Date.now(), _code:wx.current?.weather_code||0,
       _temp:wx.current?.temperature_2m||0
     }));
-    // Mettre à jour l'UI uniquement si l'onglet météo est actif
+    S.wxLoaded = true;
+    // Mettre à jour le champ input
+    const inp = $('wxCityInput');
+    if(inp && city) inp.value = city;
+    // Mettre à jour l'UI si l'onglet météo est actif
     const pane = $('pane-weather');
     if(pane?.classList.contains('active')){
       renderWeather(wx, city);
     }
-    // Toujours mettre à jour le widget sur la photo (onglet Planifier)
+    // Toujours mettre à jour le widget sur la photo
     updateLawnWeather();
   } catch(e){ /* silencieux */ }
 }
@@ -3925,57 +3947,26 @@ document.addEventListener('DOMContentLoaded', function(){
   renderTips(getSeason(),'');
   updatePushUI();
 
-  // ── Restauration météo dans le widget lawn ──
-  // 1. Afficher immédiatement les données sauvegardées (fonctionne offline)
+  // ── Restauration météo au démarrage ──
+  // 1. Lire le cache immédiatement → widget sur la photo
   const savedWidget = safeGetJSON('ln_wx_widget', null);
   const savedCity   = safeGet('ln_wx_city', '');
   const savedLat    = safeGet('ln_wx_lat', '');
   const savedLon    = safeGet('ln_wx_lon', '');
 
-  if(savedWidget){
+  if(savedWidget?.current){
     S.wxCache     = savedWidget;
     S.wxCacheCity = savedWidget._city || savedCity;
-    // Restaurer la ville dans le champ de saisie (onglet Météo)
     const inp = $('wxCityInput');
     if(inp && S.wxCacheCity) inp.value = S.wxCacheCity;
-    updateLawnWeather();
+    updateLawnWeather(); // widget lawn immédiat
   }
 
-  // 2. Rafraîchir silencieusement si localisation mémorisée
+  // 2. Rafraîchir silencieusement (pas de loader, pas d'impact sur le planning)
   if(savedLat && savedLon){
-    // Protéger le planning pendant le fetch (évite que le listener date cache schedCard)
-    _dateSetByCode = true;
-    fetch('https://api.open-meteo.com/v1/forecast?latitude='+savedLat+'&longitude='+savedLon+
-      '&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m,precipitation,uv_index'+
-      '&hourly=temperature_2m,weather_code,precipitation_probability'+
-      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max'+
-      '&wind_speed_unit=kmh&timezone=auto&forecast_days=7')
-      .then(r => r.json())
-      .then(wx => {
-        const city = savedCity || S.wxCacheCity || 'Votre position';
-        S.wxCache     = wx;
-        S.wxCacheCity = city;
-        // Sauvegarder avec daily pour le graphique stats
-        const widgetData = {
-          current:  wx.current,
-          daily:    wx.daily,
-          _city:    city,
-          _lat:     parseFloat(savedLat),
-          _lon:     parseFloat(savedLon),
-          _savedAt: Date.now(),
-          _code:    wx.current?.weather_code || 0,
-          _temp:    wx.current?.temperature_2m || 0,
-        };
-        safeSave('ln_wx_widget', JSON.stringify(widgetData));
-        updateLawnWeather();
-        // Mettre à jour le champ input météo
-        const inp = $('wxCityInput');
-        if(inp && city) inp.value = city;
-      })
-      .catch(()=>{})  // silencieux si offline
-      .finally(()=>{ setTimeout(()=>{ _dateSetByCode = false; }, 100); });
-  } else {
-    _dateSetByCode = false;
+    setTimeout(()=>{
+      _silentRefresh(parseFloat(savedLat), parseFloat(savedLon), savedCity || null);
+    }, 1500); // délai pour laisser l'app finir de s'initialiser
   }
 
   // Check in-app alert
