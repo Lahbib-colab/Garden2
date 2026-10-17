@@ -2107,7 +2107,8 @@ function startWxAnimations(cls){
 
   // ── Neige : flocons JS ──
   if(snowLayer){
-    snowLayer.innerHTML='';
+    // Vider proprement sans innerHTML (préserve le stacking context du parent)
+    while(snowLayer.firstChild) snowLayer.removeChild(snowLayer.firstChild);
     if(cls==='wx-snow'){
       for(let i=0;i<22;i++){
         const f=document.createElement('div');
@@ -2126,7 +2127,7 @@ function startWxAnimations(cls){
 
   // ── Vent : feuilles JS ──
   if(leafLayer){
-    leafLayer.innerHTML='';
+    while(leafLayer.firstChild) leafLayer.removeChild(leafLayer.firstChild);
     if(cls==='wx-cloud'||cls==='wx-storm'){
       const LEAVES=['🍃','🍂','🍁','🌿'];
       _leafInterval=setInterval(()=>{
@@ -2229,8 +2230,9 @@ function updateLawnWeather(){
     lawn.classList.add(wxCls);
   }
 
-  // 5. Démarrer les animations JS
-  startWxAnimations(wxCls);
+  // 5. Démarrer les animations JS (seulement si le pane planifier est visible)
+  const planPane = $('pane-plan');
+  if(planPane?.classList.contains('active')) startWxAnimations(wxCls);
 
   // 6. Rain on Glass — activé uniquement en pluie / orage
   if (wxCls === 'wx-rain' || wxCls === 'wx-storm') {
@@ -3501,24 +3503,19 @@ async function _silentRefresh(lat, lon, cityName){
       _temp:wx.current?.temperature_2m||0
     }));
     S.wxLoaded = true;
-    // Mettre à jour le champ input
     const inp = $('wxCityInput');
     if(inp && city) inp.value = city;
-    // Mettre à jour l'UI si l'onglet météo est actif
+    // Mettre à jour l'onglet météo si actif
     const pane = $('pane-weather');
     if(pane?.classList.contains('active')){
       renderWeather(wx, city);
     }
-    // Toujours mettre à jour le widget sur la photo
-    updateLawnWeather();
+    // Widget lawn — différé pour ne pas interférer avec le DOM en cours
+    requestAnimationFrame(()=>{ updateLawnWeather(); });
   } catch(e){ /* silencieux */ }
 }
 
 async function fetchWeatherByCoords(lat, lon, cityName){
-  // Protéger le planning contre le déclenchement parasite du listener date
-  _dateSetByCode = true;
-  setTimeout(()=>{ _dateSetByCode = false; }, 800);
-
   showWxEl('wxLoad');
   $('wxLoadMsg').textContent = 'Chargement météo…';
   try{
@@ -3560,14 +3557,13 @@ async function fetchWeatherByCoords(lat, lon, cityName){
     safeSave('ln_wx_widget', JSON.stringify(widgetData));
 
     renderWeather(wx, city);
-    updateLawnWeather();
-    S.wxLoaded = true; // marquer comme chargé → pas de rechargement au retour sur l'onglet
+    // Mettre à jour le widget lawn SANS toucher au planning ni au listener date
+    requestAnimationFrame(()=>{ updateLawnWeather(); });
+    S.wxLoaded = true;
   } catch(e) {
     console.warn('[Météo]', e.message);
     $('wxErrMsg').textContent = 'Impossible de charger la météo. Vérifiez votre connexion.';
     showWxEl('wxErr');
-  } finally {
-    setTimeout(()=>{ _dateSetByCode = false; }, 100);
   }
 }
 
