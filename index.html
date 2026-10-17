@@ -221,9 +221,8 @@ html, body {
 .wx-cloud-layer {
   position: absolute; inset: 0; display: none; z-index: 1; overflow: hidden;
 }
-.lawn.wx-cloud .wx-cloud-layer,
-.lawn.wx-rain  .wx-cloud-layer,
-.lawn.wx-storm .wx-cloud-layer { display: block; }
+/* Nuages CSS uniquement pour wx-cloud (wx-rain et wx-storm utilisent les PNG) */
+.lawn.wx-cloud .wx-cloud-layer { display: block; }
 .wx-cloud {
   position: absolute; border-radius: 50px;
   background: rgba(200,210,220,.22);
@@ -385,6 +384,27 @@ html, body {
 .note-actions { display:flex;gap:10px;margin-top:12px; }
 .note-skip { flex:1;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:12px;padding:12px;color:var(--text2);font-size:.9rem;cursor:pointer;touch-action:manipulation; }
 .note-save { flex:2;background:var(--green);border:none;border-radius:12px;padding:12px;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;touch-action:manipulation; }
+
+/* ── Mini-conseil météo dans Planifier ── */
+.wx-inline-card {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--border);
+  border-radius: 14px; padding: 10px 14px;
+  margin-bottom: 10px; animation: fadeIn .4s ease;
+}
+.wx-inline-card.hidden { display: none; }
+.wx-inline-icon { font-size: 1.6rem; flex-shrink: 0; }
+.wx-inline-body { flex: 1; min-width: 0; }
+.wx-inline-temp { font-size: 1.05rem; font-weight: 700; color: var(--text); }
+.wx-inline-advice { font-size: .72rem; color: var(--text2); margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wx-inline-city { font-size: .65rem; color: var(--text3); text-align: right;
+  flex-shrink: 0; max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Couleur selon conseil */
+.wx-inline-card.go     { border-color: rgba(48,209,88,.3);  background: rgba(48,209,88,.06); }
+.wx-inline-card.wait   { border-color: rgba(255,214,10,.3); background: rgba(255,214,10,.06); }
+.wx-inline-card.stop   { border-color: rgba(255,69,58,.3);  background: rgba(255,69,58,.06); }
 
 /* ── Bouton test pluie sur la photo ── */
 .rain-test-btn {
@@ -1083,6 +1103,16 @@ html, body {
         <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
       </div>
 
+      <!-- Mini-conseil météo inline (visible uniquement si météo disponible) -->
+      <div class="wx-inline-card hidden" id="wxInlineCard">
+        <div class="wx-inline-icon" id="wxInlineIcon">—</div>
+        <div class="wx-inline-body">
+          <div class="wx-inline-temp" id="wxInlineTemp">—</div>
+          <div class="wx-inline-advice" id="wxInlineAdvice">—</div>
+        </div>
+        <div class="wx-inline-city" id="wxInlineCity">—</div>
+      </div>
+
       <div class="notif-banner off" id="notifBanner" onclick="switchTab('settings')">
         <span id="nbIcon">🔔</span>
         <span id="nbText">Notifications non configurées</span>
@@ -1663,7 +1693,12 @@ function daysSince(ds){return Math.max(0,Math.floor((Date.now()-new Date(ds))/86
 function fmtDate(d){return DFR[d.getDay()]+' '+d.getDate()+' '+MFR[d.getMonth()];}
 function getSeason(){const m=new Date().getMonth();for(const[k,v]of Object.entries(SEASONS))if(v.months.includes(m))return{...v,key:k};return{...SEASONS.winter,key:'winter'};}
 function getFreq(){return S.freqDays===0?getSeason().freq:S.freqDays;}
-function cvt(c){return S.wxUnit==='F'?Math.round(c*9/5+32):Math.round(c);}
+function cvt(c){
+  if(S.wxUnit==='F') return Math.round(c*9/5+32);
+  // Afficher 1 décimale si la valeur n'est pas entière et proche de 0
+  const r = Math.round(c*10)/10;
+  return Number.isInteger(r) ? r : r.toFixed(1);
+}
 function vibrate(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
 
 // ══════════════════════════════════════════
@@ -1917,31 +1952,66 @@ function updateLawnWeather(){
 
   // 7. Afficher l'image météo PNG correspondante
   showWxImage(wxCls);
+
+  // 8. Mettre à jour le mini-conseil météo dans l'onglet Planifier
+  updateWxInlineCard(c, city);
+}
+
+function updateWxInlineCard(c, city) {
+  const card = $('wxInlineCard');
+  if (!card || !c) return;
+
+  const temp   = cvt(c.temperature_2m || 0);
+  const rain   = c.precipitation || 0;
+  const wind   = c.wind_speed_10m || 0;
+  const hum    = c.relative_humidity_2m || 50;
+  const code   = Number(c.weather_code) || 0;
+  const emoji  = WX_ICONS[code] || '🌡';
+  const unit   = S.wxUnit === 'F' ? '°F' : '°C';
+
+  // Calculer le conseil (même logique que renderWeather)
+  let cls, advice;
+  if(rain > 2)       { cls='stop'; advice='Sol mouillé — attendre 24h'; }
+  else if(temp < 4)  { cls='stop'; advice='Trop froid pour tondre (<5°C)'; }
+  else if(wind > 45) { cls='stop'; advice='Vent trop fort ('+Math.round(wind)+' km/h)'; }
+  else if(hum > 90)  { cls='wait'; advice='Herbe humide — attendre ce soir'; }
+  else if(temp > 36) { cls='wait'; advice='Trop chaud — tondre après 18h'; }
+  else if(rain > 0.5){ cls='wait'; advice='Pluie récente — vérifier le sol'; }
+  else               { cls='go';   advice='✓ Bonnes conditions pour tondre'; }
+
+  $('wxInlineIcon').textContent   = emoji;
+  $('wxInlineTemp').textContent   = temp + unit;
+  $('wxInlineAdvice').textContent = advice;
+  $('wxInlineCity').textContent   = city || '';
+  card.className = 'wx-inline-card ' + cls;
 }
 
 // Contrôleur d'image météo PNG flottante
+// wx-cloud → PAS de PNG (les nuages CSS animés suffisent, évite le doublon)
+// Tous les autres → PNG flottant
+const WX_IMG_MAP = {
+  'wx-sun':   'wxImgSun',
+  'wx-cloud': null,           // CSS cloud-layer déjà actif → pas de PNG
+  'wx-rain':  'wxImgRain',
+  'wx-storm': 'wxImgStorm',
+  'wx-fog':   'wxImgFog',
+  'wx-snow':  'wxImgSnow',
+};
+
 function showWxImage(wxCls) {
-  // Mapping wx-class → id de l'image
-  const map = {
-    'wx-sun':   'wxImgSun',
-    'wx-cloud': 'wxImgCloud',
-    'wx-rain':  'wxImgRain',
-    'wx-storm': 'wxImgStorm',
-    'wx-fog':   'wxImgFog',
-    'wx-snow':  'wxImgSnow',
-  };
-  // Cacher toutes
-  Object.values(map).forEach(id => {
+  const allIds = ['wxImgSun','wxImgCloud','wxImgRain','wxImgStorm','wxImgFog','wxImgSnow'];
+  // Cacher toutes immédiatement
+  allIds.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.classList.remove('visible');
   });
-  // Afficher la bonne après un court délai (transition CSS)
-  const targetId = map[wxCls];
+  // Afficher la bonne après transition
+  const targetId = WX_IMG_MAP[wxCls];
   if (targetId) {
     setTimeout(() => {
       const el = document.getElementById(targetId);
       if (el) el.classList.add('visible');
-    }, 200);
+    }, 150);
   }
 }
 
@@ -2923,39 +2993,59 @@ function showWxEl(id){['wxLoad','wxErr','wxContent'].forEach(i=>$(i).classList.a
 
 // ── Chargement météo par coordonnées ──────────────────────────
 async function fetchWeatherByCoords(lat, lon, cityName){
+  // Protéger le planning contre le déclenchement parasite du listener date
+  _dateSetByCode = true;
+  setTimeout(()=>{ _dateSetByCode = false; }, 800);
+
   showWxEl('wxLoad');
   $('wxLoadMsg').textContent = 'Chargement météo…';
   try{
-    const[wxRes,geoRes]=await Promise.all([
+    const[wxRes, geoRes] = await Promise.all([
       fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,weather_code,uv_index&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&wind_speed_unit=kmh&timezone=auto&forecast_days=7`),
       cityName ? Promise.resolve(null)
                : fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=fr`)
     ]);
-    const wx=await wxRes.json();
-    let city=cityName;
+    const wx = await wxRes.json();
+    let city = cityName;
     if(!city){
-      const geo=await geoRes.json().catch(()=>({}));
-      city=geo.address?.city||geo.address?.town||geo.address?.village||geo.address?.county||'Votre position';
+      const geo = await geoRes.json().catch(()=>({}));
+      city = geo.address?.city || geo.address?.town || geo.address?.village || geo.address?.county || 'Votre position';
     }
-    S.wxCache=wx; S.wxCacheCity=city;
-    safeSave('ln_wx_lat', lat);
-    safeSave('ln_wx_lon', lon);
+
+    // Mettre à jour l'état global ET le champ de saisie
+    S.wxCache = wx; S.wxCacheCity = city;
+
+    // Mettre à jour le champ input de recherche (onglet météo + badge planifier)
+    const inp = $('wxCityInput');
+    if(inp && city) inp.value = city;
+
+    // Persister localisation + données météo complètes
+    safeSave('ln_wx_lat',  String(lat));
+    safeSave('ln_wx_lon',  String(lon));
     safeSave('ln_wx_city', city);
-    // Sauvegarder les données météo pour restauration hors-ligne
-    // On garde la structure complète + métadonnées séparées
+
+    // Sauvegarder le widget complet (daily inclus pour le graphique stats)
     const widgetData = {
-      current:  wx.current,   // préserve la structure imbriquée
+      current:  wx.current,
+      daily:    wx.daily,   // pour graphique température dans stats
       _city:    city,
+      _lat:     lat,
+      _lon:     lon,
       _savedAt: Date.now(),
       _code:    wx.current?.weather_code || 0,
       _temp:    wx.current?.temperature_2m || 0,
     };
     safeSave('ln_wx_widget', JSON.stringify(widgetData));
+
     renderWeather(wx, city);
     updateLawnWeather();
-  }catch(e){
-    $('wxErrMsg').textContent='Impossible de charger la météo. Vérifiez votre connexion.';
+  } catch(e) {
+    console.warn('[Météo]', e.message);
+    $('wxErrMsg').textContent = 'Impossible de charger la météo. Vérifiez votre connexion.';
     showWxEl('wxErr');
+  } finally {
+    // Toujours relâcher le verrou _dateSetByCode
+    setTimeout(()=>{ _dateSetByCode = false; }, 100);
   }
 }
 
@@ -3337,30 +3427,55 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // ── Restauration météo dans le widget lawn ──
   // 1. Afficher immédiatement les données sauvegardées (fonctionne offline)
-  const savedWidget=safeGetJSON('ln_wx_widget','null');
+  const savedWidget = safeGetJSON('ln_wx_widget', null);
+  const savedCity   = safeGet('ln_wx_city', '');
+  const savedLat    = safeGet('ln_wx_lat', '');
+  const savedLon    = safeGet('ln_wx_lon', '');
+
   if(savedWidget){
-    S.wxCache=savedWidget;
-    S.wxCacheCity=savedWidget._city||safeGet('ln_wx_city','');
+    S.wxCache     = savedWidget;
+    S.wxCacheCity = savedWidget._city || savedCity;
+    // Restaurer la ville dans le champ de saisie (onglet Météo)
+    const inp = $('wxCityInput');
+    if(inp && S.wxCacheCity) inp.value = S.wxCacheCity;
     updateLawnWeather();
   }
-  // 2. Rafraîchir silencieusement si réseau disponible
-  const savedLat=safeGet('ln_wx_lat','');
-  const savedLon=safeGet('ln_wx_lon','');
-  if(savedLat&&savedLon){
-    fetch('https://api.open-meteo.com/v1/forecast?latitude='+savedLat+'&longitude='+savedLon+'&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m,precipitation,uv_index&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&wind_speed_unit=kmh&timezone=auto&forecast_days=7')
-      .then(r=>r.json())
-      .then(wx=>{
-        S.wxCache=wx; S.wxCacheCity=safeGet('ln_wx_city','');
-        const widgetData={
+
+  // 2. Rafraîchir silencieusement si localisation mémorisée
+  if(savedLat && savedLon){
+    // Protéger le planning pendant le fetch (évite que le listener date cache schedCard)
+    _dateSetByCode = true;
+    fetch('https://api.open-meteo.com/v1/forecast?latitude='+savedLat+'&longitude='+savedLon+
+      '&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m,precipitation,uv_index'+
+      '&hourly=temperature_2m,weather_code,precipitation_probability'+
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max'+
+      '&wind_speed_unit=kmh&timezone=auto&forecast_days=7')
+      .then(r => r.json())
+      .then(wx => {
+        const city = savedCity || S.wxCacheCity || 'Votre position';
+        S.wxCache     = wx;
+        S.wxCacheCity = city;
+        // Sauvegarder avec daily pour le graphique stats
+        const widgetData = {
           current:  wx.current,
-          _city:    S.wxCacheCity,
+          daily:    wx.daily,
+          _city:    city,
+          _lat:     parseFloat(savedLat),
+          _lon:     parseFloat(savedLon),
           _savedAt: Date.now(),
-          _code:    wx.current?.weather_code||0,
-          _temp:    wx.current?.temperature_2m||0,
+          _code:    wx.current?.weather_code || 0,
+          _temp:    wx.current?.temperature_2m || 0,
         };
-        safeSave('ln_wx_widget',JSON.stringify(widgetData));
+        safeSave('ln_wx_widget', JSON.stringify(widgetData));
         updateLawnWeather();
-      }).catch(()=>{}); // silencieux si offline
+        // Mettre à jour le champ input météo
+        const inp = $('wxCityInput');
+        if(inp && city) inp.value = city;
+      })
+      .catch(()=>{})  // silencieux si offline
+      .finally(()=>{ setTimeout(()=>{ _dateSetByCode = false; }, 100); });
+  } else {
+    _dateSetByCode = false;
   }
 
   // Check in-app alert
