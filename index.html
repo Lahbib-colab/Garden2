@@ -150,23 +150,31 @@ html, body {
 .wx-img {
   position: absolute;
   pointer-events: none;
-  width: 90px;
   opacity: 0;
   transition: opacity .8s ease;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,.4));
-  /* L'animation float est appliquée uniquement quand visible, via une classe */
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,.45));
 }
-.wx-img.visible { opacity: 1; animation: wx-float 4s ease-in-out infinite alternate; }
-.wx-img-sun   { top:10px; right:14px; width:80px; }
-.wx-img-cloud { top:8px;  right:10px; width:96px; }
-.wx-img-rain  { top:6px;  right:8px;  width:100px; }
-.wx-img-storm { top:4px;  right:6px;  width:110px; }
-.wx-img-fog   { top:10px; right:8px;  width:100px; }
-.wx-img-fog.visible { opacity:.85; }
-.wx-img-snow  { top:8px;  right:10px; width:96px; }
+/* Flottement doux — sans rotation pour garder le réalisme */
+.wx-img.visible { opacity: 1; animation: wx-float 5s ease-in-out infinite alternate; }
+
+/* Positions et tailles de chaque image météo */
+/* Soleil — coin haut-droit, taille modérée */
+.wx-img-sun   { top: 8px;  right: 10px; width: 64px; }
+/* Nuage couvert — en retrait, plus discret */
+.wx-img-cloud { top: 6px;  right: 8px;  width: 88px; opacity: 0; }
+/* Pluie — légèrement décalé pour laisser la tondeuse visible */
+.wx-img-rain  { top: 4px;  right: 6px;  width: 92px; }
+/* Orage — plus grand, dramatique */
+.wx-img-storm { top: 2px;  right: 4px;  width: 106px; }
+/* Brouillard — bas du cadre, plus diffus */
+.wx-img-fog   { top: 8px;  right: 8px;  width: 90px; }
+.wx-img-fog.visible { opacity: .7; }
+/* Neige — taille intermédiaire */
+.wx-img-snow  { top: 6px;  right: 8px;  width: 86px; }
+
 @keyframes wx-float {
-  from { transform: translateY(0px) rotate(-1deg); }
-  to   { transform: translateY(-6px) rotate(1deg); }
+  from { transform: translateY(0px);  }
+  to   { transform: translateY(-7px); }
 }
 /* Teinture dynamique selon météo */
 .lawn.wx-rain  .lawn-photo { filter: saturate(.85) brightness(.72) hue-rotate(10deg); }
@@ -313,51 +321,60 @@ html, body {
 .lawn.wx-storm .wx-lightning { display:block; }
 
 /* ── Widget Liquid Glass météo — AGRANDI ── */
+/* ── Variables communes Liquid Glass badges ── */
+:root {
+  --lg-bg:     rgba(0,0,0,.35);
+  --lg-border: rgba(255,255,255,.22);
+  --lg-blur:   blur(40px) saturate(180%);
+  --lg-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 4px 20px rgba(0,0,0,.35);
+  --lg-r:      16px;
+  --lg-pad:    8px 13px;
+}
+
+/* ── Météo bas gauche — sans emoji (l'image PNG le remplace) ── */
 .lawn-wx {
   position: absolute; bottom: 12px; left: 12px;
-  display: none; align-items: center; gap: 10px;
-  background: rgba(255,255,255,.15);
-  border: 1px solid rgba(255,255,255,.32);
-  border-radius: 18px; padding: 9px 16px 9px 10px;
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.35),
-              inset 0 -1px 0 rgba(0,0,0,.1),
-              0 4px 20px rgba(0,0,0,.3);
-  z-index: 10;
-  max-width: 70%;
+  display: none; align-items: flex-end; gap: 0;
+  background: var(--lg-bg);
+  border: 1px solid var(--lg-border);
+  border-radius: var(--lg-r); padding: var(--lg-pad);
+  backdrop-filter: var(--lg-blur);
+  -webkit-backdrop-filter: var(--lg-blur);
+  box-shadow: var(--lg-shadow);
+  z-index: 10; max-width: 48%;
 }
-.lawn-wx-emoji { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+/* Emoji caché — remplacé par l'image PNG flottante */
+.lawn-wx-emoji { display: none; }
 .lawn-wx-body  { display: flex; flex-direction: column; gap: 1px; }
 .lawn-wx-temp  {
-  font-size: 1.5rem; font-weight: 200; color: #fff;
+  font-size: 1.45rem; font-weight: 200; color: #fff;
   line-height: 1; letter-spacing: -.04em;
 }
-.lawn-wx-desc  { font-size: .7rem; color: rgba(255,255,255,.85); font-weight: 500; }
-.lawn-wx-city  { font-size: .62rem; color: rgba(255,255,255,.65); font-weight: 400; }
+.lawn-wx-desc  { font-size: .68rem; color: rgba(255,255,255,.85); font-weight: 500; }
+.lawn-wx-city  { font-size: .6rem;  color: rgba(255,255,255,.6);  font-weight: 400; }
 
-/* ── Prochaine tonte — Liquid Glass badge bas droite ── */
+/* ── Prochaine tonte bas droite — harmonisé ── */
 .lawn-next-badge {
   position: absolute; bottom: 12px; right: 12px; z-index: 10;
   display: flex; align-items: center; gap: 8px;
-  background: rgba(255,255,255,.15);
-  border: 1px solid rgba(255,255,255,.32);
-  border-radius: 16px; padding: 8px 12px 8px 9px;
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 4px 20px rgba(0,0,0,.3);
+  background: var(--lg-bg);
+  border: 1px solid var(--lg-border);
+  border-radius: var(--lg-r); padding: var(--lg-pad);
+  backdrop-filter: var(--lg-blur);
+  -webkit-backdrop-filter: var(--lg-blur);
+  box-shadow: var(--lg-shadow);
   transition: background .3s, border-color .3s;
+  max-width: 48%;
 }
-.lawn-next-badge.urgent { background: rgba(255,69,58,.22);  border-color: rgba(255,69,58,.45); }
-.lawn-next-badge.soon   { background: rgba(255,214,10,.18); border-color: rgba(255,214,10,.45); }
-.lawn-next-badge.ok     { background: rgba(48,209,88,.18);  border-color: rgba(48,209,88,.4); }
-.lawn-next-icon  { font-size: 1.3rem; line-height: 1; flex-shrink: 0; }
-.lawn-next-body  { display: flex; flex-direction: column; }
-.lawn-next-label { font-size: .56rem; font-weight: 600; color: rgba(255,255,255,.65);
-                   letter-spacing: .04em; text-transform: uppercase; }
-.lawn-next-date  { font-size: .82rem; font-weight: 700; color: #fff;
-                   line-height: 1.25; letter-spacing: -.01em; }
-.lawn-next-days  { font-size: .68rem; font-weight: 600; color: rgba(255,255,255,.75); }
+.lawn-next-badge.urgent { background: rgba(255,69,58,.25);  border-color: rgba(255,69,58,.4); }
+.lawn-next-badge.soon   { background: rgba(255,214,10,.2);  border-color: rgba(255,214,10,.4); }
+.lawn-next-badge.ok     { background: rgba(48,209,88,.2);   border-color: rgba(48,209,88,.38); }
+.lawn-next-icon  { font-size: 1.2rem; line-height: 1; flex-shrink: 0; }
+.lawn-next-body  { display: flex; flex-direction: column; gap: 1px; }
+.lawn-next-label { font-size: .56rem; font-weight: 600; color: rgba(255,255,255,.6);
+                   letter-spacing: .05em; text-transform: uppercase; }
+.lawn-next-date  { font-size: .82rem; font-weight: 700; color: #fff; line-height: 1.2; }
+.lawn-next-days  { font-size: .67rem; font-weight: 600; color: rgba(255,255,255,.7); }
 .lawn-next-badge.urgent .lawn-next-days { color: #ff6b63; }
 .lawn-next-badge.soon   .lawn-next-days { color: #ffd60a; }
 .lawn-next-badge.ok     .lawn-next-days { color: #4cd964; }
@@ -387,27 +404,26 @@ html, body {
 
 /* ── Conseil tonte sur la photo (Liquid Glass, haut gauche) ── */
 .lawn-conseil {
-  position: absolute; top: 10px; left: 12px; z-index: 6;
-  display: flex; align-items: center; gap: 6px;
-  background: rgba(255,255,255,.14);
-  border: 1px solid rgba(255,255,255,.28);
-  border-radius: 20px; padding: 5px 11px 5px 8px;
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 2px 12px rgba(0,0,0,.25);
+  position: absolute; top: 10px; left: 10px; z-index: 6;
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(0,0,0,.3);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 20px; padding: 4px 10px 4px 7px;
+  backdrop-filter: blur(30px) saturate(160%);
+  -webkit-backdrop-filter: blur(30px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 2px 8px rgba(0,0,0,.3);
   transition: opacity .4s ease;
-  max-width: calc(100% - 130px); /* ne pas chevaucher le badge prochaine tonte */
+  max-width: 52%; /* s'arrête bien avant le badge prochaine tonte */
 }
 .lawn-conseil.hidden { opacity: 0; pointer-events: none; }
 .lawn-conseil-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-  background: #30d158; /* vert par défaut */
-  box-shadow: 0 0 6px currentColor;
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  background: #30d158;
 }
-.lawn-conseil-dot.wait { background: #ffd60a; box-shadow: 0 0 6px #ffd60a; }
-.lawn-conseil-dot.stop { background: #ff453a; box-shadow: 0 0 6px #ff453a; }
+.lawn-conseil-dot.wait { background: #ffd60a; }
+.lawn-conseil-dot.stop { background: #ff453a; }
 .lawn-conseil-txt {
-  font-size: .67rem; font-weight: 600; color: rgba(255,255,255,.95);
+  font-size: .63rem; font-weight: 600; color: rgba(255,255,255,.9);
   letter-spacing: .01em; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
 }
@@ -493,6 +509,11 @@ html, body {
   font-size:.65rem;font-weight:700;color:#fff;letter-spacing:-.01em;white-space:nowrap;
   z-index:10;
 }
+
+/* ── Alignement vertical badges bas ── */
+/* Les deux badges partagent bottom:12px et même min-height → même ligne */
+.lawn-wx,
+.lawn-next-badge { min-height: 56px; }
 
 /* Onboarding */
 .lawn-onboard {
