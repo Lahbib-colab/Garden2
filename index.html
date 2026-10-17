@@ -2022,32 +2022,36 @@ function switchTab(name){
     const savedLat  = safeGet('ln_wx_lat','');
     const savedLon  = safeGet('ln_wx_lon','');
     const savedCity = safeGet('ln_wx_city','');
-    const inp       = $('wxCityInput');
+    const inp = $('wxCityInput');
     if(inp && savedCity) inp.value = savedCity;
 
-    // Si le contenu est déjà affiché → ne rien refaire
-    if(!$('wxContent').classList.contains('hidden')) return;
-
-    // Si on a des données en cache → les afficher immédiatement sans loader
-    const cached = safeGetJSON('ln_wx_widget', null);
-    if(cached && cached._savedAt && (Date.now()-cached._savedAt < 3*60*60*1000)){
-      // Cache < 3h : afficher directement, rafraîchir en arrière-plan si réseau
-      if(cached.current){
-        S.wxCache = cached; S.wxCacheCity = cached._city || savedCity;
-        renderWeather(cached, S.wxCacheCity);  // affiche wxContent immédiatement
-        updateLawnWeather();
-        // Rafraîchissement silencieux si coordonnées disponibles
-        if(savedLat && savedLon){
-          fetchWeatherByCoords(parseFloat(savedLat), parseFloat(savedLon), savedCity||null);
-        }
-        return;
-      }
+    // Flag : S.wxLoaded = true dès le premier affichage réussi
+    // On ne recharge jamais si les données sont déjà là
+    if(S.wxLoaded && S.wxCache){
+      showWxEl('wxContent'); // réafficher le contenu sans recharger
+      return;
     }
-    // Pas de cache ou cache périmé → charger
+
+    // Données en cache récentes (< 3h) → afficher immédiatement, refresh silencieux
+    const cached = safeGetJSON('ln_wx_widget', null);
+    const cacheAge = cached?._savedAt ? Date.now() - cached._savedAt : Infinity;
+    if(cached?.current && cacheAge < 3*60*60*1000){
+      S.wxCache = cached; S.wxCacheCity = cached._city || savedCity;
+      renderWeather(cached, S.wxCacheCity); // pas de loader
+      updateLawnWeather();
+      S.wxLoaded = true;
+      // Refresh silencieux en arrière-plan SANS loader visible
+      if(savedLat && savedLon){
+        _silentRefresh(parseFloat(savedLat), parseFloat(savedLon), savedCity||null);
+      }
+      return;
+    }
+
+    // Pas de cache → charger normalement (avec loader)
     if(savedLat && savedLon){
       fetchWeatherByCoords(parseFloat(savedLat), parseFloat(savedLon), savedCity||null);
     } else {
-      loadWeather(); // géolocalisation uniquement si pas de coordonnées du tout
+      loadWeather();
     }
   }
   if(name==='settings')updatePushUI();
@@ -2241,12 +2245,14 @@ function updateLawnWeather(){
     if(ci) ci.textContent = city || '';
   }
 
-  // 4. Appliquer la classe météo sur .lawn (CSS + animations)
+  // 4. Appliquer la classe météo sur .lawn
+  // Ne PAS réassigner lawn.className — utiliser classList pour éviter de casser le DOM
   const lawn = $('lawn');
   if(lawn){
-    // Retirer TOUTES les classes wx-* proprement
-    const classes = Array.from(lawn.classList).filter(cl => !cl.startsWith('wx-'));
-    lawn.className = classes.join(' ');
+    // Supprimer les anciennes classes wx-* une par une
+    Array.from(lawn.classList)
+      .filter(cl => cl.startsWith('wx-'))
+      .forEach(cl => lawn.classList.remove(cl));
     lawn.classList.add(wxCls);
   }
 
@@ -3450,6 +3456,41 @@ function renderTips(season,tip){
 function showWxEl(id){['wxLoad','wxErr','wxContent'].forEach(i=>$(i).classList.add('hidden'));$(id).classList.remove('hidden');}
 
 // ── Chargement météo par coordonnées ──────────────────────────
+// Rafraîchissement silencieux — AUCUN loader, AUCUNE perturbation de l'UI
+// Réinitialiser le flag météo quand on change de ville
+function resetWxLoaded(){ S.wxLoaded = false; }
+
+async function _silentRefresh(lat, lon, cityName){
+  try{
+    const res = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation,weather_code,uv_index` +
+      `&hourly=temperature_2m,weather_code,precipitation_probability` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max` +
+      `&wind_speed_unit=kmh&timezone=auto&forecast_days=7`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if(!res.ok) return;
+    const wx = await res.json();
+    const city = cityName || S.wxCacheCity || safeGet('ln_wx_city','');
+    S.wxCache = wx; S.wxCacheCity = city;
+    // Sauvegarder
+    safeSave('ln_wx_widget', JSON.stringify({
+      current:wx.current, daily:wx.daily,
+      _city:city, _lat:lat, _lon:lon,
+      _savedAt:Date.now(), _code:wx.current?.weather_code||0,
+      _temp:wx.current?.temperature_2m||0
+    }));
+    // Mettre à jour l'UI uniquement si l'onglet météo est actif
+    const pane = $('pane-weather');
+    if(pane?.classList.contains('active')){
+      renderWeather(wx, city);
+    }
+    // Toujours mettre à jour le widget sur la photo (onglet Planifier)
+    updateLawnWeather();
+  } catch(e){ /* silencieux */ }
+}
+
 async function fetchWeatherByCoords(lat, lon, cityName){
   // Protéger le planning contre le déclenchement parasite du listener date
   _dateSetByCode = true;
@@ -3497,12 +3538,12 @@ async function fetchWeatherByCoords(lat, lon, cityName){
 
     renderWeather(wx, city);
     updateLawnWeather();
+    S.wxLoaded = true; // marquer comme chargé → pas de rechargement au retour sur l'onglet
   } catch(e) {
     console.warn('[Météo]', e.message);
     $('wxErrMsg').textContent = 'Impossible de charger la météo. Vérifiez votre connexion.';
     showWxEl('wxErr');
   } finally {
-    // Toujours relâcher le verrou _dateSetByCode
     setTimeout(()=>{ _dateSetByCode = false; }, 100);
   }
 }
