@@ -385,6 +385,33 @@ html, body {
 .note-skip { flex:1;background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:12px;padding:12px;color:var(--text2);font-size:.9rem;cursor:pointer;touch-action:manipulation; }
 .note-save { flex:2;background:var(--green);border:none;border-radius:12px;padding:12px;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;touch-action:manipulation; }
 
+/* ── Conseil tonte sur la photo (Liquid Glass, haut gauche) ── */
+.lawn-conseil {
+  position: absolute; top: 10px; left: 12px; z-index: 6;
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 20px; padding: 5px 11px 5px 8px;
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 2px 12px rgba(0,0,0,.25);
+  transition: opacity .4s ease;
+  max-width: calc(100% - 130px); /* ne pas chevaucher le badge prochaine tonte */
+}
+.lawn-conseil.hidden { opacity: 0; pointer-events: none; }
+.lawn-conseil-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: #30d158; /* vert par défaut */
+  box-shadow: 0 0 6px currentColor;
+}
+.lawn-conseil-dot.wait { background: #ffd60a; box-shadow: 0 0 6px #ffd60a; }
+.lawn-conseil-dot.stop { background: #ff453a; box-shadow: 0 0 6px #ff453a; }
+.lawn-conseil-txt {
+  font-size: .67rem; font-weight: 600; color: rgba(255,255,255,.95);
+  letter-spacing: .01em; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+
 /* ── Mini-conseil météo dans Planifier ── */
 .wx-inline-card {
   display: flex; align-items: center; gap: 10px;
@@ -1030,6 +1057,12 @@ html, body {
         <div class="wx-leaf-layer" id="wxLeafLayer"></div>
         <div class="wx-lightning" id="wxLightning"></div>
 
+        <!-- Conseil météo tonte (haut gauche, Liquid Glass) -->
+        <div class="lawn-conseil hidden" id="lawnConseil">
+          <span class="lawn-conseil-dot" id="lawnConseilDot"></span>
+          <span class="lawn-conseil-txt" id="lawnConseilTxt">—</span>
+        </div>
+
         <!-- Liquid Glass météo widget (bas gauche) -->
         <div class="lawn-wx" id="lawnWx">
           <div class="lawn-wx-emoji" id="lawnWxEmoji">—</div>
@@ -1039,11 +1072,6 @@ html, body {
             <div class="lawn-wx-city" id="lawnWxCity">—</div>
           </div>
         </div>
-
-        <!-- Bouton test Rain on Glass (coin haut-droite, discret) -->
-        <button class="rain-test-btn" id="rainTestBtn" onclick="testRainGlass()" title="Tester la pluie">
-          🌧
-        </button>
 
         <!-- Badge statut tonte (haut centre) -->
         <div class="lawn-badge" id="lawnBadge">— Entrez votre dernière tonte</div>
@@ -1958,32 +1986,45 @@ function updateLawnWeather(){
 }
 
 function updateWxInlineCard(c, city) {
+  if (!c) return;
+
+  const temp  = cvt(c.temperature_2m || 0);
+  const rain  = c.precipitation || 0;
+  const wind  = c.wind_speed_10m || 0;
+  const hum   = c.relative_humidity_2m || 50;
+  const code  = Number(c.weather_code) || 0;
+  const emoji = WX_ICONS[code] || '🌡';
+  const unit  = S.wxUnit === 'F' ? '°F' : '°C';
+
+  // Conseil de tonte — même logique que renderWeather
+  let cls, advice, shortAdvice;
+  if(rain > 2)        { cls='stop'; advice='Sol mouillé — attendre 24h';       shortAdvice='Sol mouillé'; }
+  else if(temp < 4)   { cls='stop'; advice='Trop froid pour tondre (<5°C)';    shortAdvice='Trop froid'; }
+  else if(wind > 45)  { cls='stop'; advice='Vent trop fort ('+Math.round(wind)+' km/h)'; shortAdvice='Vent fort'; }
+  else if(hum > 90)   { cls='wait'; advice='Herbe humide — attendre ce soir';  shortAdvice='Herbe humide'; }
+  else if(temp > 36)  { cls='wait'; advice='Trop chaud — tondre après 18h';    shortAdvice='Tondre ce soir'; }
+  else if(rain > 0.5) { cls='wait'; advice='Pluie récente — vérifier le sol';  shortAdvice='Vérifier sol'; }
+  else                { cls='go';   advice='✓ Bonnes conditions pour tondre';   shortAdvice='Idéal pour tondre'; }
+
+  // ── 1. Carte inline dans Planifier ──
   const card = $('wxInlineCard');
-  if (!card || !c) return;
+  if(card) {
+    if($('wxInlineIcon'))   $('wxInlineIcon').textContent   = emoji;
+    if($('wxInlineTemp'))   $('wxInlineTemp').textContent   = temp + unit;
+    if($('wxInlineAdvice')) $('wxInlineAdvice').textContent = advice;
+    if($('wxInlineCity'))   $('wxInlineCity').textContent   = city || '';
+    card.className = 'wx-inline-card ' + cls;
+  }
 
-  const temp   = cvt(c.temperature_2m || 0);
-  const rain   = c.precipitation || 0;
-  const wind   = c.wind_speed_10m || 0;
-  const hum    = c.relative_humidity_2m || 50;
-  const code   = Number(c.weather_code) || 0;
-  const emoji  = WX_ICONS[code] || '🌡';
-  const unit   = S.wxUnit === 'F' ? '°F' : '°C';
-
-  // Calculer le conseil (même logique que renderWeather)
-  let cls, advice;
-  if(rain > 2)       { cls='stop'; advice='Sol mouillé — attendre 24h'; }
-  else if(temp < 4)  { cls='stop'; advice='Trop froid pour tondre (<5°C)'; }
-  else if(wind > 45) { cls='stop'; advice='Vent trop fort ('+Math.round(wind)+' km/h)'; }
-  else if(hum > 90)  { cls='wait'; advice='Herbe humide — attendre ce soir'; }
-  else if(temp > 36) { cls='wait'; advice='Trop chaud — tondre après 18h'; }
-  else if(rain > 0.5){ cls='wait'; advice='Pluie récente — vérifier le sol'; }
-  else               { cls='go';   advice='✓ Bonnes conditions pour tondre'; }
-
-  $('wxInlineIcon').textContent   = emoji;
-  $('wxInlineTemp').textContent   = temp + unit;
-  $('wxInlineAdvice').textContent = advice;
-  $('wxInlineCity').textContent   = city || '';
-  card.className = 'wx-inline-card ' + cls;
+  // ── 2. Overlay conseil sur la photo (Liquid Glass, haut gauche) ──
+  const conseil = $('lawnConseil');
+  const dot     = $('lawnConseilDot');
+  const txt     = $('lawnConseilTxt');
+  if(conseil && dot && txt) {
+    dot.className = 'lawn-conseil-dot' + (cls === 'go' ? '' : ' ' + cls);
+    txt.textContent = shortAdvice;
+    conseil.classList.remove('hidden');
+  }
 }
 
 // Contrôleur d'image météo PNG flottante
