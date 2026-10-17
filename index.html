@@ -202,28 +202,9 @@ html, body {
 }
 
 /* ── Soleil / Halo ── */
-.wx-sun-halo {
-  position: absolute; top: -30px; right: -20px;
-  width: 120px; height: 120px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,220,80,.55) 0%, rgba(255,180,0,.18) 45%, transparent 70%);
-  animation: sun-pulse 3s ease-in-out infinite alternate;
-  display: none; z-index: 1;
-}
-.lawn.wx-sun .wx-sun-halo { display: block; }
-@keyframes sun-pulse { from{transform:scale(1);opacity:.7} to{transform:scale(1.15);opacity:1} }
-
-/* Rayons solaires */
-.wx-sun-rays {
-  position: absolute; top: 8px; right: 8px;
-  width: 60px; height: 60px; display: none; z-index: 1;
-}
-.lawn.wx-sun .wx-sun-rays { display: block; }
-.wx-sun-rays::before {
-  content: '☀️'; font-size: 2.4rem; position: absolute;
-  animation: sun-spin 20s linear infinite;
-  filter: drop-shadow(0 0 8px rgba(255,210,0,.8));
-}
-@keyframes sun-spin { to { transform: rotate(360deg); } }
+/* ── Soleil — uniquement via PNG wx-sun.png flottant, pas de doublon CSS ── */
+.wx-sun-halo  { display: none !important; }
+.wx-sun-rays  { display: none !important; }
 
 /* ── Nuages ── */
 .wx-cloud-layer {
@@ -594,7 +575,88 @@ html, body {
 }
 
 /* Quick date chips */
-.date-chips { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+/* ── Plan card compact ── */
+.plan-card { display: flex; flex-direction: column; gap: 0; }
+.plan-row {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 6px;
+}
+.plan-label {
+  font-size: .72rem; font-weight: 600; color: var(--text3);
+  letter-spacing: .03em; text-transform: uppercase;
+}
+
+/* ── Bouton-pilule fréquence ── */
+.freq-pill {
+  flex: 1; display: flex; align-items: center; gap: 7px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 0 14px; height: 46px;
+  color: var(--text); font-size: .9rem; font-weight: 600;
+  cursor: pointer; touch-action: manipulation;
+  transition: border-color .15s, background .15s;
+}
+.freq-pill:active { background: var(--green-t); border-color: var(--green-g); }
+.freq-pill.open   { border-color: var(--green); background: var(--green-t); }
+.freq-pill svg:first-child { color: var(--green); flex-shrink: 0; }
+.freq-pill span { flex: 1; text-align: left; }
+.freq-pill-chevron { color: var(--text3); flex-shrink: 0; transition: transform .2s; }
+.freq-pill.open .freq-pill-chevron { transform: rotate(180deg); }
+
+/* ── Champ temps inline ── */
+.plan-time {
+  width: 110px; height: 46px; flex-shrink: 0;
+  border-radius: 14px !important;
+  font-size: .9rem !important; font-weight: 600;
+  padding: 0 12px !important;
+}
+
+/* ── Popover fréquence ── */
+.freq-picker {
+  overflow: hidden;
+  max-height: 0; opacity: 0;
+  transition: max-height .28s cubic-bezier(.4,0,.2,1), opacity .2s ease;
+}
+.freq-picker.open {
+  max-height: 320px; opacity: 1;
+}
+.freq-picker.hidden { display: none; }
+.freq-picker .freq-grid {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 8px 0 4px;
+}
+/* Les fc dans le picker deviennent des lignes horizontales */
+.freq-picker .fc {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 10px 14px;
+  color: var(--text2); font-size: .88rem; font-weight: 500;
+  cursor: pointer; touch-action: manipulation;
+  transition: background .12s, border-color .12s, color .12s;
+  width: 100%;
+}
+.freq-picker .fc svg { width: 16px; height: 16px; color: var(--text3); flex-shrink: 0; }
+.freq-picker .fc span { flex: 1; text-align: left; }
+.freq-picker .fc .fc-check {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid var(--border); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.freq-picker .fc.on {
+  border-color: var(--green); background: var(--green-t); color: var(--green);
+}
+.freq-picker .fc.on svg { color: var(--green); }
+.freq-picker .fc.on .fc-check {
+  background: var(--green); border-color: var(--green);
+}
+.freq-picker .fc.on .fc-check::after {
+  content: '';
+  width: 4px; height: 8px; border: 2px solid #000;
+  border-top: none; border-left: none;
+  transform: rotate(45deg) translate(-1px,-1px);
+  display: block;
+}
+
+.date-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .dchip {
   font-size: .72rem; font-weight: 600; padding: 5px 11px;
   background: rgba(255,255,255,.06); border: 1px solid var(--border);
@@ -1176,27 +1238,44 @@ html, body {
         </div>
       </div>
 
-      <div class="card">
-        <div class="lbl">Dernière tonte</div>
-        <div class="row">
-          <input type="date" class="field" id="lastDate" style="flex:1">
+      <div class="card plan-card">
+
+        <!-- ── Ligne 1 : Date + raccourcis ── -->
+        <div class="plan-row">
+          <div class="plan-label">Dernière tonte</div>
           <div class="chip-sm hidden" id="daysPill">0j</div>
         </div>
+        <input type="date" class="field" id="lastDate" style="width:100%;margin-bottom:8px">
         <div class="date-chips">
           <button class="dchip" onclick="setRelDate(0)">Aujourd'hui</button>
           <button class="dchip" onclick="setRelDate(1)">Hier</button>
-          <button class="dchip" onclick="setRelDate(7)">–7 jours</button>
-          <button class="dchip" onclick="setRelDate(14)">–14 jours</button>
+          <button class="dchip" onclick="setRelDate(7)">–7 j</button>
+          <button class="dchip" onclick="setRelDate(14)">–14 j</button>
         </div>
-        <div class="divider"></div>
-        <div class="lbl">Fréquence</div>
-        <div class="freq-grid" id="freqGrid"></div>
-        <div class="divider"></div>
-        <div class="time-row">
-          <div class="time-lbl">Rappel à</div>
-          <input type="time" class="time-field" id="notifTime" value="09:00">
+
+        <!-- ── Ligne 2 : Fréquence (pilule) + Rappel inline ── -->
+        <div class="plan-row" style="margin-top:14px">
+          <div class="plan-label">Fréquence</div>
+          <div class="plan-label">Rappel</div>
         </div>
-        <button class="btn-primary" id="genBtn" onclick="generate()">
+        <div class="plan-row" style="gap:8px;align-items:stretch">
+          <!-- Bouton-pilule fréquence — ouvre un popover de sélection -->
+          <button class="freq-pill" id="freqPill" onclick="toggleFreqPicker()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            <span id="freqPillLabel">10 jours</span>
+            <svg class="freq-pill-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <!-- Heure rappel -->
+          <input type="time" class="time-field plan-time" id="notifTime" value="09:00">
+        </div>
+
+        <!-- Popover fréquence (liste pilule) -->
+        <div class="freq-picker hidden" id="freqPicker">
+          <div class="freq-grid" id="freqGrid"></div>
+        </div>
+
+        <!-- ── Bouton principal ── -->
+        <button class="btn-primary" id="genBtn" onclick="generate()" style="margin-top:14px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
           Créer mon planning
         </button>
@@ -2145,21 +2224,71 @@ function setRelDate(daysAgo){
 // ══════════════════════════════════════════
 // FREQ GRID
 // ══════════════════════════════════════════
+// Mise à jour du label du bouton-pilule fréquence
+function updateFreqPill(){
+  const pill = $('freqPill'); const lbl = $('freqPillLabel');
+  if(!pill || !lbl) return;
+  const opt = FREQ_OPTS.find(o=>o.d===S.freqDays) || FREQ_OPTS[1];
+  const svgMap = {
+    7:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+    10:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 4 13c0-4.15 3.36-8 9-10 5.64 2 9 5.85 9 10a7 7 0 0 1-7 7z"/></svg>',
+    14:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
+    21:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/></svg>',
+    30:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>',
+    0:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/></svg>'
+  };
+  const label = opt.d===0 ? 'Auto ('+getSeason().freq+' j)' : opt.label;
+  const svg = svgMap[opt.d] || '';
+  const chevron = '<svg class="freq-pill-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>';
+  pill.innerHTML = svg + '<span>' + label + '</span>' + chevron;
+}
+
+function toggleFreqPicker(){
+  const picker = $('freqPicker'); const pill = $('freqPill');
+  if(!picker || !pill) return;
+  const isOpen = picker.classList.contains('open');
+  picker.classList.remove('hidden');
+  requestAnimationFrame(()=>{
+    picker.classList.toggle('open', !isOpen);
+    pill.classList.toggle('open', !isOpen);
+  });
+}
+
+function closeFreqPicker(){
+  const picker = $('freqPicker'); const pill = $('freqPill');
+  if(picker){ picker.classList.remove('open'); }
+  if(pill)  { pill.classList.remove('open'); }
+}
+
 function buildFreqGrid(){
-  const g=$('freqGrid');g.innerHTML='';
+  const g=$('freqGrid'); g.innerHTML='';
+  const svgMap={
+    7:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+    10:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 4 13c0-4.15 3.36-8 9-10 5.64 2 9 5.85 9 10a7 7 0 0 1-7 7z"/></svg>',
+    14:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
+    21:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/></svg>',
+    30:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>',
+    0:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/></svg>'
+  };
   FREQ_OPTS.forEach(opt=>{
-    const b=document.createElement('button');b.className='fc'+(opt.d===S.freqDays?' on':'');
+    const b=document.createElement('button');
+    b.className='fc'+(opt.d===S.freqDays?' on':'');
     b.dataset.d=opt.d;
-    const svgMap={7:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',10:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 4 13c0-4.15 3.36-8 9-10 5.64 2 9 5.85 9 10a7 7 0 0 1-7 7z"/></svg>',14:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',21:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"/></svg>',30:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>',0:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/></svg>'};
-    b.innerHTML=(svgMap[opt.d]||'')+'<span>'+(opt.d===0&&S.freqDays===0?'Auto ('+getSeason().freq+'j)':opt.label)+'</span>';
+    const label = opt.d===0&&S.freqDays===0 ? 'Auto ('+getSeason().freq+' j)' : opt.label;
+    b.innerHTML=(svgMap[opt.d]||'')+'<span>'+label+'</span><span class="fc-check"></span>';
     b.addEventListener('click',()=>{
-      document.querySelectorAll('.fc').forEach(c=>c.classList.remove('on'));b.classList.add('on');
-      S.freqDays=opt.d;safeSave('ln_freq',opt.d);
-      if(opt.d===0)b.querySelector('span').textContent='Auto ('+getSeason().freq+'j)';
+      document.querySelectorAll('#freqGrid .fc').forEach(c=>c.classList.remove('on'));
+      b.classList.add('on');
+      S.freqDays=opt.d; safeSave('ln_freq',opt.d);
+      if(opt.d===0) b.querySelector('span').textContent='Auto ('+getSeason().freq+' j)';
+      updateFreqPill();
       updateLawn();
+      // Fermer le picker après sélection
+      setTimeout(closeFreqPicker, 150);
     });
     g.appendChild(b);
   });
+  updateFreqPill();
 }
 
 // ══════════════════════════════════════════
