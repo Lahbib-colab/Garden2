@@ -1915,10 +1915,10 @@ const WORKER = 'https://lawnnotifier-api.lahbib78.workers.dev';
 
 // Générer ou récupérer un identifiant unique par appareil
 function getDeviceId(){
-  let id = localStorage.getItem('ln_device_id');
+  let id = safeGet('ln_device_id','');
   if(!id){
     id = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem('ln_device_id', id);
+    safeSave('ln_device_id', id);
   }
   return id;
 }
@@ -1936,9 +1936,10 @@ function dbSave(key, data){
   fetch(WORKER + '/save', {
     method: 'PUT',
     headers: {'Content-Type': 'application/json', 'X-Device-ID': getDeviceId()},
-    body: payload
+    body: payload,
+    signal: AbortSignal.timeout(5000)
   }).then(r => r.ok && console.log('[CF] Sauvegardé ✓'))
-    .catch(e => console.warn('[CF] Hors ligne, localStorage utilisé'));
+    .catch(() => {}); // silencieux — localStorage est déjà sauvegardé
 }
 
 // Chargement : Cloudflare KV en priorité, localStorage en fallback
@@ -2083,7 +2084,7 @@ function updateLawn(){
   if(arc){ arc.style.strokeDashoffset=132-(Math.min(ratio,1)*132); }
 
   // Mow badge texte (bas droite sous ring)
-  const mb=$('lawnMowBadge');
+  const mb=null; // badge supprimé — widget unifié utilisé à la place
   if(mb){ mb.textContent=days+'j depuis la tonte'; mb.classList.remove('hidden'); }
 
   // Days pill (dans la card date)
@@ -2919,7 +2920,7 @@ function runDiagnostic(){
         setDiag('SW',true,'Enregistré ✓ — '+state,'—','ok');
       } else {
         // Pas encore enregistré (premier chargement / délai) — tenter maintenant
-        navigator.serviceWorker.register('./sw.js?v=11',{scope:'./'})
+        navigator.serviceWorker.register('./sw.js?v=12',{scope:'./'})
           .then(reg=>{
             const state=reg.active?'actif':reg.installing?'installation…':'en attente';
             setDiag('SW',true,'Enregistré ✓ — '+state,'—','ok');
@@ -4000,7 +4001,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // ── Enregistrement Service Worker + restauration KV ──
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
-    navigator.serviceWorker.register('./sw.js?v=11',{scope:'./'})
+    navigator.serviceWorker.register('./sw.js?v=12',{scope:'./'})
       .then(r=>{
         console.log('[LawnNotifier] SW v10:',r.scope);
         r.update();
@@ -4185,6 +4186,12 @@ const HTCWeatherRainOverlay = (() => {
   new ResizeObserver(() => { if (active) resize(); }).observe(CVS.parentElement);
   return { activate, deactivate, triggerWiper };
 })();
+
+// ── Gestionnaire d'erreurs global ──
+window.addEventListener('unhandledrejection', e => {
+  console.warn('[LawnNotifier]', e.reason);
+  e.preventDefault();
+});
 </script>
 </body>
 </html>
