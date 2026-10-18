@@ -548,26 +548,8 @@ html, body {
   overflow: hidden; text-overflow: ellipsis;
 }
 
-/* ── Mini-conseil météo dans Planifier ── */
-.wx-inline-card {
-  display: flex; align-items: center; gap: 10px;
-  background: rgba(255,255,255,.05);
-  border: 1px solid var(--border);
-  border-radius: 14px; padding: 10px 14px;
-  margin-bottom: 10px; animation: fadeIn .4s ease;
-}
-.wx-inline-card.hidden { display: none; }
-.wx-inline-icon { font-size: 1.6rem; flex-shrink: 0; }
-.wx-inline-body { flex: 1; min-width: 0; }
-.wx-inline-temp { font-size: 1.05rem; font-weight: 700; color: var(--text); }
-.wx-inline-advice { font-size: .72rem; color: var(--text2); margin-top: 1px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wx-inline-city { font-size: .65rem; color: var(--text3); text-align: right;
-  flex-shrink: 0; max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* Couleur selon conseil */
-.wx-inline-card.go     { border-color: rgba(48,209,88,.3);  background: rgba(48,209,88,.06); }
-.wx-inline-card.wait   { border-color: rgba(255,214,10,.3); background: rgba(255,214,10,.06); }
-.wx-inline-card.stop   { border-color: rgba(255,69,58,.3);  background: rgba(255,69,58,.06); }
+/* ── Mini-conseil météo dans Planifier — supprimé (doublon avec widget photo) ── */
+.wx-inline-card { display: none !important; }
 
 /* ── Bouton test pluie sur la photo ── */
 .rain-test-btn {
@@ -898,12 +880,13 @@ html, body {
 /* ── Buttons ── */
 .btn-primary {
   width: 100%; background: linear-gradient(155deg, var(--green-d), var(--green));
-  border: none; border-radius: var(--r-sm); padding: 14px; color: #fff;
+  border: none; border-radius: 9999px; padding: 13px 28px; color: #fff;
   font-size: .9rem; font-weight: 700; font-family: inherit; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: transform .18s, box-shadow .18s;
   box-shadow: 0 4px 16px rgba(48,209,88,.22); margin-top: 10px;
   -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  letter-spacing: .01em;
 }
 .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(48,209,88,.32); }
 .btn-primary:active { transform: scale(.98); }
@@ -1459,15 +1442,6 @@ html, body {
       </div>
 
       <!-- Mini-conseil météo inline (visible uniquement si météo disponible) -->
-      <div class="wx-inline-card hidden" id="wxInlineCard">
-        <div class="wx-inline-icon" id="wxInlineIcon">—</div>
-        <div class="wx-inline-body">
-          <div class="wx-inline-temp" id="wxInlineTemp">—</div>
-          <div class="wx-inline-advice" id="wxInlineAdvice">—</div>
-        </div>
-        <div class="wx-inline-city" id="wxInlineCity">—</div>
-      </div>
-
       <div class="notif-banner off" id="notifBanner" onclick="switchTab('settings')">
         <span id="nbIcon">🔔</span>
         <span id="nbText">Notifications non configurées</span>
@@ -2339,7 +2313,8 @@ function updateLawnWeather(){
 }
 
 function updateWxInlineCard(c, city) {
-  if (!c) return;
+  // Carte inline supprimée (doublon du widget photo) — garde le conseil sur photo uniquement
+  if (!c || !$('wxInlineCard')) return;
 
   const temp  = cvt(c.temperature_2m || 0);
   const rain  = c.precipitation || 0;
