@@ -698,6 +698,65 @@ html, body {
   color: rgba(255,255,255,.45); text-align: right;
 }
 
+/* ══ Swipe sur les pilules de planning ══ */
+
+/* Wrapper : contient les révélateurs + la pilule */
+.ev-swipe-wrap {
+  position: relative; overflow: hidden;
+  border-radius: 14px; margin-bottom: 6px;
+  /* Empêche le scroll horizontal de la page pendant le swipe */
+  touch-action: pan-y;
+}
+
+/* Révélateurs gauche (annuler) et droite (reporter) */
+.ev-reveal {
+  position: absolute; top: 0; bottom: 0;
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 18px; opacity: 0;
+  transition: opacity .15s, background .15s;
+  pointer-events: none;
+  border-radius: 14px;
+}
+.ev-reveal-left  {
+  left: 0; right: 0;
+  justify-content: flex-end;   /* icône visible à gauche quand on swipe gauche */
+  background: rgba(255,69,58,.12);
+  flex-direction: row-reverse;
+}
+.ev-reveal-right {
+  left: 0; right: 0;
+  justify-content: flex-start; /* icône visible à droite quand on swipe droite */
+  background: rgba(255,214,10,.12);
+}
+.ev-reveal-icon  { font-size: 1.1rem; }
+.ev-reveal-label {
+  font-size: .7rem; font-weight: 700; letter-spacing: .02em;
+  color: rgba(255,255,255,.8);
+}
+.ev-reveal-left  .ev-reveal-label { color: #ff6b63; }
+.ev-reveal-right .ev-reveal-label { color: #ffd60a; }
+
+/* La pilule elle-même — glisse par-dessus les révélateurs */
+.ev.ev-pill {
+  position: relative; z-index: 1;
+  will-change: transform;
+  cursor: grab; user-select: none;
+  /* Supprimer le margin-bottom hérité (géré par wrap) */
+  margin-bottom: 0 !important;
+}
+.ev.ev-pill:active { cursor: grabbing; }
+
+/* Indicateur swipe discret sur les pilules actives */
+.ev.ev-pill:not(.done)::after {
+  content: '⟵  ⟶';
+  position: absolute; right: 10px; top: 50%;
+  transform: translateY(-50%);
+  font-size: .55rem; color: rgba(255,255,255,.18);
+  letter-spacing: .1em; pointer-events: none;
+}
+.ev.ev-pill.cancelled::after,
+.ev.ev-pill.postponed::after { display: none; }
+
 /* ══ Actions annuler / reporter ══ */
 .ev-actions, .cal-card-actions {
   display: flex; gap: 5px; align-items: center; flex-shrink: 0;
@@ -2854,22 +2913,137 @@ function setSchedView(v){
 function _renderListView(){
   const list = $('evList'); list.innerHTML='';
   list.className = 'ev-list';
-  S.schedule.forEach(ev=>{
+  S.schedule.forEach(ev => {
     const d   = evDate(ev);
     const key = evKey(d);
-    const ds  = (ev.diff!=null&&ev.diff>=0) ? '<span class="ev-diff">dans '+ev.diff+'j</span>' : '';
-    const bt  = ev.type==='done'?'Faite':ev.status==='cancelled'?'Annulée':ev.status==='postponed'?'Reportée':ev.type==='urgent'?'Urgent':ev.type==='soon'?'Bientôt':'Planifié';
-    const actions = ev.type==='done'||ev.status==='cancelled' ? '' : `
-      <div class="ev-actions">
-        ${ev.status==='postponed'?`<button class="ev-act reset" onclick="resetOverride('${key}')" title="Rétablir">↺</button>`:''}
-        <button class="ev-act postpone" onclick="postponeMowing('${key}',1)" title="Reporter +1j">+1j</button>
-        <button class="ev-act cancel" onclick="cancelMowing('${key}')" title="Annuler">✕</button>
+    const ds  = (ev.diff!=null && ev.diff>=0) ? '<span class="ev-diff">dans '+ev.diff+'j</span>' : '';
+    const bt  = ev.type==='done'      ? 'Faite'
+              : ev.status==='cancelled'? 'Annulée'
+              : ev.status==='postponed'? 'Reportée'
+              : ev.type==='urgent'     ? 'Urgent'
+              : ev.type==='soon'       ? 'Bientôt' : 'Planifié';
+    const canSwipe = ev.type !== 'done';
+
+    // Wrapper swipeable
+    const wrap = document.createElement('div');
+    wrap.className = 'ev-swipe-wrap';
+
+    // Révélateurs gauche (annuler) et droite (reporter)
+    wrap.innerHTML = `
+      <div class="ev-reveal ev-reveal-left">
+        <span class="ev-reveal-icon">🚫</span>
+        <span class="ev-reveal-label">Annuler</span>
+      </div>
+      <div class="ev-reveal ev-reveal-right">
+        <span class="ev-reveal-icon">📅</span>
+        <span class="ev-reveal-label">+1 jour</span>
       </div>`;
+
+    // Contenu de la pilule
     const row = document.createElement('div');
-    row.className = 'ev '+ev.type+(ev.status==='cancelled'?' cancelled':'')+(ev.status==='postponed'?' postponed':'');
-    row.innerHTML = `<div class="ev-dot ${ev.type}"></div><div class="ev-date">${fmtDate(d)}</div><div class="ev-label">${ev.label}${ds}</div><div class="ev-badge badge-${ev.type}">${bt}</div>${actions}`;
-    list.appendChild(row);
+    row.className = 'ev ev-pill '+ev.type
+      + (ev.status==='cancelled' ? ' cancelled' : '')
+      + (ev.status==='postponed' ? ' postponed' : '');
+    row.innerHTML = `
+      <div class="ev-dot ${ev.type}"></div>
+      <div class="ev-date">${fmtDate(d)}</div>
+      <div class="ev-label">${ev.label}${ds}</div>
+      <div class="ev-badge badge-${ev.type}">${bt}</div>`;
+
+    wrap.appendChild(row);
+    list.appendChild(wrap);
+
+    if(canSwipe) attachSwipe(wrap, row, key, ev);
   });
+}
+
+// ── Moteur de swipe ───────────────────────────────────────────────
+function attachSwipe(wrap, pill, key, ev){
+  const THRESHOLD  = 72;   // px pour déclencher l'action
+  const MAX_DRAG   = 110;  // px max de déplacement visuel
+  let startX=0, startY=0, curX=0, dragging=false, locked=false;
+
+  function onStart(e){
+    if(locked) return;
+    const t = e.touches ? e.touches[0] : e;
+    startX = t.clientX; startY = t.clientY;
+    curX   = 0; dragging = true;
+    pill.style.transition = 'none';
+  }
+
+  function onMove(e){
+    if(!dragging || locked) return;
+    const t = e.touches ? e.touches[0] : e;
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    // Ignorer si mouvement principalement vertical (scroll)
+    if(!dragging && Math.abs(dy) > Math.abs(dx)) { dragging=false; return; }
+    if(Math.abs(dy) > Math.abs(dx) * 1.5) return;
+    e.preventDefault();
+    curX = Math.max(-MAX_DRAG, Math.min(MAX_DRAG, dx));
+    pill.style.transform = `translate3d(${curX}px,0,0)`;
+
+    // Colorer les révélateurs selon l'intensité
+    const pct = Math.min(1, Math.abs(curX) / THRESHOLD);
+    const left  = wrap.querySelector('.ev-reveal-left');
+    const right = wrap.querySelector('.ev-reveal-right');
+    if(curX < 0){  // swipe gauche → annuler
+      left.style.opacity  = pct;
+      right.style.opacity = 0;
+      left.style.background = `rgba(255,69,58,${0.12 + pct*0.2})`;
+    } else {        // swipe droite → reporter
+      right.style.opacity = pct;
+      left.style.opacity  = 0;
+      right.style.background = `rgba(255,214,10,${0.12 + pct*0.18})`;
+    }
+  }
+
+  function onEnd(){
+    if(!dragging) return;
+    dragging = false;
+    pill.style.transition = 'transform .35s cubic-bezier(.4,0,.2,1)';
+    const left  = wrap.querySelector('.ev-reveal-left');
+    const right = wrap.querySelector('.ev-reveal-right');
+
+    if(curX < -THRESHOLD){
+      // ── Swipe gauche : annuler / rétablir ──
+      pill.style.transform = `translate3d(-${MAX_DRAG}px,0,0)`;
+      locked = true;
+      setTimeout(()=>{
+        snapBack();
+        if(ev.status==='cancelled') resetOverride(key);
+        else cancelMowing(key);
+      }, 220);
+    } else if(curX > THRESHOLD){
+      // ── Swipe droite : reporter +1j ──
+      pill.style.transform = `translate3d(${MAX_DRAG}px,0,0)`;
+      locked = true;
+      setTimeout(()=>{
+        snapBack();
+        postponeMowing(key, 1);
+      }, 220);
+    } else {
+      snapBack();
+    }
+
+    function snapBack(){
+      pill.style.transition = 'transform .28s cubic-bezier(.4,0,.2,1)';
+      pill.style.transform  = 'translate3d(0,0,0)';
+      left.style.opacity    = 0;
+      right.style.opacity   = 0;
+      left.style.background = '';
+      right.style.background= '';
+      locked = false;
+    }
+  }
+
+  pill.addEventListener('touchstart', onStart, {passive:true});
+  pill.addEventListener('touchmove',  onMove,  {passive:false});
+  pill.addEventListener('touchend',   onEnd,   {passive:true});
+  // Souris (desktop)
+  pill.addEventListener('mousedown',  onStart);
+  window.addEventListener('mousemove', e => { if(dragging) onMove(e); });
+  window.addEventListener('mouseup',   e => { if(dragging) onEnd(e);  });
 }
 
 // ── Vue CALENDRIER en pile Apple ───────────────────────────────────
