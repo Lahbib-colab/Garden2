@@ -586,6 +586,28 @@ html, body {
 }
 .rain-glass-canvas.active { opacity: 1; }
 
+/* ── Bouton réduire/étendre le planning ── */
+.sched-collapse-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 9999px;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.1);
+  color: var(--text3); font-size: .68rem; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+  touch-action: manipulation;
+  transition: background .15s, color .15s, border-color .15s;
+  align-self: flex-start; margin-top: 4px;
+}
+.sched-collapse-btn:active {
+  background: rgba(48,209,88,.12);
+  border-color: rgba(48,209,88,.3);
+  color: var(--green);
+}
+
+/* Vue pile : override border-radius pour que le swipe-wrap soit arrondi */
+.cal-swipe-wrap { border-radius: 14px; }
+.cal-swipe-wrap .cal-card { margin-bottom: 0; border-radius: 14px; }
+
 /* ── Toggle liste / calendrier ── */
 .sched-view-toggle {
   display: flex; gap: 3px;
@@ -2860,7 +2882,29 @@ function resetOverride(dateKey){
   generate(true);
 }
 
-let _schedView = safeGet('ln_sched_view','list'); // 'list' ou 'cal'
+let _schedView      = safeGet('ln_sched_view','list'); // 'list' | 'cal' | 'grid'
+let _schedCollapsed = safeGet('ln_sched_collapsed','0') === '1'; // true = 3 prochains seulement
+
+function toggleSchedCollapse(){
+  _schedCollapsed = !_schedCollapsed;
+  safeSave('ln_sched_collapsed', _schedCollapsed ? '1' : '0');
+  // Mettre à jour le bouton
+  const btn = $('collapseBtn');
+  if(btn) btn.innerHTML = _schedCollapsed
+    ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg> Tout voir'
+    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 15l-6-6-6 6"/></svg> Réduire';
+  // Re-rendre la vue courante
+  _schedView==='cal' ? _renderCalView() : _schedView==='grid' ? _renderGridView() : _renderListView();
+}
+
+// Filtre les événements selon l'état collapsed
+function _filteredSchedule(){
+  if(!_schedCollapsed) return S.schedule;
+  // Garder : dernier done + 3 prochains non-done
+  const done = S.schedule.filter(e => e.type==='done' || e.diff < 0);
+  const next = S.schedule.filter(e => e.type!=='done' && e.diff >= 0).slice(0,3);
+  return [...done, ...next];
+}
 
 function renderSchedule(season, tip){
   $('seasonTag').textContent = season.emoji + ' ' + season.name;
@@ -2886,8 +2930,24 @@ function renderSchedule(season, tip){
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           Grille
         </button>`;
-      // Insérer avant le titre
+      // Bouton réduire / tout voir
+      const colBtn = document.createElement('button');
+      colBtn.id = 'collapseBtn';
+      colBtn.className = 'sched-collapse-btn';
+      colBtn.setAttribute('onclick','toggleSchedCollapse()');
+      colBtn.innerHTML = _schedCollapsed
+        ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg> Tout voir'
+        : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 15l-6-6-6 6"/></svg> Réduire';
+
+      // Structure hdr en-tête : [toggle vues] [titre + saison + collapse]
       hdr.insertBefore(toggle, hdr.firstChild);
+      // Injecter le bouton collapse dans la 2ème ligne (titre/actions)
+      const titleRow = hdr.querySelector('.sched-hdr-row') || (() => {
+        // S'il n'existe pas encore, le créer autour du sec-title existant
+        return null;
+      })();
+      // Ajouter le btn directement dans hdr — il se positionnera en CSS
+      hdr.appendChild(colBtn);
     }
   }
 
@@ -2913,7 +2973,7 @@ function setSchedView(v){
 function _renderListView(){
   const list = $('evList'); list.innerHTML='';
   list.className = 'ev-list';
-  S.schedule.forEach(ev => {
+  _filteredSchedule().forEach(ev => {
     const d   = evDate(ev);
     const key = evKey(d);
     const ds  = (ev.diff!=null && ev.diff>=0) ? '<span class="ev-diff">dans '+ev.diff+'j</span>' : '';
@@ -3055,7 +3115,7 @@ function _renderCalView(){
   const DFS = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
 
   const groups={};
-  S.schedule.forEach(ev=>{
+  _filteredSchedule().forEach(ev=>{
     const d=evDate(ev);
     const key=d.getFullYear()+'-'+d.getMonth();
     if(!groups[key]) groups[key]={label:MFL[d.getMonth()]+' '+d.getFullYear(),evs:[]};
@@ -3072,25 +3132,41 @@ function _renderCalView(){
       const day=d.getDate();
       const mon=MFS[d.getMonth()];
       let sub='';
-      if(ev.type==='done')      sub='Effectuée';
-      else if(ev.diff===0)      sub="Aujourd'hui !";
-      else if(ev.diff<0)        sub='Il y a '+Math.abs(ev.diff)+'j';
-      else if(ev.diff<=1)       sub='Demain';
-      else                      sub='Dans '+ev.diff+' jours';
+      if(ev.type==='done')       sub='Effectuée';
+      else if(ev.diff===0)       sub="Aujourd'hui !";
+      else if(ev.diff<0)         sub='Il y a '+Math.abs(ev.diff)+'j';
+      else if(ev.diff<=1)        sub='Demain';
+      else                       sub='Dans '+ev.diff+' jours';
       const badge=ev.type==='done'?'✓':ev.status==='cancelled'?'✕':ev.status==='postponed'?'+1j':ev.type==='urgent'?'!':mon;
       const key=evKey(d);
+      const canSwipe = ev.type!=='done';
+
+      // Wrapper swipeable (même mécanique que vue liste)
+      const wrap = document.createElement('div');
+      wrap.className = 'ev-swipe-wrap cal-swipe-wrap';
+      wrap.innerHTML = `
+        <div class="ev-reveal ev-reveal-left">
+          <span class="ev-reveal-icon">🚫</span>
+          <span class="ev-reveal-label">Annuler</span>
+        </div>
+        <div class="ev-reveal ev-reveal-right">
+          <span class="ev-reveal-icon">📅</span>
+          <span class="ev-reveal-label">+1 jour</span>
+        </div>`;
+
       const card=document.createElement('div');
-      card.className='cal-card '+ev.type+(ev.status==='cancelled'?' cancelled':'')+(ev.status==='postponed'?' postponed':'');
+      card.className='cal-card ev-pill '+ev.type
+        +(ev.status==='cancelled'?' cancelled':'')
+        +(ev.status==='postponed'?' postponed':'');
       card.innerHTML=`<div class="cal-card-stripe"></div>
         <div class="cal-card-date"><div class="cal-card-dow">${dow}</div><div class="cal-card-day">${day}</div></div>
         <div class="cal-card-body"><div class="cal-card-title">${ev.label}</div><div class="cal-card-sub">${sub}</div></div>
-        <div class="cal-card-badge">${badge}</div>
-        ${ev.type!=='done'?`<div class="cal-card-actions">
-          ${ev.status==='postponed'?`<button class="ev-act reset" onclick="resetOverride('${key}');event.stopPropagation()" title="Rétablir">↺</button>`:''}
-          <button class="ev-act postpone" onclick="postponeMowing('${key}',1);event.stopPropagation()" title="Reporter +1j">+1j</button>
-          <button class="ev-act cancel" onclick="cancelMowing('${key}');event.stopPropagation()" title="${ev.status==='cancelled'?'Rétablir':'Annuler'}">${ev.status==='cancelled'?'↺':'✕'}</button>
-        </div>`:''}`;
-      grp.appendChild(card);
+        <div class="cal-card-badge">${badge}</div>`;
+
+      wrap.appendChild(card);
+      grp.appendChild(wrap);
+
+      if(canSwipe) attachSwipe(wrap, card, key, ev);
     });
     pile.appendChild(grp);
   });
@@ -3108,14 +3184,14 @@ function _renderGridView(){
 
   // Construire une map date→ev pour accès rapide
   const evMap = {};
-  S.schedule.forEach(ev => {
+  _filteredSchedule().forEach(ev => {
     const key = evKey(evDate(ev));
     evMap[key] = ev;
   });
 
   // Grouper les mois couverts par le planning
   const months = {};
-  S.schedule.forEach(ev => {
+  _filteredSchedule().forEach(ev => {
     const d = evDate(ev);
     const mk = d.getFullYear()+'-'+d.getMonth();
     if(!months[mk]) months[mk] = {year:d.getFullYear(), month:d.getMonth(), evs:[]};
