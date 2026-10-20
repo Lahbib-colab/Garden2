@@ -586,6 +586,32 @@ html, body {
 }
 .rain-glass-canvas.active { opacity: 1; }
 
+/* ══ Modal Planning ══ */
+.ios-modal-tall {
+  max-height: 88vh;
+  display: flex; flex-direction: column;
+}
+.ios-modal-tall.hidden { display: none; }
+.ios-modal-tall.open   { transform: translateY(0); }
+.ios-modal-header-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.ios-modal-close-btn {
+  background: none; border: none;
+  color: var(--green); font-size: .9rem; font-weight: 600;
+  font-family: inherit; cursor: pointer; padding: 4px 0;
+}
+.planning-modal-hdr {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.pm-list-wrap {
+  flex: 1; overflow-y: auto; margin-top: 10px;
+  scrollbar-width: none;
+}
+.pm-list-wrap::-webkit-scrollbar { display: none; }
+
 /* ── Bouton réduire/étendre le planning ── */
 .sched-collapse-btn {
   display: flex; align-items: center; gap: 5px;
@@ -2019,7 +2045,7 @@ html, body {
       <div class="ios-plan">
 
         <!-- Carte "Prochaine tonte" — verte, proéminente -->
-        <div class="ios-next-card hidden" id="iosNextCard">
+        <div class="ios-next-card hidden" id="iosNextCard" onclick="openPlanningModal()">
           <div class="ios-next-icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="4" width="18" height="17" rx="2.5"/>
@@ -2650,6 +2676,56 @@ html, body {
     </div>
   </div>
   <button class="ios-modal-done" onclick="closeFreqModal()">OK</button>
+</div>
+
+<!-- ══ Modal Planning — affiché au tap sur la carte Prochaine tonte ══ -->
+<div class="ios-modal-backdrop hidden" id="planningModalBd" onclick="closePlanningModal()"></div>
+<div class="ios-modal ios-modal-tall hidden" id="planningModal">
+  <div class="ios-modal-handle"></div>
+  <div class="ios-modal-header-row">
+    <div class="ios-modal-title" style="text-align:left">Planning</div>
+    <button class="ios-modal-close-btn" onclick="closePlanningModal()">Fermer</button>
+  </div>
+
+  <!-- Saison + actions -->
+  <div class="planning-modal-hdr">
+    <div class="season-tag" id="pmSeasonTag">—</div>
+    <div style="display:flex;gap:8px">
+      <button class="sched-action-btn" onclick="editSchedule()" title="Modifier">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button class="sched-action-btn sched-delete-btn" onclick="deleteSchedule()" title="Supprimer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Toggle vues -->
+  <div class="sched-view-toggle" id="schedViewTogglePm">
+    <button id="btnViewListPm" class="svt-btn on" onclick="setSchedViewPm('list')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      Liste
+    </button>
+    <button id="btnViewCalPm" class="svt-btn" onclick="setSchedViewPm('cal')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+      Pile
+    </button>
+    <button id="btnViewGridPm" class="svt-btn" onclick="setSchedViewPm('grid')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Grille
+    </button>
+  </div>
+
+  <!-- Bouton réduire -->
+  <button class="sched-collapse-btn" id="collapseBtnPm" onclick="toggleSchedCollapsePm()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 15l-6-6-6 6"/></svg>
+    Réduire
+  </button>
+
+  <!-- Liste du planning -->
+  <div class="pm-list-wrap">
+    <div id="pmEvList" class="ev-list"></div>
+  </div>
 </div>
 
 <!-- ══ Modal Rappel ══ -->
@@ -3599,6 +3675,9 @@ function renderSchedule(season, tip){
     $('nextBox').classList.remove('hidden');
     updateLawnNextBadge(next);
   }
+  // Rafraîchir le modal planning si ouvert
+  const pm=$('planningModal');
+  if(pm && pm.classList.contains('open')) _renderPmView();
 }
 
 function setSchedView(v){
@@ -3671,6 +3750,151 @@ function closeModal(id){
   setTimeout(()=>{ m.classList.add('hidden'); b.classList.add('hidden'); },320);
 }
 
+// ══ Modal Planning ════════════════════════════════════════════════
+let _pmView = 'list';
+let _pmCollapsed = false;
+
+function openPlanningModal(){
+  if(!S.schedule || !S.schedule.length){
+    showToast('Générez un planning d\'abord');
+    return;
+  }
+  // Sync saison
+  const season = getSeason();
+  const pmTag = $('pmSeasonTag');
+  if(pmTag) pmTag.textContent = season.emoji + ' ' + season.name;
+  // Render
+  _renderPmView();
+  openModal('planning');
+}
+function closePlanningModal(){ closeModal('planning'); }
+
+function setSchedViewPm(v){
+  _pmView = v;
+  ['List','Cal','Grid'].forEach(n=>{
+    const b=$('btnView'+n+'Pm'); if(b) b.classList.toggle('on', n.toLowerCase()===v);
+  });
+  _renderPmView();
+}
+
+function toggleSchedCollapsePm(){
+  _pmCollapsed = !_pmCollapsed;
+  const btn=$('collapseBtnPm');
+  if(btn) btn.innerHTML = _pmCollapsed
+    ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg> Tout voir'
+    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 15l-6-6-6 6"/></svg> Réduire';
+  _renderPmView();
+}
+
+function _pmFilteredSchedule(){
+  if(!_pmCollapsed) return S.schedule;
+  const done = S.schedule.filter(e => e.type==='done' || e.diff < 0);
+  const next = S.schedule.filter(e => e.type!=='done' && e.diff >= 0).slice(0,3);
+  return [...done, ...next];
+}
+
+function _renderPmView(){
+  const container = $('pmEvList');
+  if(!container) return;
+  container.innerHTML = '';
+
+  const evs = _pmFilteredSchedule();
+  const DFS = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  const MFS = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc'];
+
+  if(_pmView === 'list'){
+    container.className = 'ev-list';
+    evs.forEach(ev => {
+      const d   = evDate(ev);
+      const key = evKey(d);
+      const ds  = ev.diff!=null && ev.diff>=0 ? '<span class="ev-diff">dans '+ev.diff+'j</span>' : '';
+      const bt  = ev.type==='done' ? 'Faite'
+                : ev.status==='cancelled' ? 'Annulée'
+                : ev.status==='postponed' ? 'Reportée'
+                : ev.type==='urgent' ? 'Urgent'
+                : ev.type==='soon'   ? 'Bientôt' : 'Planifié';
+      const canSwipe = ev.type !== 'done';
+      const wrap = document.createElement('div');
+      wrap.className = 'ev-swipe-wrap';
+      wrap.innerHTML = `
+        <div class="ev-reveal ev-reveal-left"><span class="ev-reveal-icon">🚫</span><span class="ev-reveal-label">Annuler</span></div>
+        <div class="ev-reveal ev-reveal-right"><span class="ev-reveal-icon">📅</span><span class="ev-reveal-label">+1 jour</span></div>`;
+      const row = document.createElement('div');
+      row.className = 'ev ev-pill '+ev.type
+        +(ev.status==='cancelled'?' cancelled':'')
+        +(ev.status==='postponed'?' postponed':'');
+      row.innerHTML = `<div class="ev-dot ${ev.type}"></div><div class="ev-date">${fmtDate(d)}</div><div class="ev-label">${ev.label}${ds}</div><div class="ev-badge badge-${ev.type}">${bt}</div>`;
+      wrap.appendChild(row);
+      container.appendChild(wrap);
+      if(canSwipe) attachSwipe(wrap, row, key, ev);
+    });
+
+  } else if(_pmView === 'cal'){
+    container.className = 'cal-pile';
+    const MFL=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    const groups={};
+    evs.forEach(ev=>{
+      const d=evDate(ev); const k=d.getFullYear()+'-'+d.getMonth();
+      if(!groups[k]) groups[k]={label:MFL[d.getMonth()]+' '+d.getFullYear(),evs:[]};
+      groups[k].evs.push({ev,d});
+    });
+    Object.values(groups).forEach(g=>{
+      const grp=document.createElement('div'); grp.className='cal-month-group';
+      grp.innerHTML='<span class="cal-month-label">'+g.label+'</span>';
+      g.evs.forEach(({ev,d})=>{
+        const dow=DFS[d.getDay()], day=d.getDate(), mon=MFS[d.getMonth()];
+        let sub=ev.type==='done'?'Effectuée':ev.diff===0?"Aujourd'hui !":ev.diff<0?'Il y a '+Math.abs(ev.diff)+'j':ev.diff<=1?'Demain':'Dans '+ev.diff+' jours';
+        const badge=ev.type==='done'?'✓':ev.status==='cancelled'?'✕':ev.status==='postponed'?'+1j':mon;
+        const key=evKey(d);
+        const canSwipe=ev.type!=='done';
+        const wrap=document.createElement('div'); wrap.className='ev-swipe-wrap cal-swipe-wrap';
+        wrap.innerHTML=`<div class="ev-reveal ev-reveal-left"><span class="ev-reveal-icon">🚫</span><span class="ev-reveal-label">Annuler</span></div><div class="ev-reveal ev-reveal-right"><span class="ev-reveal-icon">📅</span><span class="ev-reveal-label">+1 jour</span></div>`;
+        const card=document.createElement('div');
+        card.className='cal-card ev-pill '+ev.type+(ev.status==='cancelled'?' cancelled':'')+(ev.status==='postponed'?' postponed':'');
+        card.innerHTML=`<div class="cal-card-stripe"></div><div class="cal-card-date"><div class="cal-card-dow">${dow}</div><div class="cal-card-day">${day}</div></div><div class="cal-card-body"><div class="cal-card-title">${ev.label}</div><div class="cal-card-sub">${sub}</div></div><div class="cal-card-badge">${badge}</div>`;
+        wrap.appendChild(card); grp.appendChild(wrap);
+        if(canSwipe) attachSwipe(wrap,card,key,ev);
+      });
+      container.appendChild(grp);
+    });
+
+  } else { // grid — rendu compact dans le modal
+    container.className='cal-grid-wrap';
+    const now=new Date();
+    const gm=_gridMonth||{year:now.getFullYear(),month:now.getMonth()};
+    const MFL=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    const DFS2=['L','M','M','J','V','S','D'];
+    const evMap={};
+    S.schedule.forEach(ev=>{ evMap[evKey(evDate(ev))]=ev; });
+    const {year,month}=gm;
+    // En-tête navigation
+    const hdr=document.createElement('div'); hdr.className='cal-grid-header';
+    hdr.innerHTML=`<button class="cal-nav-btn" onclick="_pmGridNav(-1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button><div class="cal-grid-title"><span class="cal-month-name">${MFL[month]}</span><span class="cal-year-name">${year}</span></div><button class="cal-nav-btn" onclick="_pmGridNav(1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></button>`;
+    container.appendChild(hdr);
+    const dowRow=document.createElement('div'); dowRow.className='cal-grid-dow';
+    DFS2.forEach(d=>{ const c=document.createElement('span');c.textContent=d;dowRow.appendChild(c); });
+    container.appendChild(dowRow);
+    const grid=document.createElement('div'); grid.className='cal-grid-days cal-grid-anim';
+    const start=(new Date(year,month,1).getDay()+6)%7;
+    const dim=new Date(year,month+1,0).getDate();
+    for(let i=0;i<start;i++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
+    for(let day=1;day<=dim;day++){
+      const d=new Date(year,month,day);
+      const key=d.toISOString().split('T')[0];
+      const ev=evMap[key];
+      const isToday=d.toDateString()===now.toDateString();
+      const cell=document.createElement('div');
+      cell.style.setProperty('--ci',start+day);
+      cell.className='cal-day'+(isToday?' today':'')+(d<now&&!isToday&&!ev?' past':'')
+        +(ev?' has-ev ev-'+ev.type+(ev.status==='cancelled'?' ev-cancelled':'')+(ev.status==='postponed'?' ev-postponed':''):'');
+      cell.innerHTML=`<span class="cal-day-num">${day}</span>${ev&&ev.type!=='done'?'<span class="cal-day-dot"></span>':''}`;
+      if(ev&&ev.type!=='done') cell.addEventListener('click',()=>showDayActions(evKey(d),ev));
+      grid.appendChild(cell);
+    }
+    container.appendChild(grid);
+  }
+}
+
 // ── Modal Date ──
 function openDateModal(){
   // Pré-remplir les dates affichées
@@ -3702,9 +3926,22 @@ function setRelDateModal(n){
   setTimeout(closeDateModal, 280);
 }
 function setCustomDateModal(val){
-  const d=$('lastDate'); if(d){ d.value=val; d.dispatchEvent(new Event('change')); }
+  if(!val) return;
+  // Appliquer directement — le champ est caché, on bypass le listener
+  S.lastDate = val;
+  safeSave('ln_date', val);
+  // Sync les éléments cachés
+  const hidden=$('lastDate'); if(hidden) hidden.value=val;
   updateIosPlanDisplay();
+  updateLawn();
   setTimeout(closeDateModal, 280);
+}
+
+function _pmGridNav(dir){
+  let {year,month}=(_gridMonth||{year:new Date().getFullYear(),month:new Date().getMonth()});
+  month+=dir; if(month<0){month=11;year--;} if(month>11){month=0;year++;}
+  _gridMonth={year,month};
+  _renderPmView();
 }
 
 // ── Modal Fréquence ──
