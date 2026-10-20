@@ -132,9 +132,11 @@ html, body {
    HERO PELOUSE — Photo + Météo animée
    ══════════════════════════════════════ */
 .lawn {
-  position: relative; height: 240px; border-radius: var(--r); overflow: hidden;
-  border: 1px solid rgba(255,255,255,.10); margin-bottom: 10px;
-  background: #0a1a0a;
+  position: relative;
+  height: 52vw; min-height: 200px; max-height: 280px;
+  overflow: hidden; background: #0a1a0a;
+  /* Pas de border-radius — plein bord comme la maquette */
+  margin: 0 -16px; /* déborde sur les marges du content */
 }
 .lawn-photo {
   position: absolute; inset: 0; width: 100%; height: 100%;
@@ -634,8 +636,29 @@ html, body {
 .cal-swipe-wrap { border-radius: 14px; }
 .cal-swipe-wrap .cal-card { margin-bottom: 0; border-radius: 14px; }
 
+/* ── Météo flottante sur canvas (style maquette) ── */
+.lawn-wx-float {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 20px 20px 16px;
+  background: linear-gradient(0deg, rgba(0,0,0,.6) 0%, transparent 100%);
+  z-index: 10;
+}
+.lwf-temp {
+  font-size: 3rem; font-weight: 100; color: #fff;
+  letter-spacing: -.06em; line-height: 1; margin-bottom: 4px;
+}
+.lwf-temp sup { font-size: 1.4rem; font-weight: 200; vertical-align: super; }
+.lwf-desc {
+  font-size: .95rem; font-weight: 400; color: rgba(255,255,255,.85);
+  margin-bottom: 5px;
+}
+.lwf-city {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .78rem; color: rgba(255,255,255,.6);
+}
+
 /* ══ iOS Plan Layout ══ */
-.ios-plan { display:flex; flex-direction:column; gap:0; padding:0 0 16px; }
+.ios-plan { display:flex; flex-direction:column; gap:0; padding: 14px 0 16px; }
 
 /* Carte prochaine tonte — verte proéminente */
 .ios-next-card {
@@ -665,42 +688,87 @@ html, body {
 }
 .ios-next-days { font-size:.75rem;font-weight:600;color:#4cd964;margin-top:1px; }
 
-/* Section label iOS */
+/* Section label iOS — style maquette */
 .ios-section-label {
-  font-size:.68rem;font-weight:600;color:var(--text3);
-  letter-spacing:.04em;text-transform:uppercase;
-  padding:0 4px 6px;
+  font-size: .72rem; font-weight: 600;
+  color: rgba(255,255,255,.45);
+  letter-spacing: .06em; text-transform: uppercase;
+  padding: 18px 4px 8px;
 }
 
 /* Groupe de rows iOS */
 .ios-group {
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:14px; overflow:hidden;
-  margin-bottom:14px;
+  background: #1c1c1e;
+  border-radius: 16px; overflow: hidden;
+  margin-bottom: 16px;
 }
 .ios-row {
-  display:flex;align-items:center;gap:12px;
-  padding:13px 14px;cursor:pointer;
-  transition:background .12s;
-  -webkit-tap-highlight-color:transparent;
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 16px; cursor: pointer;
+  transition: background .12s;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 56px;
 }
-.ios-row:active { background:rgba(255,255,255,.08); }
+.ios-row:active { background: rgba(255,255,255,.06); }
 .ios-row-icon {
-  width:30px;height:30px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  width: 34px; height: 34px;
+  border-radius: 9px; /* Squircle iOS */
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
-.ios-row-body { flex:1;min-width:0; }
+.ios-row-body { flex: 1; min-width: 0; }
 .ios-row-title {
-  font-size:.88rem;font-weight:500;color:var(--text);
+  font-size: .95rem; font-weight: 500; color: #fff;
+  letter-spacing: -.01em;
 }
 .ios-row-value {
-  font-size:.78rem;color:var(--text3);margin-top:1px;
+  font-size: .8rem; color: rgba(255,255,255,.45);
+  margin-top: 2px; font-weight: 400;
 }
-.ios-chev { flex-shrink:0; }
+.ios-chev {
+  flex-shrink: 0;
+  opacity: .35;
+}
 .ios-sep {
-  height:1px;background:rgba(255,255,255,.06);margin-left:54px;
+  height: 0.5px;
+  background: rgba(255,255,255,.12);
+  margin-left: 64px;
 }
+
+/* ── Rows standalone (sans groupe box) — style maquette ── */
+.plan-standalone-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 0; cursor: pointer; min-height: 60px;
+  border-bottom: 0.5px solid rgba(255,255,255,.1);
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity .12s;
+}
+.plan-standalone-row:active { opacity: .7; }
+.plan-standalone-row:last-of-type { border-bottom: none; }
+
+/* ── Section Fréquence avec chips inline ── */
+.plan-freq-section {
+  padding: 18px 0 4px;
+}
+.plan-freq-label {
+  font-size: 1rem; font-weight: 600; color: #fff;
+  margin-bottom: 12px;
+}
+.plan-freq-chips {
+  display: flex; gap: 10px;
+}
+.pfc {  /* plan freq chip */
+  flex: 1; height: 48px; border-radius: 14px;
+  background: #1c1c1e; border: none;
+  color: rgba(255,255,255,.6); font-size: .9rem; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+  transition: background .15s, color .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.pfc.on {
+  background: #30d158; color: #000;
+}
+.pfc:not(.on):active { background: rgba(255,255,255,.1); }
 
 /* ══ iOS Modals ══ */
 .ios-modal-backdrop {
@@ -1182,8 +1250,7 @@ html, body {
   display:flex; gap:10px; margin-bottom:12px;
 }
 .hist-stat-tile {
-  flex:1; background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.08);
+  flex:1; background: #1c1c1e;
   border-radius:14px; padding:14px 10px 12px;
   text-align:center;
 }
@@ -1196,7 +1263,7 @@ html, body {
   text-transform:uppercase; letter-spacing:.04em;
 }
 .hist-chart-wrap {
-  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07);
+  background: #1c1c1e;
   border-radius:14px; padding:14px; margin-bottom:14px;
 }
 /* History iOS rows */
@@ -2002,36 +2069,20 @@ html, body {
           <div class="ring-ctr"><span id="ringNum">0</span><span class="ring-lbl">jours</span></div>
         </div>
 
-        <!-- ══ WIDGET UNIFIÉ Liquid Glass ══
-             Un seul panneau bas de photo : météo + conseil + prochaine tonte -->
-        <div class="lawn-widget" id="lawnWx">
-
-          <!-- Colonne gauche : météo -->
-          <div class="lw-weather">
-            <div class="lw-temp" id="lawnWxTemp">—°</div>
-            <div class="lw-desc" id="lawnWxDesc">—</div>
-            <div class="lw-city" id="lawnWxCity">—</div>
-            <!-- Conseil inline sous la météo -->
-            <div class="lw-conseil hidden" id="lawnConseil">
-              <span class="lw-conseil-dot" id="lawnConseilDot"></span>
-              <span class="lw-conseil-txt" id="lawnConseilTxt">—</span>
-            </div>
+        <!-- Météo flottante directement sur le canvas (style maquette) -->
+        <div class="lawn-wx-float" id="lawnWx" style="display:none">
+          <div class="lwf-temp" id="lawnWxTemp">—°</div>
+          <div class="lwf-desc" id="lawnWxDesc">—</div>
+          <div class="lwf-city">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+            <span id="lawnWxCity">—</span>
           </div>
-
-          <!-- Séparateur vertical -->
-          <div class="lw-sep"></div>
-
-          <!-- Colonne droite : prochaine tonte -->
-          <div class="lw-next hidden" id="lawnNextBadge">
-            <div class="lw-next-label">PROCHAINE TONTE</div>
-            <div class="lw-next-date" id="lawnNextDate">—</div>
-            <div class="lw-next-days" id="lawnNextDays">—</div>
-          </div>
-
         </div>
 
-        <!-- Emoji météo caché (logique JS conservée) -->
+        <!-- Éléments cachés conservés pour compat JS -->
         <div id="lawnWxEmoji" style="display:none">—</div>
+        <div id="lawnNextBadge" style="display:none"><div id="lawnNextDate"></div><div id="lawnNextDays"></div></div>
+        <div id="lawnConseil" style="display:none"><span id="lawnConseilDot"></span><span id="lawnConseilTxt"></span></div>
 
         <!-- Onboarding -->
         <div class="lawn-onboard" id="onboard">
@@ -2041,10 +2092,10 @@ html, body {
         </div>
       </div>
 
-      <!-- ══ PLAN — iOS list rows (maquette After) ══ -->
+      <!-- ══ PLAN — style maquette exacte ══ -->
       <div class="ios-plan">
 
-        <!-- Carte "Prochaine tonte" — verte, proéminente -->
+        <!-- Carte "Prochaine tonte" verte -->
         <div class="ios-next-card hidden" id="iosNextCard" onclick="openPlanningModal()">
           <div class="ios-next-icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -2060,51 +2111,40 @@ html, body {
           <svg width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
         </div>
 
-        <!-- Groupe iOS rows -->
-        <div class="ios-section-label">Planifier</div>
-        <div class="ios-group">
-
-          <!-- Dernière tonte -->
-          <div class="ios-row" onclick="openDateModal()">
-            <div class="ios-row-icon" style="background:#30d15820">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-            </div>
-            <div class="ios-row-body">
-              <div class="ios-row-title">Dernière tonte</div>
-              <div class="ios-row-value" id="lastDateDisplay">Non renseignée</div>
-            </div>
-            <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
+        <!-- Row "Dernière tonte" seul sur fond sombre -->
+        <div class="plan-standalone-row" onclick="openDateModal()">
+          <div class="ios-row-icon" style="background:#1c1c1e;border:1px solid rgba(255,255,255,.12)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
           </div>
-          <div class="ios-sep"></div>
-
-          <!-- Fréquence -->
-          <div class="ios-row" onclick="openFreqModal()">
-            <div class="ios-row-icon" style="background:#0a84ff20">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l2 2"/></svg>
-            </div>
-            <div class="ios-row-body">
-              <div class="ios-row-title">Fréquence</div>
-              <div class="ios-row-value" id="freqDisplay">10 jours</div>
-            </div>
-            <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
+          <div class="ios-row-body">
+            <div class="ios-row-title">Dernière tonte</div>
+            <div class="ios-row-value" id="lastDateDisplay">Non renseignée</div>
           </div>
-          <div class="ios-sep"></div>
+          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
+        </div>
 
-          <!-- Rappel -->
-          <div class="ios-row" onclick="openRappelModal()">
-            <div class="ios-row-icon" style="background:#ff9f0a20">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff9f0a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2a1 1 0 0 1 2 0 7 7 0 0 1 5 6.5V13l2 2H3l2-2V8.5A7 7 0 0 1 10 2z"/><path d="M9 18a2 2 0 0 0 4 0"/></svg>
-            </div>
-            <div class="ios-row-body">
-              <div class="ios-row-title">Rappel</div>
-              <div class="ios-row-value" id="rappelDisplay">09:00</div>
-            </div>
-            <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
+        <!-- Section Fréquence avec chips visibles -->
+        <div class="plan-freq-section">
+          <div class="plan-freq-label">Fréquence</div>
+          <div class="plan-freq-chips" id="planFreqChips">
+            <!-- Injecté par buildPlanFreqChips() -->
           </div>
         </div>
 
+        <!-- Row "Rappel" seul -->
+        <div class="plan-standalone-row" onclick="openRappelModal()">
+          <div class="ios-row-icon" style="background:#1c1c1e;border:1px solid rgba(255,255,255,.12)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" stroke-linecap="round"><path d="M10 2a1 1 0 0 1 2 0 7 7 0 0 1 5 6.5V13l2 2H3l2-2V8.5A7 7 0 0 1 10 2z"/><path d="M9 18a2 2 0 0 0 4 0"/></svg>
+          </div>
+          <div class="ios-row-body">
+            <div class="ios-row-title">Rappel</div>
+            <div class="ios-row-value" id="rappelDisplay">09:00</div>
+          </div>
+          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
+        </div>
+
         <!-- Bouton Recalculer -->
-        <button class="btn-primary" id="genBtn" onclick="generate()">
+        <button class="btn-primary" id="genBtn" onclick="generate()" style="margin-top:8px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
           Recalculer
         </button>
@@ -2231,47 +2271,47 @@ html, body {
       <div class="ios-section-label">Astuces du moment</div>
       <div class="ios-group">
         <div class="ios-row">
-          <div class="ios-row-icon" style="background:#30d15820">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="1.8" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M9 12h6"/></svg>
+          <div class="ios-row-icon" style="background:#30d158">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M9 12h6"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title">Hauteur de coupe idéale</div>
             <div class="ios-row-value">4 à 5 cm pour un gazon dense</div>
           </div>
-          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
+          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
         </div>
         <div class="ios-sep"></div>
         <div class="ios-row">
-          <div class="ios-row-icon" style="background:#0a84ff20">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="1.8" stroke-linecap="round"><path d="M12 2C6 2 2 8 2 12s4 10 10 10 10-4 10-10S18 2 12 2z"/><path d="M12 6v6M12 16h.01"/></svg>
+          <div class="ios-row-icon" style="background:#0a84ff">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title">Aérer votre pelouse</div>
             <div class="ios-row-value">Au printemps ou à l'automne</div>
           </div>
-          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
+          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
         </div>
         <div class="ios-sep"></div>
         <div class="ios-row">
-          <div class="ios-row-icon" style="background:#ff9f0a20">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff9f0a" stroke-width="1.8" stroke-linecap="round"><path d="M12 22C12 22 3 16 3 9a9 9 0 0 1 18 0c0 7-9 13-9 13z"/></svg>
+          <div class="ios-row-icon" style="background:#ff9f0a">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 22C12 22 3 16 3 9a9 9 0 0 1 18 0c0 7-9 13-9 13z"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title">Lutter contre les mauvaises herbes</div>
             <div class="ios-row-value">Une pelouse dense les limite naturellement</div>
           </div>
-          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
+          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
         </div>
         <div class="ios-sep"></div>
         <div class="ios-row">
-          <div class="ios-row-icon" style="background:#5e5ce620">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5e5ce6" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+          <div class="ios-row-icon" style="background:#5e5ce6">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title">Entretien saisonnier</div>
             <div class="ios-row-value">Adapter la tonte selon la saison</div>
           </div>
-          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
+          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
         </div>
       </div>
 
@@ -2375,8 +2415,8 @@ html, body {
       <div class="ios-group">
         <!-- Lieu -->
         <div class="ios-row" onclick="switchTab('weather')">
-          <div class="ios-row-icon" style="background:#0a84ff20">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+          <div class="ios-row-icon" style="background:#0a84ff">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title">Lieu</div>
@@ -2387,8 +2427,8 @@ html, body {
         <div class="ios-sep"></div>
         <!-- Unités -->
         <div class="ios-row">
-          <div class="ios-row-icon" style="background:#5e5ce620">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5e5ce6" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.41 1.41M18.36 18.36l1.41 1.41M2 12h2M20 12h2"/></svg>
+          <div class="ios-row-icon" style="background:#5e5ce6">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.41 1.41M18.36 18.36l1.41 1.41M2 12h2M20 12h2"/></svg>
           </div>
           <div class="ios-row-body"><div class="ios-row-title">Unités</div></div>
           <div class="seg" style="flex-shrink:0">
@@ -2400,7 +2440,7 @@ html, body {
         <!-- Thème -->
         <div class="ios-row">
           <div class="ios-row-icon" style="background:#1c1c1e">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title">Thème</div>
@@ -2414,8 +2454,8 @@ html, body {
       <div class="ios-group">
         <!-- Rappels de tonte -->
         <div class="ios-row">
-          <div class="ios-row-icon" style="background:#30d15820">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2a1 1 0 0 1 2 0 7 7 0 0 1 5 6.5V13l2 2H3l2-2V8.5A7 7 0 0 1 10 2z"/><path d="M9 18a2 2 0 0 0 4 0"/></svg>
+          <div class="ios-row-icon" style="background:#30d158">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2a1 1 0 0 1 2 0 7 7 0 0 1 5 6.5V13l2 2H3l2-2V8.5A7 7 0 0 1 10 2z"/><path d="M9 18a2 2 0 0 0 4 0"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title">Rappels de tonte</div>
@@ -2426,8 +2466,8 @@ html, body {
         <div class="ios-sep"></div>
         <!-- Notifications météo -->
         <div class="ios-row">
-          <div class="ios-row-icon" style="background:#0a84ff20">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="1.8" stroke-linecap="round"><path d="M7 16a4 4 0 0 1 0-8h1a5 5 0 1 1 9 4.5A3.5 3.5 0 0 1 17 19H7z"/></svg>
+          <div class="ios-row-icon" style="background:#0a84ff">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M7 16a4 4 0 0 1 0-8h1a5 5 0 1 1 9 4.5A3.5 3.5 0 0 1 17 19H7z"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title">Notifications météo</div>
@@ -2440,8 +2480,8 @@ html, body {
         <div class="ios-sep"></div>
         <!-- Heure rappel -->
         <div class="ios-row" onclick="openRappelModal()">
-          <div class="ios-row-icon" style="background:#ff9f0a20">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff9f0a" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          <div class="ios-row-icon" style="background:#ff9f0a">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title">Heure du rappel</div>
@@ -2451,8 +2491,8 @@ html, body {
         <div class="ios-sep"></div>
         <!-- Tester -->
         <div class="ios-row" onclick="openNotifTest()" style="cursor:pointer">
-          <div class="ios-row-icon" style="background:#30d15820">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="1.8" stroke-linecap="round"><path d="M9 11l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          <div class="ios-row-icon" style="background:#30d158">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M9 11l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title">Tester les notifications</div>
@@ -2464,7 +2504,7 @@ html, body {
         <!-- Réinitialiser push -->
         <div class="ios-row" onclick="resetPushSubscription()" style="cursor:pointer">
           <div class="ios-row-icon" style="background:rgba(255,69,58,.15)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff453a" stroke-width="1.8" stroke-linecap="round"><path d="M4 11a7 7 0 1 0 1.5-4.3"/><path d="M4 6v5h5"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M4 11a7 7 0 1 0 1.5-4.3"/><path d="M4 6v5h5"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title" style="color:#ff453a">Réinitialiser l'abonnement</div>
@@ -2478,8 +2518,8 @@ html, body {
       <div class="ios-section-label">Données</div>
       <div class="ios-group">
         <div class="ios-row" onclick="exportData()" style="cursor:pointer">
-          <div class="ios-row-icon" style="background:#30d15820">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="1.8" stroke-linecap="round"><path d="M11 3v11M7 10l4 4 4-4"/><path d="M4 17v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1"/></svg>
+          <div class="ios-row-icon" style="background:#30d158">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M11 3v11M7 10l4 4 4-4"/><path d="M4 17v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title">Exporter l'historique</div>
@@ -2489,8 +2529,8 @@ html, body {
         </div>
         <div class="ios-sep"></div>
         <div class="ios-row" onclick="openSheet()" style="cursor:pointer">
-          <div class="ios-row-icon" style="background:#0a84ff20">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M14 2v4"/></svg>
+          <div class="ios-row-icon" style="background:#0a84ff">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M14 2v4"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title">Exporter le calendrier</div>
@@ -2505,7 +2545,7 @@ html, body {
       <div class="ios-group">
         <div class="ios-row" onclick="confirmReset()" style="cursor:pointer">
           <div class="ios-row-icon" style="background:rgba(255,69,58,.15)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff453a" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 19 6"/><path d="M8 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M19 6l-1 13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L3 6"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 19 6"/><path d="M8 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M19 6l-1 13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L3 6"/></svg>
           </div>
           <div class="ios-row-body">
             <div class="ios-row-title" style="color:#ff453a">Réinitialiser toutes les données</div>
@@ -2518,16 +2558,16 @@ html, body {
       <div class="ios-section-label">À propos</div>
       <div class="ios-group">
         <div class="ios-row">
-          <div class="ios-row-icon" style="background:#30d15820">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+          <div class="ios-row-icon" style="background:#30d158">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
           </div>
           <div class="ios-row-body"><div class="ios-row-title">Version</div></div>
           <div class="ios-row-value" style="flex-shrink:0">9.2</div>
         </div>
         <div class="ios-sep"></div>
         <div class="ios-row">
-          <div class="ios-row-icon" style="background:#ff9f0a20">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff9f0a" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <div class="ios-row-icon" style="background:#ff9f0a">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           </div>
           <div class="ios-row-body"><div class="ios-row-title">Nous contacter</div></div>
           <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
@@ -2660,16 +2700,16 @@ html, body {
   <div class="ios-modal-adv-label">Options avancées</div>
   <div class="ios-modal-group">
     <div class="ios-modal-row" onclick="setFreqModal(30);closeFreqModal()">
-      <div class="ios-row-icon" style="background:#5e5ce620">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5e5ce6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18"/></svg>
+      <div class="ios-row-icon" style="background:#5e5ce6">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18"/></svg>
       </div>
       <div class="ios-row-body"><div class="ios-row-title">1 mois</div><div class="ios-row-value">Tonte mensuelle</div></div>
       <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
     </div>
     <div class="ios-sep"></div>
     <div class="ios-modal-row" onclick="setFreqModal(0);closeFreqModal()">
-      <div class="ios-row-icon" style="background:#30d15820">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/></svg>
+      <div class="ios-row-icon" style="background:#30d158">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/></svg>
       </div>
       <div class="ios-row-body"><div class="ios-row-title">Auto IA</div><div class="ios-row-value">Tonte intelligente</div></div>
       <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
@@ -3201,10 +3241,10 @@ function updateLawnWeather(){
   // Appliquer le mode nuit sur la photo pelouse
   applyNightMode(cache);
 
-  // 3. Mettre à jour le widget unifié
+  // 3. Mettre à jour la météo flottante sur canvas
   const wx = $('lawnWx');
   if(wx){
-    wx.style.display = 'flex';
+    wx.style.display = 'block';
     const el = (id) => $(id);
     const em = el('lawnWxEmoji'), tp = el('lawnWxTemp'),
           dc = el('lawnWxDesc'),  ci = el('lawnWxCity');
@@ -3982,6 +4022,24 @@ function saveNotifTimeModal(val){
 }
 
 // ── Mise à jour des affichages iOS rows ──
+// Chips fréquence inline dans la page planifier
+function buildPlanFreqChips(){
+  const c = $('planFreqChips'); if(!c) return;
+  c.innerHTML = '';
+  [{d:7,l:'7j'},{d:10,l:'10j'},{d:14,l:'14j'},{d:21,l:'21j'}].forEach(o=>{
+    const b = document.createElement('button');
+    b.className = 'pfc' + (o.d===S.freqDays?' on':'');
+    b.textContent = o.l;
+    b.onclick = () => {
+      c.querySelectorAll('.pfc').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      S.freqDays = o.d; safeSave('ln_freq', o.d);
+      updateIosPlanDisplay();
+    };
+    c.appendChild(b);
+  });
+}
+
 function updateIosPlanDisplay(){
   const lastD = $('lastDate');
   const lastVal = lastD?.value || safeGet('ln_date','');
@@ -3997,6 +4055,7 @@ function updateIosPlanDisplay(){
   const freq=S.freqDays||10;
   const fd=$('freqDisplay');
   if(fd) fd.textContent=freq===0?'Auto IA':freq===30?'1 mois':freq+' jours';
+  buildPlanFreqChips();
 
   const nt=$('notifTime');
   const ntv=nt?.value||safeGet('ln_notifTime','09:00')||'09:00';
@@ -5054,9 +5113,9 @@ function renderHistory(){
     const row   = document.createElement('div');
     row.className='ios-row';
     row.innerHTML=`
-      <div class="ios-row-icon" style="background:${isPlan?'#0a84ff20':'#30d15820'}">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="${isPlan?'#0a84ff':'#30d158'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <div class="ios-row-icon" style="background:${isPlan?'#0a84ff':'#30d158'}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           ${isPlan
             ?'<rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M16 2v4"/>'
             :'<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/>'}
@@ -5895,6 +5954,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   if(S.lastDate)updateLawn();
   buildFreqGrid();
+  buildPlanFreqChips();
   updateIosPlanDisplay();
   renderHistory();
   renderChecklist();
