@@ -1151,6 +1151,151 @@ html, body {
 .day-action-btn.muted { color: var(--text3); background: transparent; }
 .day-action-btn span  { font-size: 1.1rem; }
 
+/* ══ HISTORIQUE ══ */
+.hist-stats-row {
+  display:flex; gap:10px; margin-bottom:12px;
+}
+.hist-stat-tile {
+  flex:1; background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px; padding:14px 10px 12px;
+  text-align:center;
+}
+.hist-stat-val {
+  font-size:1.45rem; font-weight:200; color:#fff;
+  line-height:1; letter-spacing:-.04em; margin-bottom:4px;
+}
+.hist-stat-lbl {
+  font-size:.6rem; font-weight:600; color:var(--text3);
+  text-transform:uppercase; letter-spacing:.04em;
+}
+.hist-chart-wrap {
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.07);
+  border-radius:14px; padding:14px; margin-bottom:14px;
+}
+/* History iOS rows */
+#histList .ios-row { cursor:default; }
+#histList .ios-row:active { background:rgba(255,255,255,.05); }
+
+.hist-health-badge {
+  display:flex; align-items:center; gap:10px;
+  background:rgba(48,209,88,.1); border:1px solid rgba(48,209,88,.25);
+  border-radius:14px; padding:14px 16px;
+  font-size:.82rem; font-weight:600; color:#4cd964;
+  margin:4px 0 14px;
+}
+.hist-health-badge.hidden { display:none; }
+
+/* ══ CONSEILS ══ */
+.tips-hero {
+  border-radius:18px; overflow:hidden;
+  background:linear-gradient(135deg,#1a5c2e,#0d3a1c);
+  border:1px solid rgba(48,209,88,.2);
+  margin-bottom:16px; box-shadow:0 4px 20px rgba(48,209,88,.12);
+}
+.tips-hero-img {
+  width:100%; height:90px; overflow:hidden;
+}
+.tips-hero-img svg { width:100%; height:100%; }
+.tips-hero-body { padding:14px 16px 16px; }
+.tips-hero-tag {
+  font-size:.6rem; font-weight:700; color:rgba(255,255,255,.5);
+  letter-spacing:.08em; text-transform:uppercase; margin-bottom:4px;
+}
+.tips-hero-title {
+  font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:4px;
+}
+.tips-hero-sub {
+  font-size:.78rem; color:rgba(255,255,255,.75); line-height:1.5;
+}
+/* Checklist dans le groupe iOS */
+#checklist .ios-row { cursor:pointer; }
+
+/* ══ MÉTÉO v2 ══ */
+/* Hero */
+.wx2-hero {
+  padding:20px 0 16px;
+  text-align:center;
+}
+.wx2-main {
+  display:flex; align-items:flex-start;
+  justify-content:center; gap:12px; margin-bottom:6px;
+}
+.wx2-temp {
+  font-size:4rem; font-weight:100; color:#fff;
+  letter-spacing:-.06em; line-height:1;
+}
+.wx2-temp sup { font-size:1.6rem; font-weight:200; vertical-align:super; }
+.wx2-emoji { font-size:3rem; line-height:1; align-self:center; }
+.wx2-desc {
+  font-size:1rem; font-weight:400; color:rgba(255,255,255,.82);
+  margin-bottom:6px;
+}
+.wx2-city {
+  display:flex; align-items:center; justify-content:center; gap:5px;
+  font-size:.8rem; color:rgba(255,255,255,.55); margin-bottom:8px;
+}
+.wx2-minmax {
+  display:flex; justify-content:center; gap:16px;
+  font-size:.78rem; color:rgba(255,255,255,.5); font-weight:500;
+}
+
+/* Barre horaire */
+.wx2-hourly-wrap {
+  margin-bottom:14px; overflow:hidden;
+}
+.wx2-hourly-scroll {
+  display:flex; gap:0; overflow-x:auto;
+  scrollbar-width:none; padding:0 2px;
+}
+.wx2-hourly-scroll::-webkit-scrollbar { display:none; }
+.wx2-h-item {
+  display:flex; flex-direction:column; align-items:center;
+  gap:6px; padding:12px 10px; flex-shrink:0; min-width:52px;
+  background:rgba(255,255,255,.04);
+  border-right:1px solid rgba(255,255,255,.06);
+  transition:background .12s;
+}
+.wx2-h-item:first-child { border-radius:14px 0 0 14px; }
+.wx2-h-item:last-child  { border-radius:0 14px 14px 0; border-right:none; }
+.wx2-h-item.now { background:rgba(48,209,88,.14); }
+.wx2-h-time { font-size:.62rem; font-weight:600; color:var(--text3); }
+.wx2-h-item.now .wx2-h-time { color:var(--green); }
+.wx2-h-icon { font-size:1.1rem; line-height:1; }
+.wx2-h-temp { font-size:.75rem; font-weight:600; color:var(--text); }
+
+/* Indices */
+.wx2-indices {
+  display:flex; gap:10px; margin-bottom:16px;
+}
+.wx2-idx {
+  flex:1; background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px; padding:14px 10px;
+  text-align:center;
+}
+.wx2-idx-val { font-size:1.1rem; font-weight:600; color:#fff; margin-bottom:2px; }
+.wx2-idx-lbl { font-size:.6rem; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.04em; }
+
+/* Daily rows (dans ios-group) */
+.wx2-daily-row {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px;
+}
+.wx2-daily-day { font-size:.85rem; font-weight:500; color:var(--text); flex:1; }
+.wx2-daily-icon { font-size:1.2rem; flex-shrink:0; }
+.wx2-daily-temps { font-size:.8rem; font-weight:500; color:var(--text); flex-shrink:0; }
+.wx2-daily-min { color:var(--text3); }
+
+/* Badge conditions tonte */
+.wx2-mow-badge {
+  display:flex; align-items:center; gap:10px;
+  background:rgba(48,209,88,.1); border:1px solid rgba(48,209,88,.25);
+  border-radius:14px; padding:14px 16px;
+  font-size:.82rem; font-weight:600; color:#4cd964;
+  margin:12px 0;
+}
+
 /* ── Historique — tags source ── */
 .hist-source {
   display: inline-flex; align-items: center; gap: 3px;
@@ -1982,75 +2127,153 @@ html, body {
 
     <!-- ═══ HISTORIQUE ═══ -->
     <div class="pane" id="pane-history">
-      <div class="card">
-        <div class="sec-title" style="margin-bottom:13px">Historique</div>
-        <div id="histList"></div>
-        <button class="log-btn" onclick="logTonte()">✂️ Enregistrer une tonte aujourd'hui</button>
-      </div>
-      <div class="card">
-        <div class="lbl" style="margin-bottom:10px">Statistiques</div>
-        <div class="stats-grid">
-          <div class="stat"><div class="stat-v" id="stTotal">0</div><div class="stat-l">Tontes</div></div>
-          <div class="stat"><div class="stat-v" id="stAvg">—</div><div class="stat-l">Intervalle moy.</div></div>
-          <div class="stat"><div class="stat-v" id="stSeason">0</div><div class="stat-l">Cette saison</div></div>
+
+      <!-- Statistiques — 3 tuiles + graphique -->
+      <div class="hist-stats-row">
+        <div class="hist-stat-tile">
+          <div class="hist-stat-val" id="stTotal">0</div>
+          <div class="hist-stat-lbl">Tontes</div>
         </div>
-        <!-- Graphique tontes + météo -->
-        <div class="stat-chart-wrap">
-          <canvas id="statChart" height="110"></canvas>
-          <div class="stat-chart-legend">
-            <span class="stat-leg-item"><span class="stat-leg-dot" style="background:var(--green)"></span>Tontes</span>
-            <span class="stat-leg-item"><span class="stat-leg-dot" style="background:#64b5f6"></span>Temp. °C</span>
-          </div>
-          <div class="stat-chart-empty hidden" id="statChartEmpty">Enregistrez des tontes pour voir le graphique</div>
+        <div class="hist-stat-tile">
+          <div class="hist-stat-val" id="stAvg">—</div>
+          <div class="hist-stat-lbl">Intervalle moy.</div>
+        </div>
+        <div class="hist-stat-tile">
+          <div class="hist-stat-val" id="stSeason">0</div>
+          <div class="hist-stat-lbl">Cette saison</div>
         </div>
       </div>
 
-      <!-- Signature Lahbib.AI -->
+      <!-- Graphique -->
+      <div class="hist-chart-wrap">
+        <canvas id="statChart" height="100"></canvas>
+        <div class="stat-chart-legend">
+          <span class="stat-leg-item"><span class="stat-leg-dot" style="background:var(--green)"></span>Tontes</span>
+          <span class="stat-leg-item"><span class="stat-leg-dot" style="background:#64b5f6"></span>Temp. °C</span>
+        </div>
+        <div class="stat-chart-empty hidden" id="statChartEmpty">Enregistrez des tontes pour voir le graphique</div>
+      </div>
+
+      <!-- Bouton enregistrer -->
+      <button class="btn-primary" onclick="logTonte()" style="margin-bottom:14px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Enregistrer une tonte
+      </button>
+
+      <!-- Liste historique iOS rows -->
+      <div class="ios-section-label">Dernières tontes</div>
+      <div class="ios-group" id="histList"></div>
+
+      <!-- Badge santé pelouse -->
+      <div class="hist-health-badge hidden" id="histHealthBadge">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 22C12 22 3 16 3 9a9 9 0 0 1 18 0c0 7-9 13-9 13z"/></svg>
+        <span id="histHealthTxt">Votre pelouse est en bonne santé</span>
+      </div>
+
       <div class="lahbib-brand">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
         Developed by <strong>Lahbib.AI</strong>
       </div>
     </div>
 
     <!-- ═══ CONSEILS ═══ -->
     <div class="pane" id="pane-tips">
-      <div class="card">
-        <div class="sched-hdr">
-          <div class="sec-title">Conseils saisonniers</div>
-          <div class="season-tag" id="tipSeason">—</div>
+
+      <!-- Carte hero "Le bon moment" -->
+      <div class="tips-hero">
+        <div class="tips-hero-img">
+          <svg viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="120" height="60" fill="url(#tipsGrad)"/>
+            <defs><linearGradient id="tipsGrad" x1="0" y1="0" x2="120" y2="60"><stop stop-color="#1a5c2e"/><stop offset="1" stop-color="#0d3a1c"/></linearGradient></defs>
+            <rect x="0" y="38" width="120" height="22" fill="#1a8c3e" opacity=".6" rx="3"/>
+            <rect x="0" y="44" width="120" height="16" fill="#22a84a" opacity=".5"/>
+            <path d="M20 38C20 38 35 32 60 35 85 38 100 32 120 36" stroke="#2ecc70" stroke-width="1.5" fill="none" opacity=".7"/>
+            <ellipse cx="60" cy="28" rx="8" ry="6" fill="#30d158" opacity=".9"/>
+            <path d="M60 34V22" stroke="#30d158" stroke-width="1.5"/>
+            <path d="M60 28C57 28 52 25 51 20c3.5 0 9 3 9 8z" fill="#4cd96a" opacity=".85"/>
+            <path d="M60 25C63 25 68 22 69 17c-3.5 0-9 3-9 8z" fill="#5ce87a" opacity=".8"/>
+          </svg>
         </div>
-        <div class="tips-body" id="tipsTxt">Générez un planning pour obtenir des conseils personnalisés.</div>
+        <div class="tips-hero-body">
+          <div class="tips-hero-tag" id="tipSeason">— Saison</div>
+          <div class="tips-hero-title">Le bon moment</div>
+          <div class="tips-hero-sub" id="tipsTxt">Générez un planning pour obtenir des conseils.</div>
+        </div>
       </div>
-      <div class="card">
-        <div class="lbl">Checklist avant tonte</div>
-        <div id="checklist"></div>
-        <button class="btn-secondary" style="margin-top:10px;width:100%;justify-content:center" onclick="resetChecklist()">Tout décocher</button>
+
+      <!-- Astuces du moment -->
+      <div class="ios-section-label">Astuces du moment</div>
+      <div class="ios-group">
+        <div class="ios-row">
+          <div class="ios-row-icon" style="background:#30d15820">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#30d158" stroke-width="1.8" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M9 12h6"/></svg>
+          </div>
+          <div class="ios-row-body">
+            <div class="ios-row-title">Hauteur de coupe idéale</div>
+            <div class="ios-row-value">4 à 5 cm pour un gazon dense</div>
+          </div>
+          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
+        </div>
+        <div class="ios-sep"></div>
+        <div class="ios-row">
+          <div class="ios-row-icon" style="background:#0a84ff20">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a84ff" stroke-width="1.8" stroke-linecap="round"><path d="M12 2C6 2 2 8 2 12s4 10 10 10 10-4 10-10S18 2 12 2z"/><path d="M12 6v6M12 16h.01"/></svg>
+          </div>
+          <div class="ios-row-body">
+            <div class="ios-row-title">Aérer votre pelouse</div>
+            <div class="ios-row-value">Au printemps ou à l'automne</div>
+          </div>
+          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
+        </div>
+        <div class="ios-sep"></div>
+        <div class="ios-row">
+          <div class="ios-row-icon" style="background:#ff9f0a20">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff9f0a" stroke-width="1.8" stroke-linecap="round"><path d="M12 22C12 22 3 16 3 9a9 9 0 0 1 18 0c0 7-9 13-9 13z"/></svg>
+          </div>
+          <div class="ios-row-body">
+            <div class="ios-row-title">Lutter contre les mauvaises herbes</div>
+            <div class="ios-row-value">Une pelouse dense les limite naturellement</div>
+          </div>
+          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
+        </div>
+        <div class="ios-sep"></div>
+        <div class="ios-row">
+          <div class="ios-row-icon" style="background:#5e5ce620">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5e5ce6" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+          </div>
+          <div class="ios-row-body">
+            <div class="ios-row-title">Entretien saisonnier</div>
+            <div class="ios-row-value">Adapter la tonte selon la saison</div>
+          </div>
+          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
+        </div>
       </div>
+
+      <!-- Checklist -->
+      <div class="ios-section-label" style="margin-top:4px">Checklist avant tonte</div>
+      <div class="ios-group" id="checklist"></div>
+      <button class="ios-modal-done" onclick="resetChecklist()" style="margin-top:8px">Tout décocher</button>
+
     </div>
 
     <!-- ═══ MÉTÉO ═══ -->
     <div class="pane" id="pane-weather">
 
-      <!-- Barre de recherche ville -->
+      <!-- Barre de recherche -->
       <div class="wx-search-wrap">
         <div class="wx-search-row">
           <div class="wx-search-box">
             <svg class="wx-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-            <input
-              type="text" id="wxCityInput"
-              class="wx-search-input"
+            <input type="text" id="wxCityInput" class="wx-search-input"
               placeholder="Rechercher une ville…"
               autocomplete="off" autocorrect="off" spellcheck="false"
-              oninput="onCityInput(this.value)"
-              onkeydown="onCityKey(event)"
-            >
-            <button class="wx-search-clear hidden" id="wxClearBtn" onclick="clearCitySearch()" aria-label="Effacer">✕</button>
+              oninput="onCityInput(this.value)" onkeydown="onCityKey(event)">
+            <button class="wx-search-clear hidden" id="wxClearBtn" onclick="clearCitySearch()">✕</button>
           </div>
           <button class="wx-loc-btn" onclick="loadWeather()" title="Ma position">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><path d="M12 5a7 7 0 0 1 7 7 7 7 0 0 1-7 7 7 7 0 0 1-7-7 7 7 0 0 1 7-7z" opacity=".3"/></svg>
           </button>
         </div>
-        <!-- Suggestions -->
         <div class="wx-suggestions hidden" id="wxSuggestions"></div>
       </div>
 
@@ -2058,40 +2281,63 @@ html, body {
       <div class="hidden" id="wxErr">
         <div class="wx-err">
           <div class="wx-err-t">📍 Localisation requise</div>
-          <div class="wx-err-s" id="wxErrMsg">Autorisez l'accès ou saisissez une ville ci-dessus.</div>
+          <div class="wx-err-s" id="wxErrMsg">Autorisez l'accès ou saisissez une ville.</div>
           <button class="btn-primary" style="margin-top:8px;max-width:220px;margin:8px auto 0" onclick="loadWeather()">📍 Utiliser ma position</button>
         </div>
       </div>
+
       <div class="hidden" id="wxContent">
-        <div class="wx-hero" id="wxHero">
-          <div>
-            <div class="wx-city" id="wxCity">—</div>
-            <div class="wx-desc" id="wxDesc">—</div>
+
+        <!-- ── Hero météo (maquette After) ── -->
+        <div class="wx2-hero">
+          <div class="wx2-main">
+            <div class="wx2-temp" id="wxTemp">—<sup>°</sup></div>
+            <div class="wx2-emoji" id="wxEmoji">—</div>
           </div>
-          <div class="wx-bottom">
-            <div class="wx-temp" id="wxTemp">—<sup>°</sup></div>
-            <div class="wx-emoji" id="wxEmoji">—</div>
+          <div class="wx2-desc" id="wxDesc">—</div>
+          <div class="wx2-city">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+            <span id="wxCity">—</span>
+          </div>
+          <div class="wx2-minmax">
+            <span>Max <span id="wxMax">—</span>°</span>
+            <span>Min <span id="wxMin">—</span>°</span>
           </div>
         </div>
-        <div class="wx-dec" id="wxDec">
-          <div class="wx-dec-icon" id="wxDecIcon">—</div>
-          <div><div class="wx-dec-v" id="wxDecV">—</div><div class="wx-dec-r" id="wxDecR">—</div></div>
+
+        <!-- ── Barre horaire ── -->
+        <div class="wx2-hourly-wrap">
+          <div class="wx2-hourly-scroll" id="wxHourly"></div>
         </div>
-        <div class="wx-grid">
-          <div class="wx-index"><div class="wx-il">💧 Humidité</div><div class="wx-iv" id="wxHum">—</div><div class="wx-is" id="wxHumS">—</div></div>
-          <div class="wx-index"><div class="wx-il">💨 Vent</div><div class="wx-iv" id="wxWind">—</div><div class="wx-is" id="wxWindS">—</div></div>
-          <div class="wx-index"><div class="wx-il">🌧 Pluie 24h</div><div class="wx-iv" id="wxRain">—</div><div class="wx-is" id="wxRainS">—</div></div>
-          <div class="wx-index"><div class="wx-il">☀️ UV Index</div><div class="wx-iv" id="wxUV">—</div><div class="wx-is" id="wxUVS">—</div></div>
+
+        <!-- ── Indices météo ── -->
+        <div class="wx2-indices">
+          <div class="wx2-idx"><div class="wx2-idx-val" id="wxHum">—</div><div class="wx2-idx-lbl">Humidité</div></div>
+          <div class="wx2-idx"><div class="wx2-idx-val" id="wxWind">—</div><div class="wx2-idx-lbl">Vent</div></div>
+          <div class="wx2-idx"><div class="wx2-idx-val" id="wxUV">—</div><div class="wx2-idx-lbl">Indice UV</div></div>
         </div>
-        <div class="wx-hourly">
-          <div class="wx-h-title">PRÉVISIONS PAR HEURE</div>
-          <div class="wx-h-fade"><div class="wx-h-scroll" id="wxHourly"></div></div>
-        </div>
-        <div class="wx-daily">
-          <div class="wx-d-title">PRÉVISIONS 7 JOURS</div>
+
+        <!-- ── Prévisions 7 jours (iOS rows) ── -->
+        <div class="ios-section-label">Prévisions</div>
+        <div class="ios-group">
           <div id="wxDaily"></div>
         </div>
-        <div class="wx-attr">Météo : Open-Meteo · Gratuit & open source</div>
+
+        <!-- ── Badge conditions tonte ── -->
+        <div class="wx2-mow-badge" id="wx2MowBadge">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 22C12 22 3 16 3 9a9 9 0 0 1 18 0c0 7-9 13-9 13z"/></svg>
+          <span id="wx2MowTxt">Conditions idéales</span>
+        </div>
+
+        <!-- Éléments cachés conservés pour compat JS -->
+        <div style="display:none">
+          <div id="wxHumS"></div><div id="wxWindS"></div><div id="wxRain"></div>
+          <div id="wxRainS"></div><div id="wxUVS"></div>
+          <div id="wxDec"><div id="wxDecIcon"></div><div id="wxDecV"></div><div id="wxDecR"></div></div>
+          <div id="wxHero"><div id="wxMaxHidden">—</div><div id="wxMinHidden">—</div></div>
+        </div>
+
+        <div class="wx-attr">Météo : Open-Meteo · Gratuit &amp; open source</div>
       </div>
     </div>
 
@@ -2693,7 +2939,11 @@ function switchTab(name){
     // Toujours appeler initWeatherPane — elle gère elle-même le cache/reload
     setTimeout(initWeatherPane, 0);
   }
-  if(name==='settings')updatePushUI();
+  if(name==='settings'){
+    updatePushUI();
+    const cityEl=$('settingsCityDisplay');
+    if(cityEl) cityEl.textContent=safeGet('ln_wx_city','')||'Non défini';
+  }
 }
 
 // ══════════════════════════════════════════
@@ -4552,22 +4802,55 @@ function delHist(i){
 }
 function renderHistory(){
   const list=$('histList');
+  if(!list) return;
   if(!S.history.length){
-    list.innerHTML='<div class="hist-empty">Aucune tonte enregistrée.<br>Appuyez ci-dessous pour commencer.</div>';
-    renderStats();return;
+    list.innerHTML='<div class="ios-row" style="color:var(--text3);font-size:.85rem;padding:20px 16px;justify-content:center">Aucune tonte enregistrée</div>';
+    renderStats(); updateHistHealthBadge(); return;
   }
-  list.innerHTML=S.history.map((h,i)=>{
-    const srcTag = h.source==='planned'
-      ? '<span class="hist-source planned">📅 Planifiée</span>'
-      : '<span class="hist-source manual">✋ Manuelle</span>';
-    const note = h.note ? `<span style="color:var(--text3)"> · ${h.note}</span>` : '';
-    return `<div class="hist-row">
-      <div class="hist-date">🌿 ${fmtDate(new Date(h.date+'T12:00'))}${srcTag}</div>
-      <div class="hist-note">${note}</div>
-      <button class="hist-del" onclick="delHist(${i})">✕</button>
-    </div>`;
-  }).join('');
-  renderStats();
+  list.innerHTML='';
+  const now = new Date();
+  S.history.forEach((h,i)=>{
+    const d     = new Date(h.date+'T12:00');
+    const ago   = Math.floor((now-d)/864e5);
+    const agoTxt= ago===0?"Aujourd'hui":ago===1?'Hier':'Il y a '+ago+' jours';
+    const isPlan= h.source==='planned';
+    const row   = document.createElement('div');
+    row.className='ios-row';
+    row.innerHTML=`
+      <div class="ios-row-icon" style="background:${isPlan?'#0a84ff20':'#30d15820'}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="${isPlan?'#0a84ff':'#30d158'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          ${isPlan
+            ?'<rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M16 2v4"/>'
+            :'<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/>'}
+        </svg>
+      </div>
+      <div class="ios-row-body">
+        <div class="ios-row-title">${fmtDate(d)}</div>
+        <div class="ios-row-value">${agoTxt}${h.note?' · '+h.note:''}</div>
+      </div>
+      <button onclick="delHist(${i});event.stopPropagation()"
+        style="background:none;border:none;color:rgba(255,69,58,.7);font-size:.85rem;
+               padding:6px;cursor:pointer;flex-shrink:0">✕</button>`;
+    if(i<S.history.length-1){
+      const sep=document.createElement('div'); sep.className='ios-sep';
+      list.appendChild(row); list.appendChild(sep);
+    } else {
+      list.appendChild(row);
+    }
+  });
+  renderStats(); updateHistHealthBadge();
+}
+
+function updateHistHealthBadge(){
+  const badge=$('histHealthBadge'), txt=$('histHealthTxt');
+  if(!badge||!txt) return;
+  if(S.history.length>=3){
+    badge.classList.remove('hidden');
+    txt.textContent='Votre pelouse est en bonne santé. Suivez votre rythme !';
+  } else {
+    badge.classList.add('hidden');
+  }
 }
 function renderStats(){
   $('stTotal').textContent=S.history.length;
@@ -5087,53 +5370,85 @@ document.addEventListener('click', e=>{
   if(!e.target.closest('.wx-search-wrap')) hideSuggestions();
 });
 
-function renderWeather(wx,city){
-  const c=wx.current,hr=wx.hourly,d=wx.daily;
-  // Hero
+function renderWeather(wx, city){
+  const c=wx.current, hr=wx.hourly, d=wx.daily;
   const _isNight = detectIsNight(wx);
-  $('wxCity').textContent=city;
-  $('wxDesc').textContent=(_isNight?WX_DESC_NIGHT[c.weather_code]:WX_DESC[c.weather_code])||'—';
-  $('wxTemp').innerHTML=cvt(c.temperature_2m)+'<sup>°</sup>';
-  $('wxEmoji').textContent=(_isNight?WX_ICONS_NIGHT[c.weather_code]:WX_ICONS[c.weather_code])||'🌡';
-  const code=c.weather_code;
-  const cls=code>=95?'stormy':code>=61?'rainy':code>=3?'cloudy':'';
-  $('wxHero').className='wx-hero '+(cls||'');
-  // Decision
-  const rain=c.precipitation||0,wind=c.wind_speed_10m||0,temp=c.temperature_2m||15,hum=c.relative_humidity_2m||50;
-  let dcls,dicon,dv,dr;
-  if(rain>2)        {dcls='stop';dicon='🚫';dv='Ne pas tondre';  dr=`Sol mouillé — ${rain.toFixed(1)} mm récents. Attendre 24h.`;}
-  else if(temp<4)   {dcls='stop';dicon='🥶';dv='Trop froid';     dr=`${Math.round(temp)}°C — l'herbe est fragile sous 5°C.`;}
-  else if(wind>45)  {dcls='stop';dicon='💨';dv='Vent trop fort'; dr=`${Math.round(wind)} km/h — dangereux. Attendre l'accalmie.`;}
-  else if(hum>90)   {dcls='wait';dicon='💧';dv='Attendre ce soir';dr=`Humidité ${hum}% — herbe potentiellement mouillée.`;}
-  else if(temp>36)  {dcls='wait';dicon='🌡';dv='Tondre le soir'; dr=`${Math.round(temp)}°C — trop chaud maintenant. Préférez après 18h.`;}
-  else if(rain>0.5) {dcls='wait';dicon='🌦';dv='À vérifier';     dr=`${rain.toFixed(1)} mm récemment. Vérifiez que le sol est drainé.`;}
-  else              {dcls='go';  dicon='✅';dv='Conditions idéales';dr=`${Math.round(temp)}°C · ${Math.round(wind)} km/h · ${hum}% — c'est le bon moment !`;}
-  $('wxDec').className='wx-dec '+dcls;
-  $('wxDecIcon').textContent=dicon;$('wxDecV').textContent=dv;$('wxDecR').textContent=dr;
-  // Index
-  $('wxHum').textContent=hum+'%';$('wxHumS').textContent=hum<60?'Sol drainé':hum<80?'Modérée':'Herbe mouillée possible';
-  $('wxWind').textContent=Math.round(wind)+' km/h';$('wxWindS').textContent=wind<20?'Calme':wind<35?'Brise':wind<50?'Modéré':'Fort — déconseillé';
-  $('wxRain').textContent=rain.toFixed(1)+' mm';$('wxRainS').textContent=rain===0?'Aucune':rain<2?'Légère':'Sol potentiellement mouillé';
-  const uv=Math.round(c.uv_index||0);$('wxUV').textContent=uv;$('wxUVS').textContent=uv<=2?'Faible':uv<=5?'Modéré':uv<=7?'Élevé':'Très élevé';
-  // Hourly
-  const nowH=new Date().getHours();const scroll=$('wxHourly');scroll.innerHTML='';
-  const times=hr.time.map((t,i)=>({t,temp:hr.temperature_2m[i],code:hr.weather_code[i],rain:hr.precipitation_probability[i]}));
-  const si=Math.max(0,times.findIndex(x=>new Date(x.t).getHours()===nowH));
-  times.slice(si,si+24).forEach((h,idx)=>{
-    const hDate=new Date(h.t),hh2=hDate.getHours();
-    const div=document.createElement('div');div.className='wx-hr';
-    div.innerHTML=`<div class="wx-hr-t${idx===0?' now':''}">${idx===0?'Maint.':(hh2<10?'0':'')+hh2+'h'}</div><div class="wx-hr-e">${WX_ICONS[h.code]||'—'}</div><div class="wx-hr-c">${cvt(h.temp)}°</div>${h.rain>20?'<div class="wx-hr-r">'+h.rain+'%</div>':''}`;
-    scroll.appendChild(div);
-  });
-  // Daily
-  const DAYS=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-  const daily=$('wxDaily');daily.innerHTML='';
-  d.time.forEach((t,i)=>{
-    const day=new Date(t+'T12:00'),isT=i===0;
-    const p=d.precipitation_sum[i],w=d.wind_speed_10m_max[i],tx=d.temperature_2m_max[i];
-    const{dot,txt}=p>5?{dot:'dot-stop',txt:'Pluie — éviter'}:w>40?{dot:'dot-wait',txt:'Vent fort'}:tx<5?{dot:'dot-stop',txt:'Trop froid'}:p>1?{dot:'dot-wait',txt:'Pluie possible'}:{dot:'dot-go',txt:'Idéal'};
-    daily.innerHTML+=`<div class="wx-day"><div class="wx-day-n">${isT?'Auj.':DAYS[day.getDay()]}</div><div class="wx-day-e">${WX_ICONS[d.weather_code[i]]||'—'}</div><div class="wx-day-l"><div class="wx-dot ${dot}"></div><span class="wx-day-lt">${txt}</span></div><div class="wx-day-temps"><span>${cvt(d.temperature_2m_max[i])}°</span><span class="wx-day-lo">${cvt(d.temperature_2m_min[i])}°</span></div></div>`;
-  });
+  const rain=c.precipitation||0, wind=c.wind_speed_10m||0;
+  const temp=c.temperature_2m||15, hum=c.relative_humidity_2m||50;
+  const uv=Math.round(c.uv_index||0);
+
+  // ── Hero wx2 ──
+  $('wxCity').textContent = city;
+  $('wxDesc').textContent = (_isNight?WX_DESC_NIGHT[c.weather_code]:WX_DESC[c.weather_code])||'—';
+  $('wxTemp').innerHTML   = cvt(temp)+'<sup>°</sup>';
+  $('wxEmoji').textContent= (_isNight?WX_ICONS_NIGHT[c.weather_code]:WX_ICONS[c.weather_code])||'🌡';
+  if($('wxMax') && d?.temperature_2m_max) $('wxMax').textContent=cvt(d.temperature_2m_max[0]);
+  if($('wxMin') && d?.temperature_2m_min) $('wxMin').textContent=cvt(d.temperature_2m_min[0]);
+
+  // ── Indices ──
+  if($('wxHum'))  $('wxHum').textContent  = hum+'%';
+  if($('wxWind')) $('wxWind').textContent = Math.round(wind)+' km/h';
+  if($('wxUV'))   $('wxUV').textContent   = uv;
+
+  // ── Barre horaire wx2 ──
+  const scroll=$('wxHourly');
+  if(scroll && hr){
+    scroll.innerHTML='';
+    const nowH=new Date().getHours();
+    const times=hr.time.map((t,i)=>({t,temp:hr.temperature_2m[i],code:hr.weather_code[i]}));
+    const si=Math.max(0,times.findIndex(x=>new Date(x.t).getHours()===nowH));
+    times.slice(si,si+12).forEach((h,idx)=>{
+      const hh=new Date(h.t).getHours();
+      const el=document.createElement('div');
+      el.className='wx2-h-item'+(idx===0?' now':'');
+      el.innerHTML=`<div class="wx2-h-time">${idx===0?'Maint.':String(hh).padStart(2,'0')+'h'}</div>
+        <div class="wx2-h-icon">${WX_ICONS[h.code]||'—'}</div>
+        <div class="wx2-h-temp">${cvt(h.temp)}°</div>`;
+      scroll.appendChild(el);
+    });
+  }
+
+  // ── Daily iOS rows ──
+  const daily=$('wxDaily');
+  if(daily && d){
+    daily.innerHTML='';
+    const DAYS=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+    d.time.forEach((t,i)=>{
+      const day=new Date(t+'T12:00'), isT=i===0;
+      const prc=d.precipitation_sum[i]||0;
+      const row=document.createElement('div');
+      row.className='wx2-daily-row';
+      const colMin='<span class="wx2-daily-min">'+cvt(d.temperature_2m_min[i])+'°</span>';
+      row.innerHTML=`<div class="wx2-daily-day">${isT?'Aujourd\'hui':DAYS[day.getDay()]}</div>
+        <div class="wx2-daily-icon">${WX_ICONS[d.weather_code[i]]||'—'}</div>
+        <div class="wx2-daily-temps">${cvt(d.temperature_2m_max[i])}° ${colMin}</div>`;
+      daily.appendChild(row);
+      if(i<d.time.length-1){
+        const sep=document.createElement('div'); sep.className='ios-sep';
+        daily.appendChild(sep);
+      }
+    });
+  }
+
+  // ── Badge conditions tonte ──
+  const mow=$('wx2MowBadge'), mowTxt=$('wx2MowTxt');
+  if(mow && mowTxt){
+    let txt, color;
+    if(rain>2||temp<4||wind>45){txt='Conditions défavorables — ne pas tondre';color='rgba(255,69,58,.1)';}
+    else if(hum>90||temp>36||rain>0.5){txt='Conditions moyennes — à vérifier';color='rgba(255,214,10,.1)';}
+    else{txt='Conditions idéales — pas de pluie prévue dans les 7 jours';color='rgba(48,209,88,.1)';}
+    mowTxt.textContent=txt;
+    mow.style.background=color;
+  }
+
+  // Compat éléments cachés
+  if($('wxHumS'))  $('wxHumS').textContent  = hum<60?'Sol drainé':hum<80?'Modérée':'Mouillée';
+  if($('wxWindS')) $('wxWindS').textContent  = wind<20?'Calme':wind<35?'Brise':'Fort';
+  if($('wxRain'))  $('wxRain').textContent   = rain.toFixed(1)+' mm';
+  if($('wxRainS')) $('wxRainS').textContent  = rain===0?'Aucune':'Récente';
+  if($('wxUVS'))   $('wxUVS').textContent    = uv<=2?'Faible':uv<=5?'Modéré':'Élevé';
+  if($('wxDecV'))  $('wxDecV').textContent   = rain>2?'Ne pas tondre':rain===0&&temp>5&&wind<45?'Conditions idéales':'À vérifier';
+
   showWxEl('wxContent');
 }
 
