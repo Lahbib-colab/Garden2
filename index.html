@@ -135,8 +135,10 @@ html, body {
   position: relative;
   height: 52vw; min-height: 200px; max-height: 280px;
   overflow: hidden; background: #0a1a0a;
-  /* Pas de border-radius — plein bord comme la maquette */
-  margin: 0 -16px; /* déborde sur les marges du content */
+  /* Plein bord : on annule le padding du parent .content directement */
+  width: 100vw;
+  margin-left: calc(-1 * var(--gap, 16px));
+  /* contain:layout empêche le collapse, pas de border-radius */
 }
 .lawn-photo {
   position: absolute; inset: 0; width: 100%; height: 100%;
@@ -157,11 +159,8 @@ html, body {
   z-index: 0;
   isolation: isolate;
 }
-/* Garde-fou sur .lawn aussi */
-.lawn {
-  min-width: 0;
-  contain: layout;  /* empêche le collapse du conteneur */
-}
+/* Garde-fou sur .lawn */
+.lawn { min-width: 100vw; }
 /* Vignette dégradée bas (identique à avant) */
 #lawnVignette {
   position: absolute; inset: 0;
@@ -317,7 +316,7 @@ html, body {
 .wx-cloud {
   position: absolute; border-radius: 50px;
   background: rgba(200,210,220,.22);
-  backdrop-filter: blur(2px);
+  /* SUPPRIMÉ: backdrop-filter crée un stacking context qui écrase #wxBgCanvas */
   animation: cloud-drift linear infinite;
 }
 .wx-cloud-1 { width:110px;height:36px;top:12px;left:-120px;animation-duration:18s;animation-delay:0s; }
@@ -6218,26 +6217,26 @@ const WeatherBackgroundCanvas = (() => {
   // ── Resize robuste — jamais de 0px ────────────────────────────────
   function getParentSize(){
     const parent = CVS.parentElement;
-    if(!parent) return { w: 375, h: 220 };
+    if(!parent) return { w: window.innerWidth || 375, h: 240 };
 
-    // Essai 1 : getBoundingClientRect (fiable si visible)
+    // .lawn utilise width:100vw avec margin négatif → getBoundingClientRect
+    // peut retourner la vraie largeur ou la largeur du flux selon le navigateur.
+    // On prend window.innerWidth comme source de vérité pour la largeur,
+    // et offsetHeight pour la hauteur (toujours fiable).
+    const vw = window.innerWidth || 375;
+
+    // Hauteur : essai cascade
+    let h = 0;
     const r = parent.getBoundingClientRect();
-    if(r.width > 0 && r.height > 0) return { w: r.width, h: r.height };
+    if(r.height > 0) h = r.height;
+    else if(parent.offsetHeight > 0) h = parent.offsetHeight;
+    else {
+      const cs = getComputedStyle(parent);
+      h = parseFloat(cs.height) || 240;
+    }
 
-    // Essai 2 : offsetWidth/offsetHeight (fonctionne même si opacity:0)
-    if(parent.offsetWidth > 0 && parent.offsetHeight > 0)
-      return { w: parent.offsetWidth, h: parent.offsetHeight };
-
-    // Essai 3 : scrollWidth/scrollHeight
-    if(parent.scrollWidth > 0) return { w: parent.scrollWidth, h: parent.scrollHeight };
-
-    // Essai 4 : lire les CSS computés
-    const cs = getComputedStyle(parent);
-    const cw = parseFloat(cs.width), ch = parseFloat(cs.height);
-    if(cw > 0 && ch > 0) return { w: cw, h: ch };
-
-    // Fallback : dimensions standard mobile
-    return { w: window.innerWidth || 375, h: 220 };
+    // Largeur : toujours 100vw (le lawn est pleine largeur)
+    return { w: vw, h: Math.max(h, 150) };
   }
 
   function resize(){
