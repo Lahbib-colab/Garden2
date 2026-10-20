@@ -149,11 +149,18 @@ html, body {
 /* ══ WeatherBackgroundCanvas ══ */
 .wx-bg-canvas {
   position: absolute; inset: 0;
-  width: 100%; height: 100%;
+  width: 100% !important;   /* garde-fou CSS — jamais 0px */
+  height: 100% !important;
+  min-width: 10px !important;
+  min-height: 10px !important;
   border-radius: var(--r);
   z-index: 0;
-  /* Isoler le stacking context du canvas pour ne pas enterrer le widget */
   isolation: isolate;
+}
+/* Garde-fou sur .lawn aussi */
+.lawn {
+  min-width: 0;
+  contain: layout;  /* empêche le collapse du conteneur */
 }
 /* Vignette dégradée bas (identique à avant) */
 #lawnVignette {
@@ -639,22 +646,27 @@ html, body {
 /* ── Météo flottante sur canvas (style maquette) ── */
 .lawn-wx-float {
   position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 20px 20px 16px;
-  background: linear-gradient(0deg, rgba(0,0,0,.6) 0%, transparent 100%);
+  min-width: 100%;   /* garde-fou */
+  padding: 20px 20px 18px;
+  background: linear-gradient(0deg, rgba(0,0,0,.65) 0%, rgba(0,0,0,.2) 60%, transparent 100%);
   z-index: 10;
+  /* Toujours visible — pas de display:none géré par JS */
+  opacity: 1;
+  transition: opacity .4s ease;
 }
+.lawn-wx-float.wx-hidden { opacity: 0; pointer-events: none; }
 .lwf-temp {
-  font-size: 3rem; font-weight: 100; color: #fff;
-  letter-spacing: -.06em; line-height: 1; margin-bottom: 4px;
+  font-size: 3.2rem; font-weight: 100; color: #fff;
+  letter-spacing: -.06em; line-height: 1; margin-bottom: 6px;
 }
-.lwf-temp sup { font-size: 1.4rem; font-weight: 200; vertical-align: super; }
+.lwf-temp sup { font-size: 1.5rem; font-weight: 200; vertical-align: super; }
 .lwf-desc {
-  font-size: .95rem; font-weight: 400; color: rgba(255,255,255,.85);
+  font-size: 1rem; font-weight: 400; color: rgba(255,255,255,.9);
   margin-bottom: 5px;
 }
 .lwf-city {
   display: flex; align-items: center; gap: 4px;
-  font-size: .78rem; color: rgba(255,255,255,.6);
+  font-size: .8rem; color: rgba(255,255,255,.65);
 }
 
 /* ══ iOS Plan Layout ══ */
@@ -2073,7 +2085,7 @@ html, body {
         </div>
 
         <!-- Météo flottante directement sur le canvas (style maquette) -->
-        <div class="lawn-wx-float" id="lawnWx" style="display:none">
+        <div class="lawn-wx-float wx-hidden" id="lawnWx">
           <div class="lwf-temp" id="lawnWxTemp">—°</div>
           <div class="lwf-desc" id="lawnWxDesc">—</div>
           <div class="lwf-city">
@@ -3054,12 +3066,18 @@ function switchTab(name){
   if(lbl){logo.style.display='none';page.style.display='block';page.textContent=lbl;}
   else{logo.style.display='';page.style.display='none';}
   // Side effects
+  if(name==='plan'){
+    // Forcer le resize du canvas AVANT de mettre à jour la météo
+    // (le pane vient de passer en display:block via .active)
+    requestAnimationFrame(()=>{
+      WeatherBackgroundCanvas.forceResize();
+      updateLawnWeather();
+    });
+  }
   if(name==='weather'){
-    // Restaurer la ville dans le champ
     const savedCity = safeGet('ln_wx_city','');
     const inp = $('wxCityInput');
     if(inp && savedCity) inp.value = savedCity;
-    // Toujours appeler initWeatherPane — elle gère elle-même le cache/reload
     setTimeout(initWeatherPane, 0);
   }
   if(name==='settings'){
@@ -3225,14 +3243,21 @@ function extractWxCurrent(cache){
 }
 
 function updateLawnWeather(){
-  // 1. Source de données : S.wxCache en priorité, sinon localStorage
+  // 1. Source : mémoire → localStorage → on ne sort JAMAIS sans afficher
   let cache = S.wxCache;
-  let city  = S.wxCacheCity || safeGet('ln_wx_city','');
+  let city  = S.wxCacheCity || safeGet('ln_wx_city','') || 'Plaisir';
 
   if(!cache){
     const saved = safeGetJSON('ln_wx_widget', null);
-    if(saved){ cache = saved; city = saved._city || city; }
+    if(saved){
+      cache = saved;
+      city  = saved._city || city;
+      // Remettre en mémoire pour les prochains appels
+      S.wxCache     = saved;
+      S.wxCacheCity = city;
+    }
   }
+  // Sans données : widget reste caché, rien à faire
   if(!cache) return;
 
   // 2. Extraire les données current (robuste quelle que soit la structure)
@@ -3248,15 +3273,14 @@ function updateLawnWeather(){
   // Appliquer le mode nuit sur la photo pelouse
   applyNightMode(cache);
 
-  // 3. Mettre à jour la météo flottante sur canvas
+  // 3. Météo flottante — toujours visible via classe CSS, jamais display:none
   const wx = $('lawnWx');
   if(wx){
-    wx.style.display = 'block';
-    const el = (id) => $(id);
-    const em = el('lawnWxEmoji'), tp = el('lawnWxTemp'),
-          dc = el('lawnWxDesc'),  ci = el('lawnWxCity');
-    if(em) em.textContent = emoji;
-    if(tp) tp.textContent = temp + '°';
+    wx.classList.remove('wx-hidden');
+    const tp = $('lawnWxTemp');
+    const dc = $('lawnWxDesc');
+    const ci = $('lawnWxCity');
+    if(tp) tp.innerHTML = temp + '<sup>°</sup>';
     if(dc) dc.textContent = desc;
     if(ci) ci.textContent = city || '';
   }
@@ -5496,6 +5520,21 @@ function clearStars(){
 // Réinitialiser quand on change de ville (force un rechargement au prochain switchTab)
 function resetWxLoaded(){ S.wxLoaded = false; }
 
+// ── Watchdog météo ───────────────────────────────────────────────
+// Surveille que le widget ne disparaît pas si des données sont disponibles
+(function startWxWatchdog(){
+  setInterval(()=>{
+    const wx = $('lawnWx');
+    if(!wx) return;
+    // Si des données existent mais widget caché → restaurer
+    const hasData = S.wxCache || safeGetJSON('ln_wx_widget', null);
+    if(hasData && wx.classList.contains('wx-hidden')){
+      console.log('[WxWatchdog] Restauration météo manquante');
+      updateLawnWeather();
+    }
+  }, 4000);
+})();
+
 async function _silentRefresh(lat, lon, cityName){
   try{
     const res = await fetch(
@@ -5506,28 +5545,28 @@ async function _silentRefresh(lat, lon, cityName){
       `&wind_speed_unit=kmh&timezone=auto&forecast_days=7`,
       { signal: AbortSignal.timeout(8000) }
     );
-    if(!res.ok) return;
-    const wx = await res.json();
-    const city = cityName || S.wxCacheCity || safeGet('ln_wx_city','');
-    S.wxCache = wx; S.wxCacheCity = city;
-    // Sauvegarder
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const wx   = await res.json();
+    const city = cityName || S.wxCacheCity || safeGet('ln_wx_city','') || 'Plaisir';
+    S.wxCache     = wx;
+    S.wxCacheCity = city;
     safeSave('ln_wx_widget', JSON.stringify({
       current:wx.current, daily:wx.daily,
       _city:city, _lat:lat, _lon:lon,
       _savedAt:Date.now(), _code:wx.current?.weather_code||0,
       _temp:wx.current?.temperature_2m||0
     }));
+    safeSave('ln_wx_city', city);
     S.wxLoaded = true;
-    const inp = $('wxCityInput');
-    if(inp && city) inp.value = city;
-    // Mettre à jour l'onglet météo si actif
+    const inp = $('wxCityInput'); if(inp) inp.value = city;
     const pane = $('pane-weather');
-    if(pane?.classList.contains('active')){
-      renderWeather(wx, city);
-    }
-    // Widget lawn — différé pour ne pas interférer avec le DOM en cours
-    requestAnimationFrame(()=>{ updateLawnWeather(); });
-  } catch(e){ /* silencieux */ }
+    if(pane?.classList.contains('active')) renderWeather(wx, city);
+  } catch(e){
+    console.warn('[Météo refresh silencieux]', e.message);
+  } finally {
+    // Toujours mettre à jour le widget lawn — même si réseau KO, le cache suffit
+    if(S.wxCache) requestAnimationFrame(updateLawnWeather);
+  }
 }
 
 async function fetchWeatherByCoords(lat, lon, cityName){
@@ -5572,13 +5611,15 @@ async function fetchWeatherByCoords(lat, lon, cityName){
     safeSave('ln_wx_widget', JSON.stringify(widgetData));
 
     renderWeather(wx, city);
-    // Mettre à jour le widget lawn SANS toucher au planning ni au listener date
-    requestAnimationFrame(()=>{ updateLawnWeather(); });
     S.wxLoaded = true;
+    requestAnimationFrame(updateLawnWeather);
   } catch(e) {
     console.warn('[Météo]', e.message);
     $('wxErrMsg').textContent = 'Impossible de charger la météo. Vérifiez votre connexion.';
     showWxEl('wxErr');
+  } finally {
+    // Garantie : si on a un cache, toujours afficher le widget
+    if(S.wxCache) requestAnimationFrame(updateLawnWeather);
   }
 }
 
@@ -5803,7 +5844,7 @@ function resetAll(){
   $('schedCard')?.classList.add('hidden');
   $('nextBox')?.classList.add('hidden');
   $('lawnNextBadge')?.classList.add('hidden');
-  $('lawnWx')&&($('lawnWx').style.display='none');
+  $('lawnWx')?.classList.add('wx-hidden');
   renderHistory();renderChecklist();buildFreqGrid();updateLawn();
   showToast('Données réinitialisées ✓');
 }
@@ -5993,44 +6034,44 @@ document.addEventListener('DOMContentLoaded', function(){
   renderTips(getSeason(),'');
   updatePushUI();
 
-  // ── Restauration météo au démarrage ──
-  // 1. Lire le cache immédiatement → widget sur la photo
-  const savedWidget = safeGetJSON('ln_wx_widget', null);
-  const savedCity   = safeGet('ln_wx_city', '');
-  const savedLat    = safeGet('ln_wx_lat', '');
-  const savedLon    = safeGet('ln_wx_lon', '');
+  // ── Restauration météo au démarrage — logique unifiée ──────────────
+  const DEFAULT_LAT  = 48.8167, DEFAULT_LON = 1.9500, DEFAULT_CITY = 'Plaisir';
+  const _savedCity   = safeGet('ln_wx_city', '');
+  const _savedLat    = safeGet('ln_wx_lat',  '');
+  const _savedLon    = safeGet('ln_wx_lon',  '');
+  const _useLat      = _savedLat  ? parseFloat(_savedLat)  : DEFAULT_LAT;
+  const _useLon      = _savedLon  ? parseFloat(_savedLon)  : DEFAULT_LON;
+  const _useCity     = _savedCity || DEFAULT_CITY;
 
-  if(savedWidget?.current){
-    S.wxCache     = savedWidget;
-    S.wxCacheCity = savedWidget._city || savedCity;
-    const inp = $('wxCityInput');
-    if(inp && S.wxCacheCity) inp.value = S.wxCacheCity;
-    updateLawnWeather(); // widget lawn immédiat
-  }
-
-  // 2. Rafraîchir / charger la météo
-  const DEFAULT_LAT = 48.8167, DEFAULT_LON = 1.9500, DEFAULT_CITY = 'Plaisir';
-  const useLat = savedLat ? parseFloat(savedLat) : DEFAULT_LAT;
-  const useLon = savedLon ? parseFloat(savedLon) : DEFAULT_LON;
-  const useCity = savedCity || DEFAULT_CITY;
-
-  if(!savedLat && !savedLon){
-    // Premier lancement → pré-enregistrer Plaisir comme ville par défaut
+  // Si pas de ville enregistrée → Plaisir par défaut
+  if(!_savedLat || !_savedLon){
     safeSave('ln_wx_lat',  String(DEFAULT_LAT));
     safeSave('ln_wx_lon',  String(DEFAULT_LON));
     safeSave('ln_wx_city', DEFAULT_CITY);
-    const inp = $('wxCityInput');
-    if(inp) inp.value = DEFAULT_CITY;
+    const inp = $('wxCityInput'); if(inp) inp.value = DEFAULT_CITY;
   }
 
+  // 1. Cache localStorage → affichage immédiat (0ms)
+  const _cached = safeGetJSON('ln_wx_widget', null);
+  if(_cached?.current){
+    S.wxCache     = _cached;
+    S.wxCacheCity = _cached._city || _useCity;
+    const inp = $('wxCityInput'); if(inp) inp.value = S.wxCacheCity;
+    updateLawnWeather();
+    S.wxLoaded = true;
+  }
+
+  // 2. Fetch réseau → màj silencieuse (délai court si cache, immédiat sinon)
+  const _delay = S.wxLoaded ? 1200 : 0;
   setTimeout(()=>{
-    if(savedLat && savedLon){
-      _silentRefresh(useLat, useLon, useCity);
+    if(S.wxLoaded){
+      // Cache présent → refresh silencieux sans loader
+      _silentRefresh(_useLat, _useLon, _useCity);
     } else {
-      // Charger Plaisir au premier lancement
-      fetchWeatherByCoords(useLat, useLon, useCity);
+      // Pas de cache → fetch complet (montre loader onglet météo uniquement)
+      fetchWeatherByCoords(_useLat, _useLon, _useCity);
     }
-  }, 800);
+  }, _delay);
 
   // Check in-app alert
   if(S.lastDate&&safeGet('ln_inApp','1')!=='0'){
@@ -6084,15 +6125,47 @@ const WeatherBackgroundCanvas = (() => {
   // Particules réutilisables (pool)
   const drops=[], clouds=[], stars=[], snowflakes=[];
 
-  // ── Resize ────────────────────────────────────────────────────────
+  // ── Resize robuste — jamais de 0px ────────────────────────────────
+  function getParentSize(){
+    const parent = CVS.parentElement;
+    if(!parent) return { w: 375, h: 220 };
+
+    // Essai 1 : getBoundingClientRect (fiable si visible)
+    const r = parent.getBoundingClientRect();
+    if(r.width > 0 && r.height > 0) return { w: r.width, h: r.height };
+
+    // Essai 2 : offsetWidth/offsetHeight (fonctionne même si opacity:0)
+    if(parent.offsetWidth > 0 && parent.offsetHeight > 0)
+      return { w: parent.offsetWidth, h: parent.offsetHeight };
+
+    // Essai 3 : scrollWidth/scrollHeight
+    if(parent.scrollWidth > 0) return { w: parent.scrollWidth, h: parent.scrollHeight };
+
+    // Essai 4 : lire les CSS computés
+    const cs = getComputedStyle(parent);
+    const cw = parseFloat(cs.width), ch = parseFloat(cs.height);
+    if(cw > 0 && ch > 0) return { w: cw, h: ch };
+
+    // Fallback : dimensions standard mobile
+    return { w: window.innerWidth || 375, h: 220 };
+  }
+
   function resize(){
-    const dpr=window.devicePixelRatio||1;
-    const r=CVS.parentElement.getBoundingClientRect();
-    W=r.width; H=r.height;
-    CVS.width=W*dpr; CVS.height=H*dpr;
-    CVS.style.width=W+'px'; CVS.style.height=H+'px';
-    CTX.setTransform(1,0,0,1,0,0);
-    CTX.scale(dpr,dpr);
+    const { w, h } = getParentSize();
+    // Sécurité absolue : ne jamais écrire 0
+    if(w <= 0 || h <= 0){
+      // Réessayer au prochain frame quand le DOM sera prêt
+      requestAnimationFrame(resize);
+      return;
+    }
+    const dpr = window.devicePixelRatio || 1;
+    W = w; H = h;
+    CVS.width  = Math.round(W * dpr);
+    CVS.height = Math.round(H * dpr);
+    CVS.style.width  = W + 'px';
+    CVS.style.height = H + 'px';
+    CTX.setTransform(1, 0, 0, 1, 0, 0);
+    CTX.scale(dpr, dpr);
     init();
   }
 
@@ -6382,22 +6455,46 @@ const WeatherBackgroundCanvas = (() => {
   function render(code, isDay){
     const changed = STATE.code!==code || STATE.isDay!==isDay;
     STATE = {code:+code, isDay:!!isDay};
-    if(changed) init(); // réinitialise les particules sans stopper la loop
-    if(!RAF){ resize(); loop(); } // démarre si pas encore démarré
+    if(changed) init();
+    if(!RAF){
+      // Premier rendu : attendre que le DOM soit visible
+      const tryStart = () => {
+        const { w } = getParentSize();
+        if(w > 0){ resize(); loop(); }
+        else requestAnimationFrame(tryStart);
+      };
+      requestAnimationFrame(tryStart);
+    }
   }
 
-  // Debounce resize — évite les relances en cascade (keyboard iOS, scroll, layout shift)
+  // forceResize — appelé depuis switchTab quand le pane redevient visible
+  function forceResize(){
+    // Court-circuite le debounce pour une réponse immédiate
+    const { w, h } = getParentSize();
+    if(w > 0 && h > 0 && (Math.abs(w-W)>1 || Math.abs(h-H)>1)){
+      resize();
+    }
+  }
+
+  // ResizeObserver sur le pane parent (pas juste le canvas)
+  // Observe aussi le pane-plan pour savoir quand il redevient visible
   let _resizeTimer = null;
-  new ResizeObserver(entries => {
-    const e = entries[0];
-    const newW = e.contentRect.width;
-    const newH = e.contentRect.height;
-    // Ne relancer que si les dimensions changent vraiment (>2px)
-    if(Math.abs(newW - W) < 2 && Math.abs(newH - H) < 2) return;
-    clearTimeout(_resizeTimer);
-    _resizeTimer = setTimeout(resize, 100);
-  }).observe(CVS.parentElement);
-  return { render };
+  const ro = new ResizeObserver(entries => {
+    for(const e of entries){
+      const { width, height } = e.contentRect;
+      // Ignorer les callbacks à 0 (pane caché)
+      if(width <= 0 || height <= 0) continue;
+      if(Math.abs(width - W) < 2 && Math.abs(height - H) < 2) continue;
+      clearTimeout(_resizeTimer);
+      _resizeTimer = setTimeout(resize, 80);
+    }
+  });
+  ro.observe(CVS.parentElement);
+  // Observer aussi le pane-plan entier pour détecter quand il devient visible
+  const planPane = document.getElementById('pane-plan');
+  if(planPane) ro.observe(planPane);
+
+  return { render, forceResize };
 })();
 
 // ── HTCWeatherRainOverlay — Rain on Glass (composant isolé) ────────
