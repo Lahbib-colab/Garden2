@@ -5344,8 +5344,8 @@ function initWeatherPane(){
     return;
   }
 
-  // Cas 4 : aucune information → afficher le formulaire de recherche vide
-  showWxEl('wxSearch');
+  // Cas 4 : aucune information → charger Plaisir, France par défaut
+  fetchWeatherByCoords(48.8167, 1.9500, 'Plaisir');
 }
 
 // ══ MODE NUIT — composant isolé ══════════════════════════════════════
@@ -5976,12 +5976,29 @@ document.addEventListener('DOMContentLoaded', function(){
     updateLawnWeather(); // widget lawn immédiat
   }
 
-  // 2. Rafraîchir silencieusement (pas de loader, pas d'impact sur le planning)
-  if(savedLat && savedLon){
-    setTimeout(()=>{
-      _silentRefresh(parseFloat(savedLat), parseFloat(savedLon), savedCity || null);
-    }, 1500); // délai pour laisser l'app finir de s'initialiser
+  // 2. Rafraîchir / charger la météo
+  const DEFAULT_LAT = 48.8167, DEFAULT_LON = 1.9500, DEFAULT_CITY = 'Plaisir';
+  const useLat = savedLat ? parseFloat(savedLat) : DEFAULT_LAT;
+  const useLon = savedLon ? parseFloat(savedLon) : DEFAULT_LON;
+  const useCity = savedCity || DEFAULT_CITY;
+
+  if(!savedLat && !savedLon){
+    // Premier lancement → pré-enregistrer Plaisir comme ville par défaut
+    safeSave('ln_wx_lat',  String(DEFAULT_LAT));
+    safeSave('ln_wx_lon',  String(DEFAULT_LON));
+    safeSave('ln_wx_city', DEFAULT_CITY);
+    const inp = $('wxCityInput');
+    if(inp) inp.value = DEFAULT_CITY;
   }
+
+  setTimeout(()=>{
+    if(savedLat && savedLon){
+      _silentRefresh(useLat, useLon, useCity);
+    } else {
+      // Charger Plaisir au premier lancement
+      fetchWeatherByCoords(useLat, useLon, useCity);
+    }
+  }, 800);
 
   // Check in-app alert
   if(S.lastDate&&safeGet('ln_inApp','1')!=='0'){
