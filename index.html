@@ -783,9 +783,12 @@ html, body {
   padding:12px 16px calc(32px + env(safe-area-inset-bottom));
   transform:translateY(100%);
   transition:transform .32s cubic-bezier(.4,0,.2,1);
+  /* Pas d'overflow:hidden — bloque le date picker natif iOS */
 }
 .ios-modal.hidden { display:none; }
 .ios-modal.open { transform:translateY(0); }
+/* Le groupe dans le modal peut clipper mais pas le modal lui-même */
+.ios-modal .ios-modal-group { overflow:hidden; border-radius:14px; }
 .ios-modal-handle {
   width:40px;height:4px;background:rgba(255,255,255,.2);
   border-radius:2px;margin:0 auto 16px;
@@ -2680,14 +2683,18 @@ html, body {
       <span class="ios-modal-check hidden" id="dmc14">✓</span>
     </div>
     <div class="ios-sep"></div>
-    <div class="ios-modal-row" id="dmCustomRow">
+    <div class="ios-modal-row" id="dmCustomRow" onclick="openNativeDatePicker()">
       <span>Autre date</span>
-      <input type="date" id="dateModalInput" class="ios-modal-date-input"
-             onchange="setCustomDateModal(this.value)">
+      <span class="ios-modal-val" id="dmCustomVal">Choisir →</span>
     </div>
   </div>
   <button class="ios-modal-done" onclick="closeDateModal()">OK</button>
 </div>
+
+<!-- Input date natif iOS — hors de tout transform/overflow pour fonctionner sur Safari -->
+<input type="date" id="nativeDatePicker"
+  style="position:fixed;bottom:-200px;left:0;opacity:0;width:1px;height:1px;pointer-events:none"
+  onchange="setCustomDateModal(this.value)">
 
 <!-- ══ Modal Fréquence ══ -->
 <div class="ios-modal-backdrop hidden" id="freqModalBd" onclick="closeFreqModal()"></div>
@@ -3363,13 +3370,22 @@ function showWxImage(wxCls) {
 // DATE HELPERS
 // ══════════════════════════════════════════
 function setRelDate(daysAgo){
-  const d=new Date();d.setDate(d.getDate()-daysAgo);
+  const d=new Date(); d.setDate(d.getDate()-daysAgo);
   const str=d.toISOString().split('T')[0];
-  _dateSetByCode = false; // changement volontaire de l'utilisateur
-  $('lastDate').value=str;
-  S.lastDate=str;safeSave('ln_date',str);
+  _applyLastDate(str);
+}
+
+function _applyLastDate(str){
+  if(!str) return;
+  _dateSetByCode = false;
+  S.lastDate = str;
+  safeSave('ln_date', str);
+  // Sync input caché sans déclencher d'event
+  const h=$('lastDate'); if(h) h.value=str;
   updateLawn();
-  $('schedCard').classList.add('hidden');$('nextBox').classList.add('hidden');
+  updateIosPlanDisplay();
+  // Masquer le planning existant pour forcer un recalcul
+  const sc=$('schedCard'); if(sc) sc.classList.add('hidden');
   try{ localStorage.removeItem('ln_sched'); }catch(e){}
 }
 
@@ -3957,24 +3973,40 @@ function openDateModal(){
 function closeDateModal(){ closeModal('date'); }
 
 function setRelDateModal(n){
-  // Décocher tout, cocher le bon
   ['dmc0','dmc1','dmc7','dmc14'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); });
   const checkId={0:'dmc0',1:'dmc1',7:'dmc7',14:'dmc14'}[n];
   if(checkId){ const el=$(checkId); if(el) el.classList.remove('hidden'); }
   setRelDate(n);
-  updateIosPlanDisplay();
-  setTimeout(closeDateModal, 280);
+  setTimeout(closeDateModal, 220);
 }
+function openNativeDatePicker(){
+  const inp = $('nativeDatePicker');
+  if(!inp) return;
+  // Pré-remplir avec la date actuelle
+  if(S.lastDate) inp.value = S.lastDate;
+  // Rendre l'input accessible temporairement pour iOS
+  inp.style.pointerEvents = 'auto';
+  inp.style.opacity = '0';
+  inp.style.bottom = '0';
+  inp.focus();
+  inp.click();
+  // iOS a besoin d'un moment pour ouvrir le picker
+  setTimeout(()=>{
+    inp.style.pointerEvents = 'none';
+    inp.style.bottom = '-200px';
+  }, 500);
+}
+
 function setCustomDateModal(val){
   if(!val) return;
-  // Appliquer directement — le champ est caché, on bypass le listener
-  S.lastDate = val;
-  safeSave('ln_date', val);
-  // Sync les éléments cachés
-  const hidden=$('lastDate'); if(hidden) hidden.value=val;
-  updateIosPlanDisplay();
-  updateLawn();
-  setTimeout(closeDateModal, 280);
+  // Mettre à jour le label dans le modal
+  const lbl = $('dmCustomVal');
+  if(lbl){
+    const d = new Date(val+'T12:00');
+    lbl.textContent = d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
+  }
+  _applyLastDate(val);
+  setTimeout(closeDateModal, 220);
 }
 
 function _pmGridNav(dir){
