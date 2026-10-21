@@ -78,10 +78,14 @@ html, body {
 .topbar-page { font-size: .9rem; font-weight: 700; letter-spacing: -.02em; color: var(--text); display: none; }
 
 /* ── Content ── */
-.content { flex: 1; padding: 0 16px calc(var(--sab) + 84px); }
-/* Premier enfant du pane-plan reçoit le padding top */
-#pane-plan .ios-plan { padding-top: 14px; }
-#pane-history, #pane-tips, #pane-weather, #pane-settings { padding-top: 14px; }
+.content { flex: 1; padding: 0 0 calc(var(--sab) + 84px); overflow-y: auto; }
+/* Chaque pane gère son propre padding horizontal */
+.pane { padding: 0 16px; }
+/* pane-plan : pas de padding horizontal (le lawn prend toute la largeur) */
+#pane-plan { padding: 0; }
+#pane-plan .ios-plan { padding: 0 16px 16px; }
+/* Autres panes : padding top aussi */
+#pane-history, #pane-tips, #pane-weather, #pane-settings { padding-top: 12px; }
 .pane { display: none; }
 .pane.active { display: block; animation: fadein 180ms ease forwards; }
 @keyframes fadein { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -139,12 +143,10 @@ html, body {
   position: relative;
   height: 52vw; min-height: 200px; max-height: 280px;
   overflow: hidden; background: #0a1a0a;
-  /* Plein bord — annule exactement le padding de .content (16px de chaque côté) */
-  width: calc(100% + 32px);
-  margin-left: -16px;
+  /* pane-plan n'a plus de padding, donc lawn = pleine largeur naturellement */
+  width: 100%;
+  margin: 0;
   border-radius: 0;
-  margin-bottom: 0;
-  margin-top: 0;
 }
 .lawn-photo {
   position: absolute; inset: 0; width: 100%; height: 100%;
@@ -713,9 +715,9 @@ html, body {
 .lwf-advice.stop { border-color: rgba(255,69,58,.3); }
 
 /* ══ iOS Plan Layout ══ */
-.ios-plan { display:flex; flex-direction:column; gap:0; padding: 0 0 16px; }
+.ios-plan { display:flex; flex-direction:column; gap:0; }
 /* Espace entre le canvas météo et la carte prochaine tonte */
-.ios-plan .ios-next-card { margin-top: 14px; }
+.ios-next-card { margin-top: 12px; }
 
 /* Carte prochaine tonte — verte proéminente */
 .ios-next-card {
@@ -6450,6 +6452,14 @@ async function restoreSavedSchedule(){
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
+// ── Bloquer le zoom pinch sur iOS (iOS 10+ ignore user-scalable=no) ──
+document.addEventListener('gesturestart',  e=>e.preventDefault(), {passive:false});
+document.addEventListener('gesturechange', e=>e.preventDefault(), {passive:false});
+document.addEventListener('gestureend',    e=>e.preventDefault(), {passive:false});
+document.addEventListener('touchmove', e=>{
+  if(e.touches.length > 1) e.preventDefault();
+}, {passive:false});
+
 document.addEventListener('DOMContentLoaded', function(){
   // Restore saved values
   // Assigner la valeur AVANT d'attacher le listener pour éviter un faux déclenchement
@@ -6581,36 +6591,23 @@ const WeatherBackgroundCanvas = (() => {
   // Particules réutilisables (pool)
   const drops=[], clouds=[], stars=[], snowflakes=[];
 
-  // ── Resize robuste — mesure réelle du conteneur ───────────────────
+  // ── Resize robuste ────────────────────────────────────────────────
   function getParentSize(){
-    const parent = CVS.parentElement;
+    const parent = CVS.parentElement; // = .lawn
     if(!parent) return { w: 375, h: 240 };
 
-    // Stratégie : mesurer le pane-plan (ancêtre visible) plutôt que .lawn
-    // qui a un margin négatif perturbant getBoundingClientRect()
-    const pane   = document.getElementById('pane-plan') || parent;
-    const content= pane.querySelector('.ios-plan') || pane;
+    // .lawn est maintenant width:100% sans margin négatif
+    // offsetWidth est fiable directement
+    let w = parent.offsetWidth;
+    let h = parent.offsetHeight;
 
-    // Largeur : pane-plan → content → parent → fallback
-    let w = 0;
-    // 1. offsetWidth du pane (fiable même pendant transition)
-    if(pane.offsetWidth > 10) w = pane.offsetWidth;
-    // 2. getBoundingClientRect du pane
+    // Fallbacks si mesure trop tôt (pane pas encore visible)
     if(w <= 10){
-      const r = pane.getBoundingClientRect();
-      if(r.width > 10) w = r.width;
-    }
-    // 3. scrollWidth
-    if(w <= 10 && pane.scrollWidth > 10) w = pane.scrollWidth;
-    // Jamais de largeur absurde (> 800px = desktop large → limiter)
-    if(w > 800) w = Math.min(w, 500); // PWA mobile max raisonnable
-
-    // Hauteur : offsetHeight du parent direct (.lawn)
-    let h = parent.offsetHeight || 0;
-    if(h <= 10){
       const r = parent.getBoundingClientRect();
+      w = r.width || document.documentElement.clientWidth || 375;
       h = r.height || 240;
     }
+    if(h <= 10) h = 240;
 
     return { w: Math.max(w, 200), h: Math.max(h, 150) };
   }
