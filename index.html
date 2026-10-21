@@ -2279,7 +2279,7 @@ html, body {
 
       <!-- Graphique -->
       <div class="hist-chart-wrap">
-        <canvas id="statChart" height="100"></canvas>
+        <canvas id="statChart" height="140" style="width:100%;cursor:pointer"></canvas>
         <div class="stat-chart-legend">
           <span class="stat-leg-item"><span class="stat-leg-dot" style="background:var(--green)"></span>Tontes</span>
           <span class="stat-leg-item"><span class="stat-leg-dot" style="background:#64b5f6"></span>Temp. °C</span>
@@ -3674,8 +3674,12 @@ function saveOverrides(ov){
   safeSave('ln_sched_overrides', JSON.stringify(ov));
 }
 function evKey(date){
+  // Utiliser la date LOCALE (pas UTC) pour éviter le décalage UTC+1/+2
   const d = date instanceof Date ? date : new Date(date+'T12:00');
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
 }
 function applyOverrides(evs){
   const ov = loadOverrides();
@@ -3700,12 +3704,14 @@ function applyOverrides(evs){
 function cancelMowing(dateKey){
   const ov = loadOverrides();
   if(ov[dateKey]?.status === 'cancelled'){
-    delete ov[dateKey]; // toggle : re-activer
+    delete ov[dateKey];
   } else {
     ov[dateKey] = {status:'cancelled'};
   }
   saveOverrides(ov);
-  generate(true); // re-render sans recalculer les dates
+  generate(true);
+  // Mettre à jour la carte "Prochaine tonte" avec le vrai prochain jour
+  _refreshNextCard();
 }
 function postponeMowing(dateKey, days){
   const ov = loadOverrides();
@@ -3713,12 +3719,26 @@ function postponeMowing(dateKey, days){
   ov[dateKey] = {status:'postponed', shift: cur + (days||1)};
   saveOverrides(ov);
   generate(true);
+  _refreshNextCard();
 }
 function resetOverride(dateKey){
   const ov = loadOverrides();
   delete ov[dateKey];
   saveOverrides(ov);
   generate(true);
+  _refreshNextCard();
+}
+
+// Recalcule et affiche la vraie prochaine tonte (ignore annulées)
+function _refreshNextCard(){
+  if(!S.schedule?.length) return;
+  // Le vrai "prochain" = premier événement non-done ET non-cancelled
+  const next = S.schedule.find(e =>
+    e.type !== 'done' &&
+    e.diff >= 0 &&
+    e.status !== 'cancelled'
+  );
+  updateLawnNextBadge(next || null);
 }
 
 let _schedView      = safeGet('ln_sched_view','list'); // 'list' | 'cal' | 'grid'
@@ -4431,7 +4451,8 @@ function _renderGridView(){
 
   for(let day=1; day<=daysInMonth; day++){
     const d   = new Date(year, month, day);
-    const key = d.toISOString().split('T')[0];
+    // Utiliser la date locale (pas UTC) pour éviter le bug UTC+1/+2
+    const key = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const ev  = evMap[key];
     const isToday = d.toDateString()===now.toDateString();
     const isPast  = d<now && !isToday;
@@ -5190,10 +5211,18 @@ function saveLogTonte(date, note){
   renderHistory();
   showToast('Tonte enregistrée ✓');
 }
-function delHist(i){
-  S.history.splice(i,1);
-  safeSave('ln_hist', JSON.stringify(S.history));
-  dbSave('ln_hist', S.history);
+function delHist(dateKey){
+  // Utiliser la date comme clé unique (pas l'index qui change après chaque delete)
+  const before = S.history.length;
+  S.history = S.history.filter(h => {
+    const d = new Date(h.date+'T12:00');
+    const k = evKey(d);
+    return k !== dateKey;
+  });
+  if(S.history.length < before){
+    safeSave('ln_hist', JSON.stringify(S.history));
+    dbSave('ln_hist', S.history);
+  }
   renderHistory();
 }
 function renderHistory(){
@@ -5238,8 +5267,9 @@ function renderHistory(){
 
     wrap.appendChild(row);
 
-    // Swipe gauche → supprimer
-    attachHistSwipe(wrap, row, i);
+    // Swipe gauche → supprimer (clé unique = date, pas index)
+    const hKey = evKey(d);
+    attachHistSwipe(wrap, row, hKey);
 
     list.appendChild(wrap);
     if(i < S.history.length-1){
@@ -5320,13 +5350,15 @@ function renderStats(){
   renderStatChart();
 }
 
+// ── Graphique en courbe interactive ──────────────────────────────
+let _chartData = null; // gardé pour le tooltip
+
 function renderStatChart(){
   const canvas=$('statChart');
   const empty=$('statChartEmpty');
   if(!canvas) return;
 
-  // Pas assez de données
-  if(S.history.length<2){
+  if(S.history.length < 2){
     canvas.style.display='none';
     if(empty) empty.classList.remove('hidden');
     return;
@@ -5334,113 +5366,176 @@ function renderStatChart(){
   canvas.style.display='block';
   if(empty) empty.classList.add('hidden');
 
-  // Préparer les données — 8 dernières tontes max, ordre chronologique
-  const data = [...S.history].reverse().slice(-8);
-  const labels = data.map(h=>{ const d=new Date(h.date+'T12:00'); return (d.getDate())+'/'+(d.getMonth()+1); });
-  const tontes = data.map((_,i)=>i+1); // cumul
+  // Données : 10 dernières tontes, ordre chronologique
+  const data = [...S.history].sort((a,b)=>a.date.localeCompare(b.date)).slice(-10);
+  const labels = data.map(h=>{
+    const d=new Date(h.date+'T12:00');
+    return String(d.getDate()).padStart(2,'0')+'/'+(d.getMonth()+1);
+  });
 
-  // Températures depuis le cache météo (si disponible)
-  const wxCache = S.wxCache;
-  let temps = data.map(()=>null);
-  if(wxCache && wxCache.daily && wxCache.daily.time){
-    const dailyTimes = wxCache.daily.time;
-    const dailyTemps = wxCache.daily.temperature_2m_max || wxCache.daily.temperature_2m_min || [];
-    data.forEach((h,i)=>{
-      const idx = dailyTimes.indexOf(h.date);
-      if(idx>=0 && dailyTemps[idx]!==undefined) temps[i]=Math.round(dailyTemps[idx]);
-    });
-  }
-  const hasTemps = temps.some(t=>t!==null);
+  // Intervalles entre tontes (en jours)
+  const intervals = data.map((h,i)=>{
+    if(i===0) return null;
+    const prev=new Date(data[i-1].date+'T12:00');
+    const cur =new Date(h.date+'T12:00');
+    return Math.round((cur-prev)/864e5);
+  });
+
+  _chartData = { data, labels, intervals };
 
   // Canvas setup
   const dpr = window.devicePixelRatio||1;
-  const W = canvas.offsetWidth||320;
-  const H = 110;
-  canvas.width = W*dpr; canvas.height = H*dpr;
+  const W = canvas.parentElement?.offsetWidth || canvas.offsetWidth || 300;
+  const H = 140;
+  canvas.width  = W*dpr; canvas.height = H*dpr;
+  canvas.style.width  = W+'px'; canvas.style.height = H+'px';
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr,dpr);
 
-  const isDark = document.documentElement.classList.contains('light') ? false : true;
-  const textCol = isDark ? 'rgba(255,255,255,.4)' : 'rgba(0,0,0,.4)';
-  const gridCol = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
-
-  const pad = {t:10,r:hasTemps?30:8,b:26,l:28};
+  const GREEN  = '#30d158';
+  const BLUE   = '#64b5f6';
+  const GRID   = 'rgba(255,255,255,.07)';
+  const TEXT   = 'rgba(255,255,255,.4)';
+  const pad = {t:18, r:14, b:30, l:14};
   const cW = W - pad.l - pad.r;
   const cH = H - pad.t - pad.b;
-  const n = data.length;
-  const xStep = n>1 ? cW/(n-1) : cW/2;
+  const n  = data.length;
+  const xAt = i => pad.l + (n > 1 ? i/(n-1) : 0.5) * cW;
 
-  // Grille horizontale
-  ctx.strokeStyle=gridCol; ctx.lineWidth=1;
-  for(let g=0;g<=3;g++){
-    const y=pad.t+(cH/3)*g;
-    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cW,y);ctx.stroke();
+  // Intervalles valides
+  const vals = intervals.filter(v=>v!==null);
+  const minV = vals.length ? Math.max(0, Math.min(...vals)-2) : 0;
+  const maxV = vals.length ? Math.max(...vals)+2 : 20;
+  const yAt  = v => pad.t + cH - ((v-minV)/(maxV-minV||1))*cH;
+
+  // ── Grille ──
+  ctx.strokeStyle=GRID; ctx.lineWidth=.8;
+  for(let g=0;g<=4;g++){
+    const y=pad.t+(cH/4)*g;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+cW,y); ctx.stroke();
   }
 
-  // Axe x — labels dates
-  ctx.fillStyle=textCol; ctx.font='500 9px -apple-system,sans-serif'; ctx.textAlign='center';
-  data.forEach((_,i)=>{
-    const x=pad.l+i*xStep;
-    ctx.fillText(labels[i], x, H-pad.b+12);
-  });
+  // ── Courbe intervalles (courbe bezier lisse) ──
+  const pts = intervals.map((v,i)=>({ x:xAt(i), y:v!==null ? yAt(v) : null }))
+                        .filter(p=>p.y!==null);
 
-  // Courbe tontes (barres)
-  const maxT=tontes[tontes.length-1]||1;
-  data.forEach((_,i)=>{
-    const x=pad.l+i*xStep;
-    const bH=(tontes[i]/maxT)*cH*0.7;
-    const y=pad.t+cH-bH;
-    const bW=Math.min(xStep*.45,14);
-    // Gradient vert
-    const grd=ctx.createLinearGradient(x,y,x,y+bH);
-    grd.addColorStop(0,'rgba(48,209,88,.9)');
-    grd.addColorStop(1,'rgba(48,209,88,.25)');
-    ctx.fillStyle=grd;
-    const r=4;
+  if(pts.length >= 2){
+    // Zone remplie sous la courbe
+    const area = ctx.createLinearGradient(0, pad.t, 0, pad.t+cH);
+    area.addColorStop(0, 'rgba(48,209,88,.18)');
+    area.addColorStop(1, 'rgba(48,209,88,0)');
+    ctx.fillStyle=area;
     ctx.beginPath();
-    ctx.roundRect(x-bW/2,y,bW,bH,r);
-    ctx.fill();
-    // Valeur
-    ctx.fillStyle='rgba(48,209,88,.9)';
-    ctx.font='bold 9px -apple-system,sans-serif';
-    ctx.textAlign='center';
-    ctx.fillText(tontes[i], x, y-3);
-  });
+    ctx.moveTo(pts[0].x, pad.t+cH);
+    ctx.lineTo(pts[0].x, pts[0].y);
+    for(let i=1;i<pts.length;i++){
+      const cpx=(pts[i-1].x+pts[i].x)/2;
+      ctx.bezierCurveTo(cpx,pts[i-1].y, cpx,pts[i].y, pts[i].x,pts[i].y);
+    }
+    ctx.lineTo(pts[pts.length-1].x, pad.t+cH);
+    ctx.closePath(); ctx.fill();
 
-  // Courbe températures
-  if(hasTemps){
-    const validTemps = temps.filter(t=>t!==null);
-    const minT=Math.min(...validTemps)-2, maxTmp=Math.max(...validTemps)+2;
-    const tempY=t=>pad.t+cH-((t-minT)/(maxTmp-minT||1))*cH*.85;
-
-    ctx.strokeStyle='rgba(100,181,246,.85)';
-    ctx.lineWidth=2;
-    ctx.lineJoin='round';
-    ctx.lineCap='round';
-    ctx.setLineDash([]);
+    // Ligne courbe
+    ctx.strokeStyle=GREEN; ctx.lineWidth=2.2;
+    ctx.lineJoin='round'; ctx.lineCap='round';
     ctx.beginPath();
-    let started=false;
-    temps.forEach((t,i)=>{
-      if(t===null) return;
-      const x=pad.l+i*xStep, y=tempY(t);
-      if(!started){ ctx.moveTo(x,y); started=true; } else ctx.lineTo(x,y);
-    });
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for(let i=1;i<pts.length;i++){
+      const cpx=(pts[i-1].x+pts[i].x)/2;
+      ctx.bezierCurveTo(cpx,pts[i-1].y, cpx,pts[i].y, pts[i].x,pts[i].y);
+    }
     ctx.stroke();
 
-    // Points + labels temp
-    temps.forEach((t,i)=>{
-      if(t===null) return;
-      const x=pad.l+i*xStep, y=tempY(t);
-      ctx.fillStyle='rgba(100,181,246,.9)';
-      ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+    // Points interactifs
+    pts.forEach((p,i)=>{
+      ctx.fillStyle='#1c1c1e';
+      ctx.beginPath(); ctx.arc(p.x,p.y,4,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle=GREEN; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(p.x,p.y,4,0,Math.PI*2); ctx.stroke();
     });
 
-    // Axe Y droite température
-    ctx.fillStyle='rgba(100,181,246,.6)';
-    ctx.font='9px -apple-system,sans-serif'; ctx.textAlign='right';
-    ctx.fillText(Math.round(maxTmp)+'°', W-2, pad.t+8);
-    ctx.fillText(Math.round(minT)+'°', W-2, pad.t+cH);
+    // Valeurs sur les points
+    ctx.fillStyle='rgba(48,209,88,.85)';
+    ctx.font='bold 9px -apple-system,sans-serif';
+    ctx.textAlign='center';
+    pts.forEach(p=>{
+      const v=Math.round(maxV - (p.y-pad.t)/(cH/(maxV-minV)) + minV);
+      ctx.fillText(v+'j', p.x, p.y-8);
+    });
   }
+
+  // ── Points tonte (axe bas) ──
+  data.forEach((h,i)=>{
+    const x=xAt(i);
+    ctx.fillStyle='rgba(48,209,88,.6)';
+    ctx.beginPath(); ctx.arc(x, pad.t+cH+8, 2.5, 0, Math.PI*2); ctx.fill();
+  });
+
+  // ── Labels dates ──
+  ctx.fillStyle=TEXT;
+  ctx.font='500 8.5px -apple-system,sans-serif';
+  ctx.textAlign='center';
+  // Afficher max 5 labels pour éviter chevauchement
+  const step = Math.ceil(n/5);
+  data.forEach((_,i)=>{
+    if(i % step === 0 || i === n-1){
+      ctx.fillText(labels[i], xAt(i), H-4);
+    }
+  });
+
+  // ── Légende ──
+  ctx.fillStyle=GREEN;
+  ctx.font='bold 9px -apple-system,sans-serif';
+  ctx.textAlign='left';
+  ctx.fillText('● Intervalle (jours)', pad.l, 12);
+
+  // ── Tooltip au touch/click ──
+  _attachChartTooltip(canvas, W, H, pad, xAt, pts, data, intervals);
+}
+
+function _attachChartTooltip(canvas, W, H, pad, xAt, pts, data, intervals){
+  // Supprimer l'ancien listener
+  canvas._tooltipHandler && canvas.removeEventListener('click', canvas._tooltipHandler);
+  canvas._tooltipHandler && canvas.removeEventListener('touchend', canvas._tooltipHandler);
+
+  const tip = $('chartTooltip') || (() => {
+    const t=document.createElement('div'); t.id='chartTooltip';
+    t.style.cssText='position:absolute;background:#1c1c1e;border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:7px 11px;font-size:.72rem;color:#fff;pointer-events:none;display:none;z-index:50;min-width:100px;box-shadow:0 4px 12px rgba(0,0,0,.4)';
+    canvas.parentElement.style.position='relative';
+    canvas.parentElement.appendChild(t);
+    return t;
+  })();
+
+  let hideTimer;
+  function showTip(e){
+    const rect=canvas.getBoundingClientRect();
+    const clientX=(e.touches?e.changedTouches[0]:e).clientX;
+    const rx=clientX-rect.left;
+    // Trouver le point le plus proche
+    let minDist=Infinity, closestIdx=-1;
+    pts.forEach((p,i)=>{ const d=Math.abs(p.x-rx); if(d<minDist){minDist=d;closestIdx=i;} });
+    if(closestIdx<0||minDist>40){tip.style.display='none';return;}
+
+    // Trouver l'index réel dans data (pts exclut data[0] qui n'a pas d'interval)
+    const dataIdx = intervals.findIndex((v,i)=>v!==null&&pts[closestIdx]===({x:xAt(i),y:null}||pts[closestIdx])) || closestIdx+1;
+    const h=data[Math.min(closestIdx+1,data.length-1)];
+    const iv=intervals[closestIdx+1]!==undefined?intervals[closestIdx+1]:null;
+    const d=new Date(h.date+'T12:00');
+
+    tip.innerHTML=`<div style="font-weight:700;margin-bottom:3px">${fmtDate(d)}</div>`
+      +(iv!==null?`<div style="color:rgba(48,209,88,.9)">⏱ ${iv} jours depuis la précédente</div>`:'')
+      +(h.note?`<div style="color:rgba(255,255,255,.5);margin-top:2px">${h.note}</div>`:'');
+
+    const tipX=Math.min(pts[closestIdx].x, W-120);
+    tip.style.left=tipX+'px';
+    tip.style.top=(pad.t)+'px';
+    tip.style.display='block';
+    clearTimeout(hideTimer);
+    hideTimer=setTimeout(()=>tip.style.display='none',3000);
+  }
+  canvas.addEventListener('click',    showTip);
+  canvas.addEventListener('touchend', showTip, {passive:true});
+  canvas._tooltipHandler = showTip;
 }
 
 // ══════════════════════════════════════════
