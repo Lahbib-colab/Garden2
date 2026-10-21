@@ -87,8 +87,9 @@ html, body {
 /* Autres panes : padding top aussi */
 #pane-history, #pane-tips, #pane-weather, #pane-settings { padding-top: 12px; }
 .pane { display: none; }
+/* Pas de transform dans fadein — crée un stacking context qui bloque les touches */
 .pane.active { display: block; animation: fadein 180ms ease forwards; }
-@keyframes fadein { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .pane.active { animation: none; } }
 
 /* ── Tab bar — Liquid Glass Pill ── */
@@ -322,10 +323,9 @@ html, body {
 /* Nuages CSS uniquement pour wx-cloud (wx-rain et wx-storm utilisent les PNG) */
 .lawn.wx-cloud .wx-cloud-layer { display: block; }
 .wx-cloud {
-  position: absolute; border-radius: 50px;
-  background: rgba(200,210,220,.22);
-  /* SUPPRIMÉ: backdrop-filter crée un stacking context qui écrase #wxBgCanvas */
-  animation: cloud-drift linear infinite;
+  /* Désactivé — remplacé par WeatherBackgroundCanvas (canvas animé) */
+  /* Les nuages CSS créaient des stacking contexts qui bloquaient les touches */
+  display: none !important;
 }
 .wx-cloud-1 { width:110px;height:36px;top:12px;left:-120px;animation-duration:18s;animation-delay:0s; }
 .wx-cloud-2 { width:80px; height:26px;top:28px;left:-90px; animation-duration:24s;animation-delay:-8s;opacity:.7; }
@@ -664,8 +664,11 @@ html, body {
   z-index: 10;
   opacity: 1;
   transition: opacity .4s ease;
+  /* Ne jamais capturer les touches — le contenu en dessous doit rester cliquable */
+  pointer-events: none;
 }
-.lawn-wx-float.wx-hidden { opacity: 0; pointer-events: none; }
+/* Les enfants interactifs récupèrent les touches individuellement */
+.lawn-wx-float.wx-hidden { opacity: 0; }
 .lwf-temp {
   font-size: 4rem; font-weight: 100; color: #fff;
   letter-spacing: -.06em; line-height: 1; margin-bottom: 4px;
@@ -1562,10 +1565,9 @@ html, body {
   background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.30);
   border-radius: 20px; padding: 5px 14px;
   font-size: .74rem; font-weight: 600; color: #fff; white-space: nowrap;
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 2px 8px rgba(0,0,0,.25);
   display: flex; align-items: center; gap: 5px; z-index: 10;
+  pointer-events: none; /* ne jamais bloquer les touches sur ios-plan */
 }
 
 /* ── Ring + badge jours — droite ── */
