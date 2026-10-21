@@ -1456,6 +1456,55 @@ html, body {
 }
 .hist-row-pill:active { cursor: grabbing; }
 
+/* ══ CONSEILS enrichis ══ */
+.tips-detail {
+  font-size: .75rem; color: rgba(255,255,255,.55); line-height: 1.5;
+  margin-top: 6px; padding-top: 6px;
+  border-top: 0.5px solid rgba(255,255,255,.07);
+}
+.tips-detail.hidden { display: none; }
+.tips-chev { transition: transform .2s ease; }
+.tips-article-row { cursor: pointer; }
+
+/* Checklist refonte */
+.chk-row { cursor: pointer; user-select: none; }
+.chk-icon-wrap {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: background .2s;
+}
+.chk-done .ios-row-title { opacity: .4; }
+
+/* Barre progression checklist */
+.chk-progress-wrap {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px;
+}
+.chk-progress-bar {
+  flex: 1; height: 4px; background: rgba(255,255,255,.1);
+  border-radius: 2px; overflow: hidden;
+}
+.chk-progress-fill {
+  height: 100%; background: #30d158; border-radius: 2px;
+  transition: width .3s ease;
+}
+.chk-progress-count {
+  font-size: .72rem; font-weight: 600; color: rgba(255,255,255,.45);
+  flex-shrink: 0;
+}
+
+/* Bouton reset checklist */
+.tips-reset-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; margin-top: 8px;
+  background: transparent; border: 1px solid rgba(255,255,255,.1);
+  border-radius: var(--r-pill); color: rgba(255,255,255,.4);
+  font-size: .72rem; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: color .15s, border-color .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tips-reset-btn:active { color: #ff453a; border-color: rgba(255,69,58,.4); }
+
 /* ── Historique — tags source ── */
 .hist-source {
   display: inline-flex; align-items: center; gap: 3px;
@@ -2325,58 +2374,21 @@ html, body {
         </div>
       </div>
 
-      <!-- Astuces du moment -->
+      <!-- Astuces du moment — injectées par renderTipsArticles() -->
       <div class="ios-section-label">Astuces du moment</div>
-      <div class="ios-group">
-        <div class="ios-row">
-          <div class="ios-row-icon" style="background:#30d158">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M9 12h6"/></svg>
-          </div>
-          <div class="ios-row-body">
-            <div class="ios-row-title">Hauteur de coupe idéale</div>
-            <div class="ios-row-value">4 à 5 cm pour un gazon dense</div>
-          </div>
-          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
-        </div>
-        <div class="ios-sep"></div>
-        <div class="ios-row">
-          <div class="ios-row-icon" style="background:#0a84ff">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
-          </div>
-          <div class="ios-row-body">
-            <div class="ios-row-title">Aérer votre pelouse</div>
-            <div class="ios-row-value">Au printemps ou à l'automne</div>
-          </div>
-          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
-        </div>
-        <div class="ios-sep"></div>
-        <div class="ios-row">
-          <div class="ios-row-icon" style="background:#ff9f0a">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 22C12 22 3 16 3 9a9 9 0 0 1 18 0c0 7-9 13-9 13z"/></svg>
-          </div>
-          <div class="ios-row-body">
-            <div class="ios-row-title">Lutter contre les mauvaises herbes</div>
-            <div class="ios-row-value">Une pelouse dense les limite naturellement</div>
-          </div>
-          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
-        </div>
-        <div class="ios-sep"></div>
-        <div class="ios-row">
-          <div class="ios-row-icon" style="background:#5e5ce6">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
-          </div>
-          <div class="ios-row-body">
-            <div class="ios-row-title">Entretien saisonnier</div>
-            <div class="ios-row-value">Adapter la tonte selon la saison</div>
-          </div>
-          <svg class="ios-chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
-        </div>
-      </div>
+      <div class="ios-group" id="tipsArticles"></div>
 
-      <!-- Checklist -->
-      <div class="ios-section-label" style="margin-top:4px">Checklist avant tonte</div>
+      <!-- Checklist refonte -->
+      <div class="ios-section-label" style="margin-top:6px">Checklist avant tonte</div>
+      <div class="chk-progress-wrap">
+        <div class="chk-progress-bar"><div class="chk-progress-fill" id="chkProgress" style="width:0%"></div></div>
+        <span class="chk-progress-count" id="chkCount">0/8</span>
+      </div>
       <div class="ios-group" id="checklist"></div>
-      <button class="ios-modal-done" onclick="resetChecklist()" style="margin-top:8px">Tout décocher</button>
+      <button class="tips-reset-btn" onclick="resetChecklist()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+        Tout décocher
+      </button>
 
     </div>
 
@@ -2962,14 +2974,61 @@ const SEASONS = {
   winter:{name:'Hiver',    emoji:'❄️',freq:30,months:[11,0,1]},
 };
 const TIPS = {
-  spring:'<strong>Printemps</strong> — Croissance intense. Tondre toutes les 7–10j, hauteur 4–5 cm. Engrais de printemps.',
-  summer:'<strong>Été</strong> — Laisser 6–7 cm pour protéger les racines. Tondre le soir. Arroser 24h après.',
-  autumn:'<strong>Automne</strong> — Couper à 5 cm. Ramasser les feuilles. Engrais potassium avant hiver.',
-  winter:'<strong>Hiver</strong> — Pause. Ne pas tondre si sol gelé. Affûter la lame.',
+  spring:'Printemps — La croissance reprend fortement. Tondre toutes les 7–10 jours, hauteur 4–5 cm. Appliquer un engrais de printemps riche en azote pour une pousse dense et verte.',
+  summer:'Été — Laisser 6–7 cm pour protéger les racines de la chaleur. Préférer la tonte en soirée. Arroser 24h après la coupe. Éviter de tondre par forte chaleur ou canicule.',
+  autumn:'Automne — Réduire progressivement à 5 cm. Ramasser les feuilles mortes qui étouffent le gazon. Appliquer un engrais riche en potassium pour préparer l\'hiver. Scarifier si nécessaire.',
+  winter:'Hiver — Mettre la tondeuse en pause. Ne jamais tondre un sol gelé ou détrempé. Profiter de cette période pour affûter la lame, vidanger et vérifier la tondeuse.',
 };
+
+// Infos utiles par astuce (titre, sous-titre, détail)
+const TIPS_ARTICLES = [
+  {
+    icon:'#30d158', iconSvg:'<path d="M3 6l3 1.5M3 6l3-1.5M3 6v4M21 6l-3 1.5M21 6l-3-1.5M21 6v4M12 2l3 1.5M12 2l-3 1.5M12 2v4M12 16v4M12 20l3-1.5M12 20l-3-1.5"/>',
+    title:'Hauteur de coupe idéale',
+    sub:'4 à 5 cm pour un gazon dense',
+    detail:'Ne jamais couper plus d\'1/3 de la hauteur totale en une seule fois. Une hauteur trop faible affaiblit les racines.'
+  },
+  {
+    icon:'#0a84ff', iconSvg:'<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
+    title:'Aérer votre pelouse',
+    sub:'Printemps ou automne',
+    detail:'L\'aération brise le feutre et améliore la pénétration de l\'eau et des nutriments. Idéal après un été sec ou un hiver humide.'
+  },
+  {
+    icon:'#ff9f0a', iconSvg:'<path d="M7 20h10M12 20V12M5 8c0-4 3-6 7-6s7 2 7 6c0 2-1 4-3 5H8c-2-1-3-3-3-5z"/>',
+    title:'Lutter contre les mauvaises herbes',
+    sub:'Pelouse dense = moins d\'herbes',
+    detail:'Un gazon épais et bien nourri laisse peu de place aux adventices. Désherber manuellement tôt au printemps avant la montée en graine.'
+  },
+  {
+    icon:'#5e5ce6', iconSvg:'<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>',
+    title:'Arrosage efficace',
+    sub:'Le matin, pas le soir',
+    detail:'Arroser tôt le matin limite l\'évaporation. Éviter l\'arrosage le soir qui favorise les champignons. Mieux vaut arroser peu et profond que souvent et superficiellement.'
+  },
+  {
+    icon:'#ff453a', iconSvg:'<path d="M12 9v4M12 16h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>',
+    title:'Signes d\'alerte',
+    sub:'Pelouse jaune ou creuse',
+    detail:'Jaune = carence en fer ou sécheresse. Zones creuses = taupe ou hanneton. Mousse = sol trop acide ou ombragé. Agissez dès les premiers signes.'
+  },
+  {
+    icon:'#30d158', iconSvg:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+    title:'Entretien saisonnier',
+    sub:'Adapter la fréquence selon la saison',
+    detail:'Printemps/automne : toutes les semaines. Été chaud : toutes les 2 semaines. Hiver : pause complète. La régularité est la clé d\'un beau gazon.'
+  },
+];
+
 const CHECKLIST_ITEMS = [
-  "Vérifier le niveau d'huile","Contrôler la lame","Vider le bac",
-  "Régler la hauteur","Dégager les obstacles","Météo OK (pas de pluie 24h)","Sol pas trop humide",
+  {label:"Niveau d'huile OK",        icon:"🛢",  detail:"Vérifier avant chaque utilisation"},
+  {label:"Lame affûtée",             icon:"⚙️",  detail:"Une lame émoussée déchire l'herbe"},
+  {label:"Bac à herbe vidé",         icon:"♻️",  detail:"Un bac plein réduit l'aspiration"},
+  {label:"Hauteur de coupe réglée",  icon:"📏",  detail:"4–5 cm selon la saison"},
+  {label:"Obstacles dégagés",        icon:"⚠️",  detail:"Cailloux, jouets, câbles…"},
+  {label:"Météo favorable",          icon:"☀️",  detail:"Pas de pluie dans les 24h"},
+  {label:"Sol pas trop humide",      icon:"💧",  detail:"Éviter après une forte pluie"},
+  {label:"Carburant / batterie OK",  icon:"🔋",  detail:"Éviter les coupures en cours de tonte"},
 ];
 const FREQ_OPTS = [
   {d:7, label:'7 jours'}, {d:10,label:'10 jours'}, {d:14,label:'14 jours'},
@@ -3081,9 +3140,7 @@ function getSeason(){const m=new Date().getMonth();for(const[k,v]of Object.entri
 function getFreq(){return S.freqDays===0?getSeason().freq:S.freqDays;}
 function cvt(c){
   if(S.wxUnit==='F') return Math.round(c*9/5+32);
-  // Afficher 1 décimale si la valeur n'est pas entière et proche de 0
-  const r = Math.round(c*10)/10;
-  return Number.isInteger(r) ? r : r.toFixed(1);
+  return Math.round(c); // toujours entier — pas de virgule
 }
 function vibrate(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
 
@@ -5282,55 +5339,85 @@ function renderHistory(){
 }
 
 // ── Swipe gauche pour supprimer dans l'historique ──────────────────
-function attachHistSwipe(wrap, pill, idx){
-  const THRESHOLD = 70;
-  const MAX_DRAG  = 100;
-  let sx=0, dragging=false, locked=false;
+function attachHistSwipe(wrap, pill, dateKey){
+  const THRESHOLD = 68;
+  const MAX_DRAG  = 96;
+  let sx=0, sy=0, curX=0, active=false, locked=false, dirLocked=false, isHoriz=false;
 
-  function onStart(e){
-    if(locked) return;
-    sx = (e.touches ? e.touches[0] : e).clientX;
-    dragging = true;
-    pill.style.transition = 'none';
-  }
-  function onMove(e){
-    if(!dragging||locked) return;
-    const dx = (e.touches ? e.touches[0] : e).clientX - sx;
-    if(dx >= 0){ onEnd(); return; } // ignorer swipe droite
-    e.preventDefault();
-    const x = Math.max(-MAX_DRAG, dx);
-    pill.style.transform = `translate3d(${x}px,0,0)`;
-    const pct = Math.min(1, Math.abs(x)/THRESHOLD);
+  function snap(x){ pill.style.transform = `translate3d(${x}px,0,0)`; }
+
+  function revealAt(pct){
     const rev = wrap.querySelector('.hist-reveal');
-    if(rev){ rev.style.opacity = pct; rev.style.background = `rgba(255,69,58,${0.15+pct*0.25})`; }
+    if(!rev) return;
+    rev.style.opacity = Math.min(1, pct);
+    rev.style.background = `rgba(255,69,58,${Math.min(.4, 0.12+pct*.3)})`;
   }
-  function onEnd(){
-    if(!dragging) return;
-    dragging = false;
-    const cur = parseFloat(pill.style.transform?.match(/-?\d+/)?.[0]||0);
-    pill.style.transition = 'transform .3s cubic-bezier(.4,0,.2,1)';
-    if(cur < -THRESHOLD){
-      pill.style.transform = `translate3d(-${MAX_DRAG}px,0,0)`;
-      locked = true;
-      setTimeout(()=>{
-        wrap.style.transition = 'opacity .2s, max-height .3s';
-        wrap.style.opacity = '0';
-        wrap.style.maxHeight = '0';
-        wrap.style.overflow = 'hidden';
-        setTimeout(()=>{ delHist(idx); }, 280);
-      }, 150);
-    } else {
-      pill.style.transform = 'translate3d(0,0,0)';
-      const rev = wrap.querySelector('.hist-reveal');
-      if(rev){ rev.style.opacity='0'; rev.style.background=''; }
+
+  function snapBack(){
+    pill.style.transition = 'transform .28s cubic-bezier(.4,0,.2,1)';
+    snap(0); revealAt(0);
+    const rev = wrap.querySelector('.hist-reveal');
+    if(rev) rev.style.background='';
+    active=false; dirLocked=false; isHoriz=false; curX=0;
+  }
+
+  function triggerDelete(){
+    locked=true;
+    pill.style.transition='transform .2s ease';
+    snap(-MAX_DRAG);
+    const rev=wrap.querySelector('.hist-reveal');
+    if(rev){rev.style.opacity='1';rev.style.background='rgba(255,69,58,.4)';}
+    setTimeout(()=>{
+      const h=wrap.offsetHeight;
+      wrap.style.transition='opacity .22s ease, max-height .28s ease';
+      wrap.style.maxHeight=h+'px'; wrap.style.overflow='hidden';
+      wrap.style.opacity='0';
+      requestAnimationFrame(()=>{ wrap.style.maxHeight='0'; });
+      setTimeout(()=>{ delHist(dateKey); }, 320);
+    }, 120);
+  }
+
+  // ── Touch ──
+  pill.addEventListener('touchstart', e=>{
+    if(locked) return;
+    const t=e.touches[0];
+    sx=t.clientX; sy=t.clientY;
+    curX=0; active=true; dirLocked=false; isHoriz=false;
+    pill.style.transition='none';
+  },{passive:true});
+
+  pill.addEventListener('touchmove', e=>{
+    if(!active||locked) return;
+    const t=e.touches[0];
+    const dx=t.clientX-sx, dy=t.clientY-sy;
+    if(!dirLocked&&(Math.abs(dx)>5||Math.abs(dy)>5)){
+      isHoriz=Math.abs(dx)>Math.abs(dy)*.8;
+      dirLocked=true;
     }
-  }
-  pill.addEventListener('touchstart', onStart, {passive:true});
-  pill.addEventListener('touchmove',  onMove,  {passive:false});
-  pill.addEventListener('touchend',   onEnd,   {passive:true});
-  pill.addEventListener('mousedown',  onStart);
-  window.addEventListener('mousemove', e=>{ if(dragging) onMove(e); });
-  window.addEventListener('mouseup',   e=>{ if(dragging) onEnd(e); });
+    if(!isHoriz) return;
+    e.preventDefault();
+    curX=Math.max(-MAX_DRAG,Math.min(0,dx));
+    snap(curX); revealAt(Math.abs(curX)/THRESHOLD);
+  },{passive:false});
+
+  pill.addEventListener('touchend', e=>{
+    if(!active||locked) return;
+    active=false;
+    if(curX<-THRESHOLD) triggerDelete(); else snapBack();
+  },{passive:true});
+
+  pill.addEventListener('touchcancel',()=>{ if(!locked) snapBack(); },{passive:true});
+
+  // ── Souris (desktop) ──
+  pill.addEventListener('mousedown', e=>{
+    if(locked) return;
+    sx=e.clientX; curX=0; active=true;
+    pill.style.transition='none';
+    const onMove=ev=>{ if(!active)return; curX=Math.max(-MAX_DRAG,Math.min(0,ev.clientX-sx)); snap(curX); revealAt(Math.abs(curX)/THRESHOLD); };
+    const onUp=()=>{ window.removeEventListener('mousemove',onMove); window.removeEventListener('mouseup',onUp); if(!active||locked)return; active=false; if(curX<-THRESHOLD)triggerDelete(); else snapBack(); };
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onUp);
+  });
 }
 
 function updateHistHealthBadge(){
@@ -5542,7 +5629,38 @@ function _attachChartTooltip(canvas, W, H, pad, xAt, pts, data, intervals){
 // CHECKLIST
 // ══════════════════════════════════════════
 function renderChecklist(){
-  $('checklist').innerHTML=CHECKLIST_ITEMS.map((item,i)=>{const done=S.checks[i]||false;return`<div class="chk${done?' done':''}"><input type="checkbox" id="chk${i}" ${done?'checked':''} onchange="toggleChk(${i})"><label for="chk${i}">${item}</label></div>`;}).join('');
+  const el = $('checklist'); if(!el) return;
+  el.innerHTML = '';
+  CHECKLIST_ITEMS.forEach((item,i)=>{
+    const done = S.checks[i]||false;
+    const row  = document.createElement('div');
+    row.className = 'chk-row ios-row' + (done?' chk-done':'');
+    row.innerHTML = `
+      <div class="chk-icon-wrap" style="background:${done?'#30d158':'rgba(255,255,255,.08)'}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          ${done?'<polyline points="20 6 9 17 4 12"/>':'<circle cx="12" cy="12" r="9"/>'}
+        </svg>
+      </div>
+      <div class="ios-row-body">
+        <div class="ios-row-title" style="${done?'text-decoration:line-through;color:rgba(255,255,255,.35)':''}">${item.icon} ${item.label}</div>
+        <div class="ios-row-value">${item.detail}</div>
+      </div>`;
+    row.addEventListener('click', ()=>toggleChk(i));
+    el.appendChild(row);
+    if(i < CHECKLIST_ITEMS.length-1){
+      const sep=document.createElement('div');
+      sep.className='ios-sep'; sep.style.marginLeft='62px';
+      el.appendChild(sep);
+    }
+  });
+  // Compteur
+  const done = CHECKLIST_ITEMS.filter((_,i)=>S.checks[i]).length;
+  const total = CHECKLIST_ITEMS.length;
+  const bar = $('chkProgress');
+  if(bar){
+    bar.style.width = (done/total*100)+'%';
+    $('chkCount').textContent = done+'/'+total;
+  }
 }
 function toggleChk(i){S.checks[i]=!S.checks[i];safeSave('ln_chk',JSON.stringify(S.checks));renderChecklist();}
 function resetChecklist(){S.checks={};safeSave('ln_chk','{}');renderChecklist();showToast('Checklist réinitialisée');}
@@ -5550,9 +5668,48 @@ function resetChecklist(){S.checks={};safeSave('ln_chk','{}');renderChecklist();
 // ══════════════════════════════════════════
 // TIPS
 // ══════════════════════════════════════════
+function renderTipsArticles(){
+  const el = $('tipsArticles'); if(!el) return;
+  el.innerHTML = '';
+  TIPS_ARTICLES.forEach((a,i)=>{
+    const row = document.createElement('div');
+    row.className = 'ios-row tips-article-row';
+    row.innerHTML = `
+      <div class="ios-row-icon" style="background:${a.icon}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${a.iconSvg}</svg>
+      </div>
+      <div class="ios-row-body">
+        <div class="ios-row-title">${a.title}</div>
+        <div class="ios-row-value">${a.sub}</div>
+        <div class="tips-detail hidden" id="tipsDetail${i}">${a.detail}</div>
+      </div>
+      <svg class="ios-chev tips-chev" id="tipsChev${i}" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>`;
+    row.addEventListener('click', ()=>{
+      const detail = $('tipsDetail'+i);
+      const chev   = $('tipsChev'+i);
+      const open   = !detail.classList.contains('hidden');
+      // Fermer tous les autres
+      TIPS_ARTICLES.forEach((_,j)=>{
+        $('tipsDetail'+j)?.classList.add('hidden');
+        const c=$('tipsChev'+j); if(c) c.style.transform='';
+      });
+      if(!open){
+        detail.classList.remove('hidden');
+        if(chev) chev.style.transform='rotate(90deg)';
+      }
+    });
+    el.appendChild(row);
+    if(i < TIPS_ARTICLES.length-1){
+      const sep=document.createElement('div'); sep.className='ios-sep'; sep.style.marginLeft='62px';
+      el.appendChild(sep);
+    }
+  });
+}
+
 function renderTips(season,tip){
   $('tipSeason').textContent=season.emoji+' '+season.name;
-  $('tipsTxt').innerHTML='<p style="margin-bottom:10px">'+TIPS[season.key]+'</p>'+(tip?'<div class="ai-tip"><div class="ai-lbl"><div class="ai-dot"></div> IA personnalisée</div>'+tip+'</div>':'');
+  $('tipsTxt').innerHTML=TIPS[season.key]+(tip?'<div class="ai-tip" style="margin-top:10px"><div class="ai-lbl"><div class="ai-dot"></div> IA personnalisée</div>'+tip+'</div>':'');
+  renderTipsArticles();
 }
 
 // ══════════════════════════════════════════
@@ -6049,7 +6206,7 @@ function resetAll(){
   $('nextBox')?.classList.add('hidden');
   $('lawnNextBadge')?.classList.add('hidden');
   $('lawnWx')?.classList.add('wx-hidden');
-  renderHistory();renderChecklist();buildFreqGrid();updateLawn();
+  renderHistory();renderChecklist();buildFreqGrid();updateLawn();renderTipsArticles();
   showToast('Données réinitialisées ✓');
 }
 
