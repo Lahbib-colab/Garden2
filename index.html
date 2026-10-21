@@ -3211,6 +3211,8 @@ function showToast(msg,dur=2600){const t=$('toast');t.textContent=msg;t.classLis
 const PAGE_TITLES = {plan:null,history:'Historique',tips:'Conseils',weather:'Météo',settings:'Réglages'};
 function switchTab(name){
   vibrate(8);
+  // Persister l'onglet actif — survit au rafraîchissement
+  try{ localStorage.setItem('ln_active_tab', name); }catch(e){}
   document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   const pane=$('pane-'+name);
@@ -6545,8 +6547,12 @@ document.addEventListener('DOMContentLoaded', function(){
     if(ratio>=.85)setTimeout(()=>showToast(ratio>=1.1?'Tonte urgente !':'Tonte bientôt recommandée',5000),800);
   }
 
-  // switchTab EN PREMIER pour que le pane soit actif et visible
-  switchTab('plan');
+  // Restaurer l'onglet actif au rafraîchissement (sinon toujours 'plan')
+  const VALID_TABS = ['plan','history','tips','weather','settings'];
+  const savedTab = (() => {
+    try{ return localStorage.getItem('ln_active_tab'); }catch(e){ return null; }
+  })();
+  switchTab(VALID_TABS.includes(savedTab) ? savedTab : 'plan');
 
   // Restauration depuis Cloudflare KV — laisser le réseau s'établir
   setTimeout(async () => {
