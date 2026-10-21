@@ -1395,7 +1395,7 @@ html, body {
 .wx2-h-item.now { background:rgba(48,209,88,.14); }
 .wx2-h-time { font-size:.62rem; font-weight:600; color:var(--text3); }
 .wx2-h-item.now .wx2-h-time { color:var(--green); }
-.wx2-h-icon { font-size:1.1rem; line-height:1; }
+.wx2-h-icon { display:flex; align-items:center; justify-content:center; }
 .wx2-h-temp { font-size:.75rem; font-weight:600; color:var(--text); }
 
 /* Indices */
@@ -2202,7 +2202,7 @@ html, body {
 
         <!-- Onboarding -->
         <div class="lawn-onboard" id="onboard">
-          <em>🌿</em>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22C12 22 4 16 4 10a8 8 0 0 1 16 0c0 6-8 12-8 12z"/><path d="M12 10v8"/></svg>
           <b>Entrez votre dernière tonte</b>
           <span>Saisissez la date ci-dessous</span>
         </div>
@@ -2277,7 +2277,7 @@ html, body {
 
       <!-- Mini-conseil météo inline (visible uniquement si météo disponible) -->
       <div class="notif-banner off" id="notifBanner" onclick="switchTab('settings')">
-        <span id="nbIcon">🔔</span>
+        <span id="nbIcon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
         <span id="nbText">Notifications non configurées</span>
         <span class="cta">Configurer →</span>
       </div>
@@ -2404,7 +2404,7 @@ html, body {
               placeholder="Rechercher une ville…"
               autocomplete="off" autocorrect="off" spellcheck="false"
               oninput="onCityInput(this.value)" onkeydown="onCityKey(event)">
-            <button class="wx-search-clear hidden" id="wxClearBtn" onclick="clearCitySearch()">✕</button>
+            <button class="wx-search-clear hidden" id="wxClearBtn" onclick="clearCitySearch()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
           <button class="wx-loc-btn" onclick="loadWeather()" title="Ma position">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><path d="M12 5a7 7 0 0 1 7 7 7 7 0 0 1-7 7 7 7 0 0 1-7-7 7 7 0 0 1 7-7z" opacity=".3"/></svg>
@@ -2416,9 +2416,9 @@ html, body {
       <div class="wx-load" id="wxLoad"><div class="wx-spin"></div><span id="wxLoadMsg">Localisation…</span></div>
       <div class="hidden" id="wxErr">
         <div class="wx-err">
-          <div class="wx-err-t">📍 Localisation requise</div>
+          <div class="wx-err-t">Localisation requise</div>
           <div class="wx-err-s" id="wxErrMsg">Autorisez l'accès ou saisissez une ville.</div>
-          <button class="btn-primary" style="margin-top:8px;max-width:220px;margin:8px auto 0" onclick="loadWeather()">📍 Utiliser ma position</button>
+          <button class="btn-primary" style="margin-top:8px;max-width:220px;margin:8px auto 0" onclick="loadWeather()">Utiliser ma position</button>
         </div>
       </div>
 
@@ -2732,22 +2732,22 @@ html, body {
   <div class="ios-modal-group">
     <div class="ios-modal-row active" onclick="setRelDateModal(0)">
       <span>Aujourd'hui</span><span id="dm0" class="ios-modal-val"></span>
-      <span class="ios-modal-check hidden" id="dmc0">✓</span>
+      <span class="ios-modal-check hidden" id="dmc0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>
     </div>
     <div class="ios-sep"></div>
     <div class="ios-modal-row" onclick="setRelDateModal(1)">
       <span>Hier</span><span id="dm1" class="ios-modal-val"></span>
-      <span class="ios-modal-check hidden" id="dmc1">✓</span>
+      <span class="ios-modal-check hidden" id="dmc1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>
     </div>
     <div class="ios-sep"></div>
     <div class="ios-modal-row" onclick="setRelDateModal(7)">
       <span>–7 jours</span><span id="dm7" class="ios-modal-val"></span>
-      <span class="ios-modal-check hidden" id="dmc7">✓</span>
+      <span class="ios-modal-check hidden" id="dmc7"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>
     </div>
     <div class="ios-sep"></div>
     <div class="ios-modal-row" onclick="setRelDateModal(14)">
       <span>–14 jours</span><span id="dm14" class="ios-modal-val"></span>
-      <span class="ios-modal-check hidden" id="dmc14">✓</span>
+      <span class="ios-modal-check hidden" id="dmc14"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></span>
     </div>
     <div class="ios-sep"></div>
     <div class="ios-modal-row" id="dmCustomRow" onclick="openNativeDatePicker()">
@@ -2865,7 +2865,7 @@ html, body {
 <div class="overlay" id="ntOverlay" onclick="closeNotifTest()"></div>
 <div class="sheet" id="ntSheet">
   <div class="sheet-handle"></div>
-  <div class="sheet-title">🧪 Test des notifications</div>
+  <div class="sheet-title">Test des notifications</div>
   <div class="sheet-sub">Diagnostique et teste vos notifications push en temps réel.</div>
 
   <!-- Diagnostic -->
@@ -2896,7 +2896,7 @@ html, body {
   <!-- Test buttons -->
   <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
     <button class="nt-test-btn" id="testServerBtn" onclick="sendServerTestPush()">
-      <span class="nt-btn-icon">🌐</span>
+      <span class="nt-btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg></span>
       <div class="nt-btn-body">
         <div class="nt-btn-t">Test Push serveur (Cloudflare)</div>
         <div class="nt-btn-s">Notification même app fermée</div>
@@ -2904,7 +2904,7 @@ html, body {
       <span class="nt-btn-status" id="testServerStatus"></span>
     </button>
     <button class="nt-test-btn" id="testNowBtn" onclick="sendTestNotif('now')">
-      <span class="nt-btn-icon">⚡</span>
+      <span class="nt-btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
       <div class="nt-btn-body">
         <div class="nt-btn-t">Notification locale immédiate</div>
         <div class="nt-btn-s">Reçue en moins d'1 seconde</div>
@@ -2912,7 +2912,7 @@ html, body {
       <span class="nt-btn-status" id="testNowStatus"></span>
     </button>
     <button class="nt-test-btn" id="test5sBtn" onclick="sendTestNotif('5s')">
-      <span class="nt-btn-icon">⏱</span>
+      <span class="nt-btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg></span>
       <div class="nt-btn-body">
         <div class="nt-btn-t">Notification dans 5 secondes</div>
         <div class="nt-btn-s">Simule un rappel différé</div>
@@ -2920,7 +2920,7 @@ html, body {
       <span class="nt-btn-status" id="test5sStatus"></span>
     </button>
     <button class="nt-test-btn" id="testVeilleBtn" onclick="sendTestNotif('veille')">
-      <span class="nt-btn-icon">🌙</span>
+      <span class="nt-btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
       <div class="nt-btn-body">
         <div class="nt-btn-t">Simule "Veille de tonte"</div>
         <div class="nt-btn-s">Message exact envoyé la veille à 20h</div>
@@ -2928,7 +2928,7 @@ html, body {
       <span class="nt-btn-status" id="testVeilleStatus"></span>
     </button>
     <button class="nt-test-btn" id="testJourBtn" onclick="sendTestNotif('jour')">
-      <span class="nt-btn-icon">🌿</span>
+      <span class="nt-btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22C12 22 4 16 4 10a8 8 0 0 1 16 0c0 6-8 12-8 12z"/></svg></span>
       <div class="nt-btn-body">
         <div class="nt-btn-t">Simule "Jour de tonte"</div>
         <div class="nt-btn-s">Message exact envoyé le jour J</div>
@@ -2938,7 +2938,7 @@ html, body {
   </div>
 
   <div style="font-size:.72rem;color:var(--text3);line-height:1.55;padding:10px 12px;background:rgba(255,255,255,.03);border-radius:9px;margin-bottom:12px" id="ntHint">
-    💡 Sur iPhone : l'app doit être ajoutée à l'écran d'accueil et les notifications autorisées dans Réglages → Notifications.
+    Sur iPhone : l'app doit être ajoutée à l'écran d'accueil et les notifications autorisées dans Réglages → Notifications.
   </div>
 
   <button class="btn-cl" style="width:100%;text-align:center" onclick="closeNotifTest()">Fermer</button>
@@ -2948,7 +2948,7 @@ html, body {
 <div class="overlay" id="overlay" onclick="closeSheet()"></div>
 <div class="sheet" id="sheet">
   <div class="sheet-handle"></div>
-  <div class="sheet-title">📅 Ajouter à iPhone</div>
+  <div class="sheet-title">Ajouter à iPhone</div>
   <div class="sheet-sub">Téléchargez le fichier <strong>.ics</strong> et ouvrez-le sur iPhone — iOS importe automatiquement tout le planning avec 2 notifications par tonte.</div>
   <div class="step"><div class="step-n">1</div><div class="step-t">Téléchargez <strong>tonte-pelouse.ics</strong></div></div>
   <div class="step"><div class="step-n">2</div><div class="step-t">Ouvrez-le depuis <strong>Fichiers</strong> sur iPhone</div></div>
@@ -2956,7 +2956,7 @@ html, body {
   <div class="step"><div class="step-n">4</div><div class="step-t">2 alertes par tonte : veille 20h + jour J à <strong id="sheetTime">09:00</strong></div></div>
   <div class="sheet-actions">
     <button class="btn-dl" onclick="downloadICS()">⬇️ Télécharger .ics</button>
-    <button class="btn-cl" onclick="closeSheet()">✕</button>
+    <button class="btn-cl" onclick="closeSheet()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
 </div>
 
@@ -2968,10 +2968,10 @@ const MFR = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov'
 const DFR = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
 
 const SEASONS = {
-  spring:{name:'Printemps',emoji:'🌸',freq:7, months:[2,3,4]},
-  summer:{name:'Été',      emoji:'☀️',freq:10,months:[5,6,7,8]},
-  autumn:{name:'Automne',  emoji:'🍂',freq:14,months:[9,10]},
-  winter:{name:'Hiver',    emoji:'❄️',freq:30,months:[11,0,1]},
+  spring:{name:'Printemps',emoji:'spring',freq:7, months:[2,3,4]},
+  summer:{name:'Été',      emoji:'summer',freq:10,months:[5,6,7,8]},
+  autumn:{name:'Automne',  emoji:'autumn',freq:14,months:[9,10]},
+  winter:{name:'Hiver',    emoji:'winter',freq:30,months:[11,0,1]},
 };
 const TIPS = {
   spring:'Printemps — La croissance reprend fortement. Tondre toutes les 7–10 jours, hauteur 4–5 cm. Appliquer un engrais de printemps riche en azote pour une pousse dense et verte.',
@@ -3021,21 +3021,25 @@ const TIPS_ARTICLES = [
 ];
 
 const CHECKLIST_ITEMS = [
-  {label:"Niveau d'huile OK",        icon:"🛢",  detail:"Vérifier avant chaque utilisation"},
-  {label:"Lame affûtée",             icon:"⚙️",  detail:"Une lame émoussée déchire l'herbe"},
-  {label:"Bac à herbe vidé",         icon:"♻️",  detail:"Un bac plein réduit l'aspiration"},
-  {label:"Hauteur de coupe réglée",  icon:"📏",  detail:"4–5 cm selon la saison"},
-  {label:"Obstacles dégagés",        icon:"⚠️",  detail:"Cailloux, jouets, câbles…"},
-  {label:"Météo favorable",          icon:"☀️",  detail:"Pas de pluie dans les 24h"},
-  {label:"Sol pas trop humide",      icon:"💧",  detail:"Éviter après une forte pluie"},
-  {label:"Carburant / batterie OK",  icon:"🔋",  detail:"Éviter les coupures en cours de tonte"},
+  {label:"Niveau d'huile OK",        iconSvg:'<path d="M12 2h0a6 4 0 0 1 6 4v12a6 4 0 0 1-12 0V6a6 4 0 0 1 6-4z"/><path d="M6 10h12"/>',  detail:"Vérifier avant chaque utilisation"},
+  {label:"Lame affûtée",             iconSvg:'<circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>',  detail:"Une lame émoussée déchire l'herbe"},
+  {label:"Bac à herbe vidé",         iconSvg:'<path d="M7 19H4.5a2.5 2.5 0 0 1 0-5H7"/><path d="M17 19h2.5a2.5 2.5 0 0 0 0-5H17"/><path d="M12 19v-9M9 7l3-4 3 4"/><path d="M9 13l-3-2M15 13l3-2"/>',  detail:"Un bac plein réduit l'aspiration"},
+  {label:"Hauteur de coupe réglée",  iconSvg:'<path d="M3 7h18M3 12h18M3 17h18"/><path d="M7 3v18M12 3v4M17 3v4M12 17v4M17 17v4"/>',  detail:"4–5 cm selon la saison"},
+  {label:"Obstacles dégagés",        iconSvg:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',  detail:"Cailloux, jouets, câbles…"},
+  {label:"Météo favorable",          iconSvg:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>',  detail:"Pas de pluie dans les 24h"},
+  {label:"Sol pas trop humide",      iconSvg:'<path d="M12 2C6 9 4 13 4 16a8 8 0 0 0 16 0c0-3-2-7-8-14z"/>',  detail:"Éviter après une forte pluie"},
+  {label:"Carburant / batterie OK",  iconSvg:'<rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/><line x1="6" y1="12" x2="10" y2="12"/>',  detail:"Éviter les coupures en cours de tonte"},
 ];
 const FREQ_OPTS = [
   {d:7, label:'7 jours'}, {d:10,label:'10 jours'}, {d:14,label:'14 jours'},
   {d:21,label:'21 jours'}, {d:30,label:'1 mois'}, {d:0, label:'Auto IA'},
 ];
-const WX_ICONS       = {0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',51:'🌦',61:'🌧',63:'🌧',65:'🌧',71:'🌨',75:'❄️',80:'🌦',81:'🌧',82:'⛈',95:'⛈',99:'⛈'};
-const WX_ICONS_NIGHT = {0:'🌙',1:'🌙',2:'☁️',3:'☁️',45:'🌫',51:'🌧',61:'🌧',63:'🌧',65:'🌧',71:'🌨',75:'❄️',80:'🌧',81:'🌧',82:'⛈',95:'⛈',99:'⛈'};
+// Noms SVG météo (rendus via wxSvg())
+const WX_ICONS       = {0:'sun',1:'pcloud',2:'pcloud',3:'cloud',45:'mist',51:'drizzle',61:'rain',63:'rain',65:'rain',71:'snow',75:'snow',80:'drizzle',81:'rain',82:'storm',95:'storm',99:'storm'};
+const WX_ICONS_NIGHT = {0:'moon',1:'moon',2:'cloud',3:'cloud',45:'mist',51:'rain',61:'rain',63:'rain',65:'rain',71:'snow',75:'snow',80:'rain',81:'rain',82:'storm',95:'storm',99:'storm'};
+const WX_SVG_PATHS   = {sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>',pcloud:'<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>',cloud:'<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>',mist:'<line x1="3" y1="8" x2="21" y2="8"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="16" x2="21" y2="16"/>',drizzle:'<path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/><line x1="8" y1="19" x2="8" y2="21"/><line x1="12" y1="15" x2="12" y2="17"/>',rain:'<path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/><line x1="8" y1="19" x2="8" y2="21"/><line x1="12" y1="19" x2="12" y2="21"/><line x1="16" y1="19" x2="16" y2="21"/>',snow:'<path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="8" y1="20" x2="8.01" y2="20"/><line x1="12" y1="18" x2="12.01" y2="18"/><line x1="16" y1="16" x2="16.01" y2="16"/>',storm:'<path d="M19 16.9A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/><polyline points="13 11 9 17 15 17 11 23"/>',moon:'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'};
+// Rendu SVG météo flat
+function wxSvg(name,sz,col){sz=sz||20;col=col||'#fff';const p=WX_SVG_PATHS[name]||WX_SVG_PATHS.sun;return '<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';}
 const WX_DESC        = {0:'Ciel dégagé',1:'Principalement clair',2:'Partiellement nuageux',3:'Couvert',45:'Brumeux',51:'Bruine légère',61:'Pluie légère',63:'Pluie modérée',65:'Pluie forte',71:'Neige légère',75:'Neige forte',80:'Averses légères',81:'Averses modérées',82:'Averses violentes',95:'Orages',99:'Orages violents'};
 const WX_DESC_NIGHT  = {0:'Nuit claire',1:'Nuit dégagée',2:'Nuit nuageuse',3:'Nuit couverte',45:'Brume nocturne',51:'Bruine nocturne',61:'Pluie nocturne',63:'Pluie nocturne',65:'Pluie nocturne',71:'Neige la nuit',75:'Neige la nuit',80:'Averses nocturnes',81:'Averses nocturnes',82:'Orages nocturnes',95:'Orages la nuit',99:'Orages violents'};
 
@@ -3196,10 +3200,10 @@ function updateLawn(){
   const days=daysSince(S.lastDate),freq=getFreq(),ratio=Math.min(days/freq,2);
   // Status badge
   let lbl,col,dot;
-  if(ratio<.5)  {lbl='Pelouse fraîche';     col='#30d158';dot='🟢';}
-  else if(ratio<.8)  {lbl='Pousse modérée'; col='#ffd60a';dot='🟡';}
-  else if(ratio<1.1) {lbl='Tonte recommandée';col='#ff9f0a';dot='🟠';}
-  else               {lbl='Tonte urgente';  col='#ff453a';dot='🔴';}
+  if(ratio<.5)  {lbl='Pelouse fraîche';     col='#30d158';dot='dot-go';}
+  else if(ratio<.8)  {lbl='Pousse modérée'; col='#ffd60a';dot='dot-wait';}
+  else if(ratio<1.1) {lbl='Tonte recommandée';col='#ff9f0a';dot='dot-soon';}
+  else               {lbl='Tonte urgente';  col='#ff453a';dot='dot-stop';}
 
   // Liquid Glass badge (haut centre)
   const b=$('lawnBadge');
@@ -3270,7 +3274,7 @@ function startWxAnimations(cls){
       for(let i=0;i<22;i++){
         const f=document.createElement('div');
         f.className='snowflake';
-        f.textContent=['❄','❅','❆','✻','✼'][i%5];
+        f.textContent=['*','·','○','+','×'][i%5];
         f.style.left=Math.random()*100+'%';
         f.style.setProperty('--sx',(Math.random()*40-20)+'px');
         f.style.animationDuration=(2.5+Math.random()*3)+'s';
@@ -3286,7 +3290,7 @@ function startWxAnimations(cls){
   if(leafLayer){
     while(leafLayer.firstChild) leafLayer.removeChild(leafLayer.firstChild);
     if(cls==='wx-cloud'||cls==='wx-storm'){
-      const LEAVES=['🍃','🍂','🍁','🌿'];
+      const LEAVES=['◆','●','▲','■'];
       _leafInterval=setInterval(()=>{
         if(!leafLayer.isConnected)return;
         const l=document.createElement('div');
@@ -3367,7 +3371,8 @@ function updateLawnWeather(){
   const code   = Number(c.weather_code) || 0;
   const temp   = cvt(c.temperature_2m  || 0);
   const isNight = detectIsNight(cache);
-  const emoji  = (isNight ? WX_ICONS_NIGHT[code] : WX_ICONS[code]) || '🌡';
+  const emojiName = (isNight ? WX_ICONS_NIGHT[code] : WX_ICONS[code]) || 'sun';
+  const emoji = emojiName; // nom SVG
   const desc   = (isNight ? WX_DESC_NIGHT[code]  : WX_DESC[code])  || '—';
   const wxCls  = getWxClass(code);
   // Appliquer le mode nuit sur la photo pelouse
@@ -3380,6 +3385,7 @@ function updateLawnWeather(){
     const tp = $('lawnWxTemp');
     const dc = $('lawnWxDesc');
     const ci = $('lawnWxCity');
+    const em2 = $('lawnWxEmoji'); if(em2) em2.innerHTML = wxSvg(emoji, 32, 'rgba(255,255,255,.9)');
     if(tp) tp.innerHTML = temp + '<sup>°</sup>';
     if(dc) dc.textContent = desc;
     if(ci) ci.textContent = city || '';
@@ -3427,7 +3433,7 @@ function updateWxInlineCard(c, city) {
   const wind  = c.wind_speed_10m || 0;
   const hum   = c.relative_humidity_2m || 50;
   const code  = Number(c.weather_code) || 0;
-  const emoji = WX_ICONS[code] || '🌡';
+  const emoji = WX_ICONS[code] || 'sun';
   const unit  = S.wxUnit === 'F' ? '°F' : '°C';
 
   // Conseil de tonte — même logique que renderWeather
@@ -3625,7 +3631,7 @@ function buildFreqGrid(){
 // GENERATE
 // ══════════════════════════════════════════
 async function generate(skipRecalc){
-  if(!S.lastDate){showToast('📅 Entrez d\'abord une date');return;}
+  if(!S.lastDate){showToast('Entrez d\'abord une date');return;}
   // Mode rapide : juste re-appliquer les overrides et re-rendre
   if(skipRecalc && S.schedule.length){
     const freq=getFreq(), season=getSeason();
@@ -3668,16 +3674,19 @@ async function generate(skipRecalc){
   // ── Sauvegarde du planning complet ──
   // ── Sauvegarde du planning (structure explicite et vérifiée) ──
   const schedData = {
-    v: 2,                          // version du format
+    v: 3,                          // version du format
     savedAt: Date.now(),
     lastDate: S.lastDate,
     freq,
     seasonKey: season.key,
     tip: tip || '',
+    // Sauvegarder les dates brutes (avant overrides) pour reconstruire proprement
     events: S.schedule.map(e => ({
-      iso:   e.date.toISOString(), // clé principale
+      iso:   e.date instanceof Date ? e.date.toISOString() : String(e.date),
       label: e.label,
     })),
+    // Sauvegarder aussi les overrides pour les réappliquer au redémarrage
+    overrides: loadOverrides(),
   };
   // Sauvegarder localStorage (immédiat) + Cloudflare KV (arrière-plan)
   safeSave('ln_sched', JSON.stringify(schedData));
@@ -3686,7 +3695,7 @@ async function generate(skipRecalc){
 
   // ── Ajouter la tonte de départ dans l'historique si absente ──
   if(S.lastDate && !S.history.some(h=>h.date===S.lastDate)){
-    S.history.unshift({date:S.lastDate, note:'Planning créé (✂️ '+freq+'j)', source:'planned'});
+    S.history.unshift({date:S.lastDate, note:'Planning créé ('+freq+'j)', source:'planned'});
     dbSave('ln_hist', S.history);
     renderHistory();
   }
@@ -3823,7 +3832,7 @@ function _filteredSchedule(){
 }
 
 function renderSchedule(season, tip){
-  $('seasonTag').textContent = season.emoji + ' ' + season.name;
+  $('seasonTag').textContent = season.name;
 
   // Injecter le toggle si absent
   let toggle = $('schedViewToggle');
@@ -3910,11 +3919,11 @@ function _renderListView(){
     // Révélateurs gauche (annuler) et droite (reporter)
     wrap.innerHTML = `
       <div class="ev-reveal ev-reveal-left">
-        <span class="ev-reveal-icon">🚫</span>
+        <span class="ev-reveal-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg></span>
         <span class="ev-reveal-label">Annuler</span>
       </div>
       <div class="ev-reveal ev-reveal-right">
-        <span class="ev-reveal-icon">📅</span>
+        <span class="ev-reveal-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 14v4M10 16h4"/></svg></span>
         <span class="ev-reveal-label">+1 jour</span>
       </div>`;
 
@@ -3963,7 +3972,7 @@ function openPlanningModal(){
   // Sync saison
   const season = getSeason();
   const pmTag = $('pmSeasonTag');
-  if(pmTag) pmTag.textContent = season.emoji + ' ' + season.name;
+  if(pmTag) pmTag.textContent = season.name;
   // Render
   _renderPmView();
   openModal('planning');
@@ -4018,8 +4027,8 @@ function _renderPmView(){
       const wrap = document.createElement('div');
       wrap.className = 'ev-swipe-wrap';
       wrap.innerHTML = `
-        <div class="ev-reveal ev-reveal-left"><span class="ev-reveal-icon">🚫</span><span class="ev-reveal-label">Annuler</span></div>
-        <div class="ev-reveal ev-reveal-right"><span class="ev-reveal-icon">📅</span><span class="ev-reveal-label">+1 jour</span></div>`;
+        <div class="ev-reveal ev-reveal-left"><span class="ev-reveal-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg></span><span class="ev-reveal-label">Annuler</span></div>
+        <div class="ev-reveal ev-reveal-right"><span class="ev-reveal-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 14v4M10 16h4"/></svg></span><span class="ev-reveal-label">+1 jour</span></div>`;
       const row = document.createElement('div');
       row.className = 'ev ev-pill '+ev.type
         +(ev.status==='cancelled'?' cancelled':'')
@@ -4049,7 +4058,7 @@ function _renderPmView(){
         const key=evKey(d);
         const canSwipe=ev.type!=='done';
         const wrap=document.createElement('div'); wrap.className='ev-swipe-wrap cal-swipe-wrap';
-        wrap.innerHTML=`<div class="ev-reveal ev-reveal-left"><span class="ev-reveal-icon">🚫</span><span class="ev-reveal-label">Annuler</span></div><div class="ev-reveal ev-reveal-right"><span class="ev-reveal-icon">📅</span><span class="ev-reveal-label">+1 jour</span></div>`;
+        wrap.innerHTML=`<div class="ev-reveal ev-reveal-left"><span class="ev-reveal-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg></span><span class="ev-reveal-label">Annuler</span></div><div class="ev-reveal ev-reveal-right"><span class="ev-reveal-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 14v4M10 16h4"/></svg></span><span class="ev-reveal-label">+1 jour</span></div>`;
         const card=document.createElement('div');
         card.className='cal-card ev-pill '+ev.type+(ev.status==='cancelled'?' cancelled':'')+(ev.status==='postponed'?' postponed':'');
         card.innerHTML=`<div class="cal-card-stripe"></div><div class="cal-card-date"><div class="cal-card-dow">${dow}</div><div class="cal-card-day">${day}</div></div><div class="cal-card-body"><div class="cal-card-title">${ev.label}</div><div class="cal-card-sub">${sub}</div></div><div class="cal-card-badge">${badge}</div>`;
@@ -4387,11 +4396,11 @@ function _renderCalView(){
       wrap.className = 'ev-swipe-wrap cal-swipe-wrap';
       wrap.innerHTML = `
         <div class="ev-reveal ev-reveal-left">
-          <span class="ev-reveal-icon">🚫</span>
+          <span class="ev-reveal-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg></span>
           <span class="ev-reveal-label">Annuler</span>
         </div>
         <div class="ev-reveal ev-reveal-right">
-          <span class="ev-reveal-icon">📅</span>
+          <span class="ev-reveal-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M12 14v4M10 16h4"/></svg></span>
           <span class="ev-reveal-label">+1 jour</span>
         </div>`;
 
@@ -4480,7 +4489,7 @@ function _renderGridView(){
     legend.innerHTML = mevs.map(ev => {
       const d = evDate(ev);
       const cls = ev.status==='cancelled'?'cancelled':ev.status==='postponed'?'postponed':ev.type;
-      const icon = ev.status==='cancelled'?'🚫':ev.status==='postponed'?'📅':'✂️';
+      const icon = ev.status==='cancelled'?'✕':ev.status==='postponed'?'+1j':'✂';
       return `<span class="cal-legend-item ${cls}">${icon} ${d.getDate()} ${MFL[month].slice(0,3)}</span>`;
     }).join('');
     container.appendChild(legend);
@@ -4594,13 +4603,13 @@ function showDayActions(key, ev){
           <span>↺</span> Rétablir la tonte
         </button>` : `
         <button class="day-action-btn" onclick="postponeMowing('${key}',1);document.getElementById('dayActionSheet').remove()">
-          <span>📅</span> Reporter +1 jour
+          Reporter +1 jour
         </button>
         <button class="day-action-btn" onclick="postponeMowing('${key}',3);document.getElementById('dayActionSheet').remove()">
-          <span>📅</span> Reporter de 3 jours
+          Reporter de 3 jours
         </button>
         <button class="day-action-btn red" onclick="cancelMowing('${key}');document.getElementById('dayActionSheet').remove()">
-          <span>🚫</span> Annuler cette tonte
+          Annuler cette tonte
         </button>
         ${isPostponed ? `<button class="day-action-btn" onclick="resetOverride('${key}');document.getElementById('dayActionSheet').remove()">
           <span>↺</span> Rétablir la date initiale
@@ -4654,11 +4663,11 @@ function updateLawnNextBadge(next){
 
 function renderShareRow(freq){
   const up=S.schedule.filter(e=>e.type!=='done').slice(0,6);
-  let msg='🌿 *Planning de tonte*\n\n📅 Toutes les '+freq+' jours\n\n';
-  up.forEach(e=>msg+=(e.type==='urgent'?'🔴':e.type==='soon'?'🟡':'🟢')+' '+fmtDate(e.date)+'\n');
+  let msg='Planning de tonte — Toutes les '+freq+' jours\n\n';
+  up.forEach(e=>msg+='• '+fmtDate(e.date)+'\n');
   msg+='\n_LawnNotifier_';
   const enc=encodeURIComponent(msg);
-  $('shareRow').innerHTML=`<button class="share-btn ics" onclick="openSheet()">📅 Exporter .ics</button>`;
+  $('shareRow').innerHTML=`<button class="share-btn ics" onclick="openSheet()">Exporter .ics</button>`;
 }
 
 // ══════════════════════════════════════════
@@ -4670,14 +4679,14 @@ function updateNotifBanner(){
   const perm=('Notification' in window)?Notification.permission:'default';
   if(perm==='granted'){
     banner.className='notif-banner ok';
-    $('nbIcon').textContent='🔔';$('nbText').textContent='Notifications push activées';
+    $('nbIcon').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';$('nbText').textContent='Notifications push activées';
     setTimeout(()=>{if(banner.classList.contains('ok'))banner.style.display='none';},2000);
   }else if(perm==='denied'){
     banner.style.display='';banner.className='notif-banner warn';
-    $('nbIcon').textContent='🔕';$('nbText').textContent='Notifications bloquées — toucher pour Réglages';
+    $('nbIcon').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';$('nbText').textContent='Notifications bloquées — toucher pour Réglages';
   }else{
     banner.style.display='';banner.className='notif-banner off';
-    $('nbIcon').textContent='🔔';$('nbText').textContent='Notifications non configurées';
+    $('nbIcon').innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';$('nbText').textContent='Notifications non configurées';
   }
 }
 
@@ -4841,12 +4850,12 @@ function scheduleLocalPush(){
     const dayOf=new Date(ev.date); dayOf.setHours(hh,mm,0,0);
     const ms=dayOf.getTime()-now;
     if(ms>0&&ms<14*864e5) setTimeout(()=>{
-      try{new Notification('🌿 LawnNotifier',{body:'Jour de tonte — '+fmtDate(ev.date),tag:'lawn-'+tag,icon:'./icon-192.png'});}catch(e){}
+      try{new Notification('LawnNotifier',{body:'Jour de tonte — '+fmtDate(ev.date),tag:'lawn-'+tag,icon:'./icon-192.png'});}catch(e){}
     },ms);
     const eve=new Date(ev.date); eve.setDate(eve.getDate()-1); eve.setHours(20,0,0,0);
     const msE=eve.getTime()-now;
     if(msE>0&&msE<14*864e5) setTimeout(()=>{
-      try{new Notification('🌿 LawnNotifier',{body:'Tonte demain — '+fmtDate(ev.date),tag:'lawn-eve-'+tag,icon:'./icon-192.png'});}catch(e){}
+      try{new Notification('LawnNotifier',{body:'Tonte demain — '+fmtDate(ev.date),tag:'lawn-eve-'+tag,icon:'./icon-192.png'});}catch(e){}
     },msE);
   });
 }
@@ -4940,22 +4949,22 @@ function runDiagnostic(){
   const hint=$('ntHint');
   const inIframe2 = window.self !== window.top;
   if(!hasAPI){
-    hint.textContent='⚠️ Notifications non supportées sur ce navigateur.';
+    hint.textContent='Notifications non supportées sur ce navigateur.';
   }else if(perm==='denied'){
-    hint.textContent='⛔ Notifications bloquées. Sur iPhone : Réglages iOS → Notifications → LawnNotifier → Autoriser.';
+    hint.textContent='Notifications bloquées. Sur iPhone : Réglages iOS → Notifications → LawnNotifier → Autoriser.';
   }else if(perm==='default'){
-    hint.textContent='👆 Allez dans Réglages → Notifications push → Activer, puis revenez ici pour tester.';
+    hint.textContent='Allez dans Réglages → Notifications push → Activer, puis revenez ici pour tester.';
   }else if(!isSecure){
-    hint.textContent='⚠️ Fonctionne uniquement en HTTPS. Publiez sur GitHub Pages ou ouvrez depuis claude.ai.';
+    hint.textContent='Fonctionne uniquement en HTTPS. Publiez sur GitHub Pages ou ouvrez depuis claude.ai.';
   }else if(inIframe2){
-    hint.textContent='✅ Tout est prêt. Le Service Worker s\'activera automatiquement sur GitHub Pages pour le mode offline et les notifications en arrière-plan.';
+    hint.textContent='Tout est prêt. Le Service Worker s\'activera automatiquement sur GitHub Pages pour le mode offline et les notifications en arrière-plan.';
   }else{
-    hint.textContent='✅ Tout est prêt. Appuyez sur un bouton ci-dessus pour envoyer une notification test.';
+    hint.textContent='Tout est prêt. Appuyez sur un bouton ci-dessus pour envoyer une notification test.';
   }
 
   // Update settings row status
   const ts=$('testNotifStatus');
-  if(ts)ts.textContent=!hasAPI?'Non supporté':perm==='granted'?'✅ Opérationnelles':perm==='denied'?'⛔ Bloquées':'⚠️ Non configurées';
+  if(ts)ts.textContent=!hasAPI?'Non supporté':perm==='granted'?'Opérationnelles':perm==='denied'?'Bloquées':'Non configurées';
 }
 
 function setDiag(key,ok,okLabel,failLabel,state){
@@ -4966,9 +4975,9 @@ function setDiag(key,ok,okLabel,failLabel,state){
 
 async function sendTestNotif(type){
   // Check permission first
-  if(!('Notification' in window)){showToast('❌ Non supporté sur ce navigateur');return;}
+  if(!('Notification' in window)){showToast('Non supporté sur ce navigateur');return;}
   if(Notification.permission!=='granted'){
-    showToast('⚠️ Activez d\'abord les notifications dans Réglages');
+    showToast('Activez d\'abord les notifications dans Réglages');
     closeNotifTest();
     setTimeout(()=>switchTab('settings'),300);
     return;
@@ -4978,23 +4987,23 @@ async function sendTestNotif(type){
     now:{
       id:'testNow',
       delay:0,
-      title:'🌿 LawnNotifier — Test',
-      body:'✅ Les notifications fonctionnent parfaitement !',
+      title:'LawnNotifier — Test',
+      body:'Les notifications fonctionnent !',
       tag:'ln-test-now',
       statusOk:'Envoyée ✓',
     },
     '5s':{
       id:'test5s',
       delay:5000,
-      title:'🌿 LawnNotifier — Test différé',
-      body:'⏱ Cette notification a été envoyée 5 secondes après le tap.',
+      title:'LawnNotifier — Test différé',
+      body:'Notification différée — 5 secondes',
       tag:'ln-test-5s',
       statusOk:'Envoi dans 5s…',
     },
     veille:{
       id:'testVeille',
       delay:0,
-      title:'🌿 LawnNotifier',
+      title:'LawnNotifier',
       body:'Tonte demain — '+fmtDate(new Date(Date.now()+864e5))+' · Préparez la tondeuse',
       tag:'ln-test-veille',
       statusOk:'Envoyée ✓',
@@ -5002,7 +5011,7 @@ async function sendTestNotif(type){
     jour:{
       id:'testJour',
       delay:0,
-      title:'🌿 LawnNotifier',
+      title:'LawnNotifier',
       body:'Jour de tonte — '+fmtDate(new Date())+' · Bonne tonte !',
       tag:'ln-test-jour',
       statusOk:'Envoyée ✓',
@@ -5021,16 +5030,15 @@ async function sendTestNotif(type){
       new Notification(cfg.title,{
         body:cfg.body,
         tag:cfg.tag,
-        icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text y="52" font-size="52">🌿</text></svg>',
-        badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><text y="52" font-size="52">🌿</text></svg>',
+        
       });
       if(btn){btn.classList.add('sent');}
       if(st){st.textContent=cfg.statusOk;st.style.color='var(--green)';}
-      showToast('🔔 '+cfg.statusOk);
+      showToast(''+cfg.statusOk);
     }catch(e){
-      if(st){st.textContent='❌ Erreur';st.style.color='var(--red)';}
+      if(st){st.textContent='Erreur';st.style.color='var(--red)';}
       if(btn)btn.disabled=false;
-      showToast('❌ Erreur: '+e.message);
+      showToast('Erreur: '+e.message);
     }
   };
 
@@ -5068,8 +5076,8 @@ function editSchedule(){
     <div class="edit-sheet">
       <div class="edit-handle"></div>
       <div class="edit-title">
-        ✏️ Modifier le planning
-        <button class="edit-close" onclick="closeEditModal()">✕</button>
+        Modifier le planning
+        <button class="edit-close" onclick="closeEditModal()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="edit-row">
         <div class="edit-label">Dernière tonte</div>
@@ -5166,7 +5174,7 @@ async function sendServerTestPush(){
     if(r.ok){
       if(st){ st.textContent='Envoyée ✓'; st.style.color='var(--green)'; }
       if(btn) btn.classList.add('sent');
-      showToast('🔔 Push serveur envoyé ✓');
+      showToast('Push serveur envoyé ✓');
     } else {
       const err = await r.json().catch(()=>({}));
       if(st){ st.textContent='Erreur '+r.status; st.style.color='var(--red)'; }
@@ -5208,13 +5216,13 @@ async function downloadICS(){
     return['BEGIN:VEVENT','UID:'+Math.random().toString(36).slice(2)+'@ln',
       'DTSTART;TZID=Europe/Paris:'+ds+'T'+pad2(hh)+pad2(mm)+'00',
       'DTEND;TZID=Europe/Paris:'+ds+'T'+pad2(hh)+pad2(mm)+'00',
-      'SUMMARY:🌿 Tondre la pelouse','DESCRIPTION:Toutes les '+freq+' jours.',
-      'BEGIN:VALARM','TRIGGER:-PT18H','ACTION:DISPLAY','DESCRIPTION:🌿 Tonte demain !','END:VALARM',
-      'BEGIN:VALARM','TRIGGER:PT0S','ACTION:DISPLAY','DESCRIPTION:🌿 Jour de tonte !','END:VALARM',
+      'SUMMARY:Tondre la pelouse','DESCRIPTION:Toutes les '+freq+' jours.',
+      'BEGIN:VALARM','TRIGGER:-PT18H','ACTION:DISPLAY','DESCRIPTION:Tonte demain !','END:VALARM',
+      'BEGIN:VALARM','TRIGGER:PT0S','ACTION:DISPLAY','DESCRIPTION:Jour de tonte !','END:VALARM',
       'END:VEVENT'].join('\r\n');
   });
   const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//LawnNotifier//FR',
-    'CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:🌿 Tontes','X-WR-TIMEZONE:Europe/Paris',
+    'CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:Tontes LawnNotifier','X-WR-TIMEZONE:Europe/Paris',
     ...evLines,'END:VCALENDAR'].join('\r\n');
 
   // Blob download
@@ -5237,7 +5245,7 @@ function logTonte(){
     <div class="note-backdrop"></div>
     <div class="note-sheet">
       <div class="note-handle"></div>
-      <div class="note-title">✂️ Tonte du ${fmtDate(new Date(today+'T12:00'))}</div>
+      <div class="note-title">Tonte du ${fmtDate(new Date(today+'T12:00'))}</div>
       <textarea class="note-input" id="noteInput" rows="2"
         placeholder="Note optionnelle (facultatif)…"></textarea>
       <div class="note-actions">
@@ -5635,14 +5643,17 @@ function renderChecklist(){
     const done = S.checks[i]||false;
     const row  = document.createElement('div');
     row.className = 'chk-row ios-row' + (done?' chk-done':'');
+    const _iconPath = done
+      ? '<polyline points="20 6 9 17 4 12"/>'
+      : (item.iconSvg || '<circle cx="12" cy="12" r="9"/>');
     row.innerHTML = `
-      <div class="chk-icon-wrap" style="background:${done?'#30d158':'rgba(255,255,255,.08)'}">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          ${done?'<polyline points="20 6 9 17 4 12"/>':'<circle cx="12" cy="12" r="9"/>'}
-        </svg>
+      <div class="chk-icon-wrap" style="background:${done?'#30d158':'rgba(255,255,255,.1)'}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${_iconPath}</svg>
       </div>
       <div class="ios-row-body">
-        <div class="ios-row-title" style="${done?'text-decoration:line-through;color:rgba(255,255,255,.35)':''}">${item.icon} ${item.label}</div>
+        <div class="ios-row-title" style="${done?'text-decoration:line-through;opacity:.4':''}">
+          ${item.label}
+        </div>
         <div class="ios-row-value">${item.detail}</div>
       </div>`;
     row.addEventListener('click', ()=>toggleChk(i));
@@ -5707,7 +5718,7 @@ function renderTipsArticles(){
 }
 
 function renderTips(season,tip){
-  $('tipSeason').textContent=season.emoji+' '+season.name;
+  $('tipSeason').dataset.season=season.emoji; $('tipSeason').textContent=season.name;
   $('tipsTxt').innerHTML=TIPS[season.key]+(tip?'<div class="ai-tip" style="margin-top:10px"><div class="ai-lbl"><div class="ai-dot"></div> IA personnalisée</div>'+tip+'</div>':'');
   renderTipsArticles();
 }
@@ -5984,7 +5995,7 @@ async function fetchWeatherByCoords(lat, lon, cityName){
   }
 }
 
-// ── Géolocalisation (bouton 📍) ───────────────────────────────
+// ── Géolocalisation ──
 async function loadWeather(){
   showWxEl('wxLoad');
   $('wxLoadMsg').textContent='Localisation…';
@@ -6060,7 +6071,7 @@ async function searchCity(q, immediate=false){
       const name=r.display_name.split(',')[0];
       const country=r.display_name.split(',').slice(1,3).join(',').trim();
       return `<div class="wx-sug-item" onclick="pickCity(_sugResults[${i}])">
-        <span class="wx-sug-pin">📍</span>
+        <span class="wx-sug-pin"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="10" r="3"/><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg></span>
         <div><div class="wx-sug-name">${name}</div><div class="wx-sug-country">${country}</div></div>
       </div>`;
     }).join('');
@@ -6111,7 +6122,8 @@ function renderWeather(wx, city){
   $('wxCity').textContent = city;
   $('wxDesc').textContent = (_isNight?WX_DESC_NIGHT[c.weather_code]:WX_DESC[c.weather_code])||'—';
   $('wxTemp').innerHTML   = cvt(temp)+'<sup>°</sup>';
-  $('wxEmoji').textContent= (_isNight?WX_ICONS_NIGHT[c.weather_code]:WX_ICONS[c.weather_code])||'🌡';
+  const _wxName = (_isNight?WX_ICONS_NIGHT[c.weather_code]:WX_ICONS[c.weather_code])||'sun';
+  $('wxEmoji').innerHTML = wxSvg(_wxName, 48, '#fff');
   if($('wxMax') && d?.temperature_2m_max) $('wxMax').textContent=cvt(d.temperature_2m_max[0]);
   if($('wxMin') && d?.temperature_2m_min) $('wxMin').textContent=cvt(d.temperature_2m_min[0]);
 
@@ -6132,7 +6144,7 @@ function renderWeather(wx, city){
       const el=document.createElement('div');
       el.className='wx2-h-item'+(idx===0?' now':'');
       el.innerHTML=`<div class="wx2-h-time">${idx===0?'Maint.':String(hh).padStart(2,'0')+'h'}</div>
-        <div class="wx2-h-icon">${WX_ICONS[h.code]||'—'}</div>
+        <div class="wx2-h-icon">${wxSvg(WX_ICONS[h.code]||'sun',18,'rgba(255,255,255,.8)')}</div>
         <div class="wx2-h-temp">${cvt(h.temp)}°</div>`;
       scroll.appendChild(el);
     });
@@ -6150,7 +6162,7 @@ function renderWeather(wx, city){
       row.className='wx2-daily-row';
       const colMin='<span class="wx2-daily-min">'+cvt(d.temperature_2m_min[i])+'°</span>';
       row.innerHTML=`<div class="wx2-daily-day">${isT?'Aujourd\'hui':DAYS[day.getDay()]}</div>
-        <div class="wx2-daily-icon">${WX_ICONS[d.weather_code[i]]||'—'}</div>
+        <div class="wx2-daily-icon">${wxSvg(WX_ICONS[d.weather_code[i]]||'sun',18,'rgba(255,255,255,.65)')}</div>
         <div class="wx2-daily-temps">${cvt(d.temperature_2m_max[i])}° ${colMin}</div>`;
       daily.appendChild(row);
       if(i<d.time.length-1){
@@ -6220,7 +6232,7 @@ function confirmReset(){
     <div class="note-sheet">
       <div class="note-handle"></div>
       <div style="text-align:center;margin-bottom:14px">
-        <div style="font-size:2rem;margin-bottom:6px">⚠️</div>
+        <div style="margin-bottom:8px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff453a" stroke-width="1.6" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
         <div class="note-title" style="text-align:center;color:var(--red)">Réinitialiser toutes les données</div>
         <div style="font-size:.78rem;color:var(--text2);margin-top:4px">
           Cette action supprime le planning, l'historique et les réglages.<br>
@@ -6254,7 +6266,7 @@ function testRainGlass(){
   closeNotifTest();
   // Activer l'overlay + déclencher un passage d'essuie-glace après 1s
   HTCWeatherRainOverlay.activate();
-  showToast('🌧 Rain on Glass activé — glisse vers Planifier');
+  showToast('Rain on Glass activé');
   setTimeout(() => HTCWeatherRainOverlay.triggerWiper(), 1200);
   // Auto-désactiver après 15s si la météo n'est pas pluie/orage
   setTimeout(() => {
@@ -6294,7 +6306,7 @@ async function restoreSavedSchedule(){
 
   // Reconstruire avec statuts frais
   const now = new Date();
-  S.schedule = events.map((e, i) => {
+  const rawEvents = events.map((e, i) => {
     const iso  = e.iso || e.date || '';
     const date = new Date(iso);
     if(isNaN(date.getTime())) return null;
@@ -6304,8 +6316,14 @@ async function restoreSavedSchedule(){
       : diff <= 2          ? 'urgent'
       : diff <= 5          ? 'soon'
       : 'normal';
-    return { date, type, label: e.label || ('Tonte #' + i), diff };
+    return { date, type, label: e.label || ('Tonte #' + i), diff, status:'normal' };
   }).filter(Boolean);
+
+  if(rawEvents.length === 0) return;
+
+  // ── CORRECTION BUG 1 : réappliquer les overrides sauvegardés ──
+  // Sans ça, toutes les annulations/reports disparaissent au redémarrage
+  S.schedule = applyOverrides(rawEvents);
 
   if(S.schedule.length === 0) return;
 
@@ -6329,23 +6347,17 @@ async function restoreSavedSchedule(){
     btn.disabled = false;
   }
 
-  // Mettre à jour le badge photo "prochaine tonte"
-  const nextEv = S.schedule.find(e=>e.type!=='done');
+  // Mettre à jour la carte "Prochaine tonte" (ignorant les annulées)
+  const nextEv = S.schedule.find(e => e.type !== 'done' && e.status !== 'cancelled' && (e.diff ?? -1) >= 0);
   if(nextEv) updateLawnNextBadge(nextEv);
 
-  // Afficher la carte (forcer display + délai post-animation)
-  const showCard = () => {
-    const card = $('schedCard');
-    if(card){ card.classList.remove('hidden'); card.style.display='block'; }
-    const nb = $('nextBox');
-    if(nb){ nb.classList.remove('hidden'); nb.style.display='flex'; }
-  };
-  showCard();
-  setTimeout(showCard, 300);
+  // ── CORRECTION BUG 2 : ne jamais afficher schedCard ──
+  // Le planning s'ouvre uniquement via openPlanningModal() (tap sur carte verte)
+  // schedCard a display:none!important — on n'y touche pas
 
   const age = Date.now() - (saved.savedAt || 0);
   if(age > 48*3600*1000){
-    setTimeout(()=>showToast('🔄 Planning de '+Math.round(age/3600000)+'h — recalculer ?',4000),1500);
+    setTimeout(()=>showToast('Planning de '+Math.round(age/3600000)+'h — recalculer ?',4000),1500);
   }
 
   console.log('[LawnNotifier] Planning restauré depuis', _db?'db':'localStorage',
@@ -6437,7 +6449,7 @@ document.addEventListener('DOMContentLoaded', function(){
   // Check in-app alert
   if(S.lastDate&&safeGet('ln_inApp','1')!=='0'){
     const ratio=daysSince(S.lastDate)/getFreq();
-    if(ratio>=.85)setTimeout(()=>showToast(ratio>=1.1?'🔴 Tonte urgente !':'🟡 Tonte bientôt recommandée',5000),800);
+    if(ratio>=.85)setTimeout(()=>showToast(ratio>=1.1?'Tonte urgente !':'Tonte bientôt recommandée',5000),800);
   }
 
   // switchTab EN PREMIER pour que le pane soit actif et visible
