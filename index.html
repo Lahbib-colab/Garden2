@@ -3201,6 +3201,79 @@ function cvt(c){
 }
 function vibrate(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
 
+// ── Évaluation conditions de tonte ──────────────────────────────────
+// Règle fondamentale : weather_code est LA source de vérité.
+// precipitation peut être 0 entre deux averses → on ne lui fait pas confiance seul.
+function _mowAdvice(current){
+  const c    = current || {};
+  const code = Number(c.weather_code) || 0;
+  const rain = Number(c.precipitation)        || 0;   // mm/h (peut être 0 entre averses)
+  const wind = Number(c.wind_speed_10m)       || 0;   // km/h
+  const tmp  = c.temperature_2m !== undefined ? Number(c.temperature_2m) : 15;
+  const hum  = Number(c.relative_humidity_2m) || 50;
+
+  // ── Classification des codes Open-Meteo ─────────────────────────────
+  // Orage      : 95, 96, 99
+  // Neige      : 71, 73, 75, 77, 85, 86
+  // Pluie/averse: 56, 57, 61, 63, 65, 66, 67, 80, 81, 82  → STOP absolu
+  // Bruine     : 51, 53, 55                                → WAIT
+  // Brouillard : 45, 48                                    → WAIT
+  const isStorm   = [95,96,99].includes(code);
+  const isSnow    = [71,73,75,77,85,86].includes(code);
+  const isRainHard= [56,57,61,63,65,66,67,80,81,82].includes(code); // averses incluses
+  const isDrizzle = [51,53,55].includes(code);
+  const isFog     = [45,48].includes(code);
+
+  // ── Priorité 1 : IMPOSSIBLE ─────────────────────────────────────────
+  if(isStorm)
+    return { cls:'stop', label:'Tonte impossible',
+             detail:'Orage en cours — danger électrique' };
+  if(isSnow || tmp < 2)
+    return { cls:'stop', label:'Tonte impossible',
+             detail:'Neige ou gel — ne pas tondre' };
+
+  // ── Priorité 2 : DÉCONSEILLÉE (rouge) ───────────────────────────────
+  // Pluie / averses → STOP même si precipitation = 0 (code fait foi)
+  if(isRainHard || rain > 1)
+    return { cls:'stop', label:'Tonte déconseillée',
+             detail: isRainHard
+               ? (code>=80 ? 'Averses en cours — herbe détrempée'
+                           : 'Pluie en cours — sol mouillé')
+               : 'Précipitations — attendre que le sol sèche' };
+  if(tmp < 5)
+    return { cls:'stop', label:'Tonte déconseillée',
+             detail:'Trop froid ('+Math.round(tmp)+'°C) — gazon fragile sous 5°C' };
+  if(wind > 45)
+    return { cls:'stop', label:'Tonte déconseillée',
+             detail:'Vent trop fort ('+Math.round(wind)+' km/h)' };
+
+  // ── Priorité 3 : CONDITIONS PASSABLES (ambre) ────────────────────────
+  if(isDrizzle || rain > 0.2)
+    return { cls:'wait', label:'Conditions passables',
+             detail:'Bruine ou légère pluie — vérifier le sol avant de tondre' };
+  if(isFog)
+    return { cls:'wait', label:'Conditions passables',
+             detail:'Brouillard — sol potentiellement humide' };
+  if(hum > 88)
+    return { cls:'wait', label:'Conditions passables',
+             detail:'Humidité élevée ('+Math.round(hum)+'%) — herbe humide possible' };
+  if(tmp < 10)
+    return { cls:'wait', label:'Conditions passables',
+             detail:'Température fraîche ('+Math.round(tmp)+'°C) — croissance lente' };
+  if(tmp > 32)
+    return { cls:'wait', label:'Conditions passables',
+             detail:'Chaleur forte ('+Math.round(tmp)+'°C) — préférer tondre après 18h' };
+
+  // ── Priorité 4 : IDÉAL (vert) ───────────────────────────────────────
+  if(tmp >= 12 && tmp <= 25 && rain === 0 && hum < 80)
+    return { cls:'go', label:'Conditions idéales',
+             detail:'Température et humidité parfaites pour tondre' };
+
+  // ── Défaut : BONNES CONDITIONS ──────────────────────────────────────
+  return { cls:'go', label:'Bonnes conditions',
+           detail:'Vous pouvez tondre ('+Math.round(tmp)+'°C, '+Math.round(hum)+'% hum.)' };
+}
+
 // ══════════════════════════════════════════
 // TOAST
 // ══════════════════════════════════════════
@@ -3458,25 +3531,13 @@ function updateLawnWeather(){
     if(ci) ci.textContent = city || '';
 
     // Recommandation de tonte selon météo
-    const advEl  = $('lawnWxAdvice');
-    const dotEl  = $('lawnWxAdviceDot');
-    const txtEl  = $('lawnWxAdviceTxt');
+    // Utiliser `c` (déjà extrait via extractWxCurrent) — source fiable
+    const advEl = $('lawnWxAdvice');
+    const txtEl = $('lawnWxAdviceTxt');
     if(advEl && txtEl){
-      const c   = cache.current || cache;
-      const rain = c.precipitation || 0;
-      const wind = c.wind_speed_10m || 0;
-      const tmp  = c.temperature_2m || 15;
-      const hum  = c.relative_humidity_2m || 50;
-      let cls, msg;
-      if(rain > 3)         { cls='stop'; msg='Sol mouillé — ne pas tondre'; }
-      else if(tmp < 4)     { cls='stop'; msg='Trop froid pour tondre'; }
-      else if(wind > 45)   { cls='stop'; msg='Vent trop fort'; }
-      else if(hum > 88)    { cls='wait'; msg='Herbe humide — attendre'; }
-      else if(tmp > 35)    { cls='wait'; msg='Trop chaud — tondre le soir'; }
-      else if(rain > 0.5)  { cls='wait'; msg='Pluie récente — vérifier le sol'; }
-      else                 { cls='go';   msg='Conditions idéales pour tondre'; }
-      advEl.className = 'lwf-advice ' + cls;
-      txtEl.textContent = msg;
+      const adv = _mowAdvice(c);
+      advEl.className   = 'lwf-advice ' + adv.cls;
+      txtEl.textContent = adv.label + ' — ' + adv.detail;
     }
   }
 
@@ -3525,15 +3586,11 @@ function updateWxInlineCard(c, city) {
   const emoji = WX_ICONS[code] || 'sun';
   const unit  = S.wxUnit === 'F' ? '°F' : '°C';
 
-  // Conseil de tonte — même logique que renderWeather
-  let cls, advice, shortAdvice;
-  if(rain > 2)        { cls='stop'; advice='Sol mouillé — attendre 24h';       shortAdvice='Sol mouillé'; }
-  else if(temp < 4)   { cls='stop'; advice='Trop froid pour tondre (<5°C)';    shortAdvice='Trop froid'; }
-  else if(wind > 45)  { cls='stop'; advice='Vent trop fort ('+Math.round(wind)+' km/h)'; shortAdvice='Vent fort'; }
-  else if(hum > 90)   { cls='wait'; advice='Herbe humide — attendre ce soir';  shortAdvice='Herbe humide'; }
-  else if(temp > 36)  { cls='wait'; advice='Trop chaud — tondre après 18h';    shortAdvice='Tondre ce soir'; }
-  else if(rain > 0.5) { cls='wait'; advice='Pluie récente — vérifier le sol';  shortAdvice='Vérifier sol'; }
-  else                { cls='go';   advice='✓ Bonnes conditions pour tondre';   shortAdvice='Idéal pour tondre'; }
+  // Conseil de tonte — logique centralisée _mowAdvice()
+  const _adv = _mowAdvice(c);
+  const cls   = _adv.cls;
+  const advice = _adv.label + ' — ' + _adv.detail;
+  const shortAdvice = _adv.label;
 
   // ── 1. Carte inline dans Planifier ──
   const card = $('wxInlineCard');
@@ -6261,15 +6318,25 @@ function renderWeather(wx, city){
     });
   }
 
-  // ── Badge conditions tonte ──
+  // ── Badge conditions tonte (onglet Météo) ──
   const mow=$('wx2MowBadge'), mowTxt=$('wx2MowTxt');
   if(mow && mowTxt){
-    let txt, color;
-    if(rain>2||temp<4||wind>45){txt='Conditions défavorables — ne pas tondre';color='rgba(255,69,58,.1)';}
-    else if(hum>90||temp>36||rain>0.5){txt='Conditions moyennes — à vérifier';color='rgba(255,214,10,.1)';}
-    else{txt='Conditions idéales — pas de pluie prévue dans les 7 jours';color='rgba(48,209,88,.1)';}
-    mowTxt.textContent=txt;
-    mow.style.background=color;
+    const _a = _mowAdvice(c);
+    mowTxt.textContent = _a.label + ' — ' + _a.detail;
+    const colors = {
+      go:   'rgba(48,209,88,.12)',
+      wait: 'rgba(255,214,10,.12)',
+      stop: 'rgba(255,69,58,.12)'
+    };
+    mow.style.background = colors[_a.cls] || colors.go;
+    // Bordure dynamique
+    const borders = {
+      go:   'rgba(48,209,88,.3)',
+      wait: 'rgba(255,214,10,.3)',
+      stop: 'rgba(255,69,58,.3)'
+    };
+    mow.style.borderColor = borders[_a.cls] || borders.go;
+    mow.querySelector('svg').style.stroke = _a.cls==='go'?'#30d158':_a.cls==='wait'?'#ffd60a':'#ff453a';
   }
 
   // Compat éléments cachés
@@ -6278,7 +6345,7 @@ function renderWeather(wx, city){
   if($('wxRain'))  $('wxRain').textContent   = rain.toFixed(1)+' mm';
   if($('wxRainS')) $('wxRainS').textContent  = rain===0?'Aucune':'Récente';
   if($('wxUVS'))   $('wxUVS').textContent    = uv<=2?'Faible':uv<=5?'Modéré':'Élevé';
-  if($('wxDecV'))  $('wxDecV').textContent   = rain>2?'Ne pas tondre':rain===0&&temp>5&&wind<45?'Conditions idéales':'À vérifier';
+  if($('wxDecV'))  $('wxDecV').textContent   = _mowAdvice(c).label;
 
   showWxEl('wxContent');
 }
