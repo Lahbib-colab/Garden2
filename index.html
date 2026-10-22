@@ -6039,18 +6039,18 @@ function clearStars(){
 function resetWxLoaded(){ S.wxLoaded = false; }
 
 // ── Watchdog météo ───────────────────────────────────────────────
-// Surveille que le widget ne disparaît pas si des données sont disponibles
+// Surveille que le widget et le canvas ne disparaissent pas
 (function startWxWatchdog(){
   setInterval(()=>{
+    if(document.hidden) return; // pas la peine si page masquée
     const wx = $('lawnWx');
     if(!wx) return;
-    // Si des données existent mais widget caché → restaurer
     const hasData = S.wxCache || safeGetJSON('ln_wx_widget', null);
     if(hasData && wx.classList.contains('wx-hidden')){
       console.log('[WxWatchdog] Restauration météo manquante');
       updateLawnWeather();
     }
-  }, 4000);
+  }, 5000);
 })();
 
 async function _silentRefresh(lat, lon, cityName){
@@ -6965,7 +6965,9 @@ const WeatherBackgroundCanvas = (() => {
 
   // ── Boucle principale ─────────────────────────────────────────────
   function loop(){
-    RAF=requestAnimationFrame(loop);
+    // Ne pas planifier le prochain frame si la page est masquée (verrouillage iPhone)
+    if(document.hidden){ RAF = null; return; }
+    RAF = requestAnimationFrame(loop);
     CTX.clearRect(0,0,W,H);
     update();
 
@@ -6988,50 +6990,84 @@ const WeatherBackgroundCanvas = (() => {
     drawGrass();
   }
 
+  // ── Arrêt propre de la boucle ─────────────────────────────────────
+  function stop(){
+    if(RAF){ cancelAnimationFrame(RAF); RAF=null; }
+  }
+
+  // ── Démarrage (avec garde anti double-boucle) ─────────────────────
+  function start(){
+    if(RAF) return; // déjà en cours — ne pas créer une 2ème boucle
+    loop();
+  }
+
   // ── API publique ──────────────────────────────────────────────────
   function render(code, isDay){
     const changed = STATE.code!==code || STATE.isDay!==isDay;
     STATE = {code:+code, isDay:!!isDay};
-    if(changed) init();
+    if(changed){ stop(); init(); } // arrêt propre avant réinit des particules
     if(!RAF){
-      // Premier rendu : attendre que le DOM soit visible
       const tryStart = () => {
         const { w } = getParentSize();
-        if(w > 0){ resize(); loop(); }
+        if(w > 0){ resize(); start(); }
         else requestAnimationFrame(tryStart);
       };
       requestAnimationFrame(tryStart);
     }
   }
 
-  // forceResize — appelé depuis switchTab quand le pane redevient visible
+  // forceResize — appelé depuis switchTab
   function forceResize(){
-    // Court-circuite le debounce pour une réponse immédiate
     const { w, h } = getParentSize();
     if(w > 0 && h > 0 && (Math.abs(w-W)>1 || Math.abs(h-H)>1)){
       resize();
     }
+    // Si la boucle est morte (page était en background), la relancer
+    if(!RAF) start();
   }
 
-  // ResizeObserver sur le pane parent (pas juste le canvas)
-  // Observe aussi le pane-plan pour savoir quand il redevient visible
+  // ── Visibility API : pause/reprise quand iOS met la PWA en arrière-plan ──
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden){
+      // Page masquée → arrêt propre des deux canvas
+      stop();
+      // HTCWeatherRainOverlay est défini plus bas — accès via window pour éviter TDZ
+      if(typeof HTCWeatherRainOverlay !== 'undefined') HTCWeatherRainOverlay.pause?.();
+    } else {
+      // Retour sur la page → relancer le canvas météo
+      if(W > 0 && H > 0) start();
+      else forceResize();
+      // Relancer la pluie si elle était active
+      if(typeof HTCWeatherRainOverlay !== 'undefined') HTCWeatherRainOverlay.resume?.();
+      // Rafraîchir la météo si le cache a plus de 30 min
+      const widget = safeGetJSON('ln_wx_widget', null);
+      if(widget?._savedAt && Date.now() - widget._savedAt > 30*60*1000){
+        const lat  = safeGet('ln_wx_lat','');
+        const lon  = safeGet('ln_wx_lon','');
+        const city = safeGet('ln_wx_city','') || 'Plaisir';
+        if(lat && lon) _silentRefresh(parseFloat(lat), parseFloat(lon), city);
+      }
+      // Toujours réafficher le widget météo flottant
+      if(S.wxCache) requestAnimationFrame(updateLawnWeather);
+    }
+  });
+
+  // ── ResizeObserver ─────────────────────────────────────────────────
   let _resizeTimer = null;
   const ro = new ResizeObserver(entries => {
     for(const e of entries){
       const { width, height } = e.contentRect;
-      // Ignorer les callbacks à 0 (pane caché)
       if(width <= 0 || height <= 0) continue;
       if(Math.abs(width - W) < 2 && Math.abs(height - H) < 2) continue;
       clearTimeout(_resizeTimer);
-      _resizeTimer = setTimeout(resize, 80);
+      _resizeTimer = setTimeout(()=>{ resize(); if(!RAF) start(); }, 80);
     }
   });
   ro.observe(CVS.parentElement);
-  // Observer aussi le pane-plan entier pour détecter quand il devient visible
   const planPane = document.getElementById('pane-plan');
   if(planPane) ro.observe(planPane);
 
-  return { render, forceResize };
+  return { render, forceResize, stop, start };
 })();
 
 // ── HTCWeatherRainOverlay — Rain on Glass (composant isolé) ────────
@@ -7199,8 +7235,20 @@ const HTCWeatherRainOverlay = (() => {
     CTX.clearRect(0, 0, W, H);
   }
 
+  // Pause sans déactiver (visibilitychange)
+  function pause(){
+    if(raf){ cancelAnimationFrame(raf); raf = null; }
+    clearInterval(wiper.autoTimer);
+  }
+  function resume(){
+    if(!active) return;
+    if(!raf) loop();
+    if(CFG.autoWiper && !wiper.autoTimer)
+      wiper.autoTimer = setInterval(triggerWiper, CFG.wiperPause);
+  }
+
   new ResizeObserver(() => { if (active) resize(); }).observe(CVS.parentElement);
-  return { activate, deactivate, triggerWiper };
+  return { activate, deactivate, triggerWiper, pause, resume };
 })();
 
 // ── Gestionnaire d'erreurs global ──
