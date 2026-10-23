@@ -1,7 +1,7 @@
-// LawnNotifier — Service Worker v10
+// LawnNotifier — Service Worker v13
 // IMPORTANT : changer CACHE_VERSION force le remplacement de l'ancien cache
 
-const CACHE_VERSION = 'lawnnotifier-v12';
+const CACHE_VERSION = 'lawnnotifier-v13';
 const BASE = self.registration.scope;
 
 const ASSETS = [
@@ -15,7 +15,7 @@ const ASSETS = [
 
 // ── Install : mise en cache des assets ──
 self.addEventListener('install', event => {
-  console.log('[SW] Install v12');
+  console.log('[SW] Install v13');
   event.waitUntil(
     caches.open(CACHE_VERSION).then(cache =>
       Promise.allSettled(ASSETS.map(url => cache.add(url)))
@@ -27,70 +27,46 @@ self.addEventListener('install', event => {
 
 // ── Activate : suppression FORCÉE de tous les vieux caches ──
 self.addEventListener('activate', event => {
-  console.log('[SW] Activate v12 — nettoyage des anciens caches');
+  console.log('[SW] Activate v13 — nettoyage des anciens caches');
   event.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
         keys
-          .filter(k => k !== CACHE_VERSION) // garder seulement la version courante
+          .filter(k => k !== CACHE_VERSION)
           .map(k => {
             console.log('[SW] Suppression cache:', k);
             return caches.delete(k);
           })
       );
-    }).then(() => {
-      // Prendre le contrôle de tous les onglets ouverts immédiatement
-      return self.clients.claim();
-    })
+    }).then(() => self.clients.claim())
   );
 });
 
-// ── Fetch : network-first pour HTML, cache-first pour assets ──
+// ── Fetch : network-FIRST pour tout — toujours la dernière version ──
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-
   const url = event.request.url;
 
-  // Ne jamais mettre en cache les APIs externes
-  if (url.includes('api.anthropic.com')   ||
-      url.includes('open-meteo.com')       ||
-      url.includes('nominatim.openstreetmap.org')) return;
+  // Ne jamais intercepter les APIs externes
+  if (url.includes('api.anthropic.com') ||
+      url.includes('open-meteo.com') ||
+      url.includes('nominatim.openstreetmap.org') ||
+      url.includes('lawnnotifier-api')) return;
 
-  // Pour index.html : network-first pour toujours avoir la dernière version
-  if (url.endsWith('/') || url.endsWith('/index.html') ||
-      url === BASE || url === BASE + 'index.html') {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_VERSION).then(c => c.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match(event.request)
-          .then(r => r || caches.match(BASE + 'index.html'))
-        )
-    );
-    return;
-  }
-
-  // Pour les autres assets : cache-first
+  // Network-first pour TOUT : garantit qu'on a toujours la dernière version
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        if (response.ok && url.startsWith(self.location.origin)) {
+    fetch(event.request, { cache: 'no-store' })
+      .then(response => {
+        if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_VERSION).then(c => c.put(event.request, clone));
         }
         return response;
-      }).catch(() => {
-        if (event.request.destination === 'document')
-          return caches.match(BASE + 'index.html');
-        return new Response('', { status: 503 });
-      });
-    })
+      })
+      .catch(() =>
+        caches.match(event.request)
+          .then(r => r || caches.match(BASE + 'index.html'))
+      )
   );
 });
 
@@ -108,7 +84,7 @@ self.addEventListener('notificationclick', event => {
 
 // ── Push ──
 self.addEventListener('push', event => {
-  let data = { title: '🌿 LawnNotifier', body: 'Rappel de tonte' };
+  let data = { title: 'LawnNotifier', body: 'Rappel de tonte' };
   try { if (event.data) data = event.data.json(); } catch(e) {}
   event.waitUntil(
     self.registration.showNotification(data.title, {
