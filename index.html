@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#09090f">
+<script>/* Thème appliqué avant le premier rendu (aucun flash) */
+try{var d=document.documentElement,L=localStorage,t=L.getItem("ln_theme"),g=L.getItem("ln_glass"),l=L.getItem("ln_glass_level");
+var reduce=window.matchMedia&&matchMedia("(prefers-reduced-transparency: reduce)").matches;
+d.setAttribute("data-theme",t||"forest");d.setAttribute("data-glass",(g===null?!reduce:g==="1")?"on":"off");d.setAttribute("data-glass-level",l||"2");}catch(e){document.documentElement.setAttribute("data-glass","on");}</script>
 <title>LawnNotifier</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icon-180.png">
@@ -18,8 +23,8 @@
   --border:   rgba(255,255,255,.10);
   --green:    #30d158;
   --green-d:  #1fa344;
-  --green-t:  rgba(48,209,88,.14);
-  --green-g:  rgba(48,209,88,.30);
+  --green-t:  rgba(var(--green-rgb),.14);
+  --green-g:  rgba(var(--green-rgb),.30);
   --blue:     #0a84ff;
   --blue-t:   rgba(10,132,255,.14);
   --amber:    #ffd60a;
@@ -30,6 +35,19 @@
   --text:     #f5f5f7;
   --text2:    rgba(245,245,247,.52);
   --text3:    rgba(245,245,247,.28);
+  /* ── Thème (défaut : Forêt) ── */
+  --bg:#09090f; --bg2:#13131a; --bg-rgb:9,9,15;
+  --green:#30d158; --green-d:#1fa344; --green-rgb:48,209,88;
+  --icon-bg:#30d158; --on-accent:#000000;
+  --btn-a:#28c45a; --btn-b:#1aa348; --btn-text:#ffffff;
+  --hero-a:#1a5c2e; --hero-b:#0d3a1c;
+  --au1:#30d158; --au2:#0a84ff; --au3:#00c7be; --au-o:0.48;
+  --card-solid:#1c1c1e; --bar-bg:rgba(9,9,15,.82); --pill-bg:rgba(22,22,30,.80);
+  --hero-grad: linear-gradient(135deg, var(--hero-a), var(--hero-b));
+  --btn-grad:  linear-gradient(145deg, var(--btn-a), var(--btn-b));
+  /* ── Verre dépoli ── */
+  --glass-bg: rgba(255,255,255,.07); --glass-border: rgba(255,255,255,.15); --glass-hi: rgba(255,255,255,.24);
+  --glass-blur: 24px;
   --r:        16px;
   --r-sm:     10px;
   --r-pill:   9999px;
@@ -49,9 +67,12 @@ html, body {
 
 /* ── Aurora ── */
 .aurora { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-.ab { position: absolute; border-radius: 50%; filter: blur(90px); animation: drift 22s ease-in-out infinite alternate; }
-.ab:nth-child(1) { width: 55vw; height: 55vw; background: #30d158; opacity: .09; top: -15%; left: -10%; }
-.ab:nth-child(2) { width: 45vw; height: 45vw; background: #0a84ff; opacity: .07; bottom: -10%; right: -10%; animation-delay: -10s; animation-duration: 28s; }
+.ab { position: absolute; border-radius: 50%; filter: blur(80px); opacity: var(--au-o, .4);
+      transition: background-color .6s ease, opacity .6s ease; }
+.ab:nth-child(1) { width: 72vw; height: 72vw; background: var(--au1); top: -6%; left: -26%; }
+.ab:nth-child(2) { width: 64vw; height: 64vw; background: var(--au2); top: 36%; right: -32%; }
+.ab:nth-child(3) { width: 68vw; height: 68vw; background: var(--au3); bottom: -22%; left: -14%; }
+
 @keyframes drift { to { transform: translate(5vw, 4vh) scale(1.08); } }
 
 /* ── Shell ── */
@@ -61,7 +82,7 @@ html, body {
 .topbar {
   position: sticky; top: 0; z-index: 40;
   padding: calc(var(--sat) + 10px) 16px 10px;
-  background: rgba(9,9,15,.82);
+  background: var(--bar-bg);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   border-bottom: 1px solid var(--border);
@@ -78,7 +99,7 @@ html, body {
 .topbar-page { font-size: .9rem; font-weight: 700; letter-spacing: -.02em; color: var(--text); display: none; }
 
 /* ── Content ── */
-.content { flex: 1; padding: 0 0 calc(var(--sab) + 84px); overflow-y: auto; }
+.content { flex: 1; padding: 0 0 calc(var(--sab) + 84px); }
 /* Chaque pane gère son propre padding horizontal */
 .pane { padding: 0 16px; }
 /* pane-plan : pas de padding horizontal (le lawn prend toute la largeur) */
@@ -88,7 +109,7 @@ html, body {
 #pane-history, #pane-tips, #pane-weather, #pane-settings { padding-top: 12px; }
 .pane { display: none; }
 /* Pas de transform dans fadein — crée un stacking context qui bloque les touches */
-.pane.active { display: block; animation: fadein 180ms ease forwards; }
+.pane.active { display: block; animation: fadein 180ms ease; }
 @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .pane.active { animation: none; } }
 
@@ -102,7 +123,7 @@ html, body {
 .pill {
   pointer-events: all;
   display: flex; align-items: center; gap: 3px; padding: 5px;
-  background: rgba(22,22,30,.80);
+  background: var(--pill-bg);
   backdrop-filter: blur(48px) saturate(200%);
   -webkit-backdrop-filter: blur(48px) saturate(200%);
   border: 1px solid rgba(255,255,255,.13);
@@ -119,8 +140,8 @@ html, body {
   min-width: 54px;
 }
 .tab svg { width: 22px; height: 22px; flex-shrink: 0; }
-.tab.active { color: var(--green); background: rgba(48,209,88,.12); box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
-.tab.active svg { filter: drop-shadow(0 0 4px rgba(48,209,88,.4)); }
+.tab.active { color: var(--green); background: rgba(var(--green-rgb),.12); box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
+.tab.active svg { filter: drop-shadow(0 0 4px rgba(var(--green-rgb),.4)); }
 .tab:active svg { transform: scale(.88); }
 
 /* ── Cards ── */
@@ -175,7 +196,7 @@ html, body {
 .lawn-conseil.hidden { opacity: 0; pointer-events: none; }
 .lawn-conseil-dot {
   width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
-  background: #30d158;
+  background: var(--green);
 }
 .lawn-conseil-dot.wait { background: #ffd60a; }
 .lawn-conseil-dot.stop { background: #ff453a; }
@@ -250,8 +271,8 @@ html, body {
   align-self: flex-start; margin-top: 4px;
 }
 .sched-collapse-btn:active {
-  background: rgba(48,209,88,.12);
-  border-color: rgba(48,209,88,.3);
+  background: rgba(var(--green-rgb),.12);
+  border-color: rgba(var(--green-rgb),.3);
   color: var(--green);
 }
 
@@ -263,7 +284,7 @@ html, body {
 .lawn {
   margin: 12px 16px 0;
   padding: 16px 18px 14px;
-  background: #1c1c1e;
+  background: var(--card-solid);
   border-radius: var(--r);
 }
 .lawn-wx-float.wx-hidden { display: none; }
@@ -312,20 +333,20 @@ html, body {
 /* Carte prochaine tonte — verte proéminente */
 .ios-next-card {
   display:flex; align-items:center; gap:14px;
-  background:linear-gradient(135deg,#1a5c2e,#0d3a1c);
-  border:1px solid rgba(48,209,88,.3);
+  background: var(--hero-grad);
+  border:1px solid rgba(var(--green-rgb),.3);
   border-radius: var(--r); padding:16px 14px 16px 16px;
   margin-bottom:12px; cursor:pointer;
   transition:transform .15s, box-shadow .15s;
-  box-shadow:0 4px 20px rgba(48,209,88,.18);
+  box-shadow:0 4px 20px rgba(var(--green-rgb),.18);
 }
 .ios-next-card.hidden { display:none; }
 .ios-next-card:active { transform:scale(.98); }
 .ios-next-icon {
   width:44px;height:44px;border-radius:12px;
-  background:rgba(48,209,88,.22);
+  background:rgba(var(--green-rgb),.22);
   display:flex;align-items:center;justify-content:center;
-  color:#4cd964;flex-shrink:0;
+  color:var(--green);flex-shrink:0;
 }
 .ios-next-body { flex:1;min-width:0; }
 .ios-next-label {
@@ -335,7 +356,7 @@ html, body {
 .ios-next-date {
   font-size:1.05rem;font-weight:700;color:#fff;line-height:1.2;
 }
-.ios-next-days { font-size:.75rem;font-weight:600;color:#4cd964;margin-top:1px; }
+.ios-next-days { font-size:.75rem;font-weight:600;color:var(--green);margin-top:1px; }
 
 /* Section label iOS — style maquette */
 .ios-section-label {
@@ -347,7 +368,7 @@ html, body {
 
 /* Groupe de rows iOS */
 .ios-group {
-  background: #1c1c1e;
+  background: var(--card-solid);
   border-radius: 16px; overflow: hidden;
   margin-bottom: 16px;
 }
@@ -421,14 +442,14 @@ html, body {
 }
 .pfc {  /* plan freq chip */
   flex: 1; height: 48px; border-radius: 14px;
-  background: #1c1c1e; border: none;
+  background: var(--card-solid); border: none;
   color: rgba(255,255,255,.6); font-size: .9rem; font-weight: 600;
   font-family: inherit; cursor: pointer;
   transition: background .15s, color .15s;
   -webkit-tap-highlight-color: transparent;
 }
 .pfc.on {
-  background: #30d158; color: #000;
+  background: var(--green); color: var(--on-accent);
 }
 .pfc:not(.on):active { background: rgba(255,255,255,.1); }
 
@@ -441,7 +462,7 @@ html, body {
 .ios-modal-backdrop.hidden { display:none; }
 .ios-modal {
   position:fixed;bottom:0;left:0;right:0;z-index:801;
-  background:#1c1c1e;border-radius:20px 20px 0 0;
+  background:var(--card-solid);border-radius:20px 20px 0 0;
   padding:12px 16px calc(32px + env(safe-area-inset-bottom));
   transform:translateY(100%);
   transition:transform .32s cubic-bezier(.4,0,.2,1);
@@ -517,7 +538,7 @@ html, body {
   -webkit-tap-highlight-color:transparent;
 }
 .fchip-modal.on {
-  background:rgba(48,209,88,.18);border-color:var(--green);color:var(--green);
+  background:rgba(var(--green-rgb),.18);border-color:var(--green);color:var(--green);
 }
 .logo-icon {
   width:28px;height:28px;border-radius:7px;object-fit:cover;
@@ -751,7 +772,7 @@ html, body {
   cursor: pointer; color: var(--text2); transition: background .15s, transform .15s;
   touch-action: manipulation;
 }
-.cal-nav-btn:active:not(:disabled) { background: rgba(48,209,88,.18); transform: scale(.9); }
+.cal-nav-btn:active:not(:disabled) { background: rgba(var(--green-rgb),.18); transform: scale(.9); }
 .cal-nav-btn:disabled { opacity: .25; cursor: default; }
 
 /* Légende tontes du mois */
@@ -821,7 +842,7 @@ html, body {
   width: 24px; height: 24px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: .75rem;
-  box-shadow: 0 0 10px rgba(48,209,88,.55);
+  box-shadow: 0 0 10px rgba(var(--green-rgb),.55);
 }
 /* Jours avec tonte */
 .cal-day.has-ev { cursor: pointer; }
@@ -882,7 +903,7 @@ html, body {
 }
 .day-action-backdrop.open { background: rgba(0,0,0,.55); }
 .day-action-sheet {
-  width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0;
+  width: 100%; background: var(--card-solid); border-radius: 20px 20px 0 0;
   padding: 12px 16px 32px; transform: translateY(100%);
   transition: transform .3s cubic-bezier(.4,0,.2,1);
 }
@@ -905,7 +926,7 @@ html, body {
   transition: background .15s;
 }
 .day-action-btn:active { background: rgba(255,255,255,.14); }
-.day-action-btn.green { color: #30d158; }
+.day-action-btn.green { color: var(--green); }
 .day-action-btn.red   { color: #ff453a; }
 .day-action-btn.muted { color: var(--text3); background: transparent; }
 .day-action-btn span  { font-size: 1.1rem; }
@@ -915,7 +936,7 @@ html, body {
   display:flex; gap:10px; margin-bottom:12px;
 }
 .hist-stat-tile {
-  flex:1; background: #1c1c1e;
+  flex:1; background: var(--card-solid);
   border-radius:14px; padding:14px 10px 12px;
   text-align:center;
 }
@@ -928,7 +949,7 @@ html, body {
   text-transform:uppercase; letter-spacing:.04em;
 }
 .hist-chart-wrap {
-  background: #1c1c1e;
+  background: var(--card-solid);
   border-radius:14px; padding:14px; margin-bottom:14px;
 }
 /* History iOS rows */
@@ -947,9 +968,9 @@ html, body {
 /* ══ CONSEILS ══ */
 .tips-hero {
   border-radius:18px; overflow:hidden;
-  background:#0d3a1c;
-  border:1px solid rgba(48,209,88,.2);
-  margin-bottom:16px; box-shadow:0 4px 20px rgba(48,209,88,.12);
+  background: var(--hero-b);
+  border:1px solid rgba(var(--green-rgb),.2);
+  margin-bottom:16px; box-shadow:0 4px 20px rgba(var(--green-rgb),.12);
 }
 .tips-hero-img {
   width:100%; height:130px; overflow:hidden;
@@ -1024,7 +1045,7 @@ html, body {
 }
 .wx2-h-item:first-child { border-radius:14px 0 0 14px; }
 .wx2-h-item:last-child  { border-radius:0 14px 14px 0; border-right:none; }
-.wx2-h-item.now { background:rgba(48,209,88,.14); }
+.wx2-h-item.now { background:rgba(var(--green-rgb),.14); }
 .wx2-h-time { font-size:.62rem; font-weight:600; color:var(--text3); }
 .wx2-h-item.now .wx2-h-time { color:var(--green); }
 .wx2-h-icon { display:flex; align-items:center; justify-content:center; }
@@ -1081,7 +1102,7 @@ html, body {
   display: flex; align-items: center; gap: 14px;
   padding: 13px 16px; min-height: 56px;
   position: relative; z-index: 1;
-  background: #1c1c1e; /* même fond que ios-group */
+  background: var(--card-solid); /* même fond que ios-group */
   cursor: grab; user-select: none;
   will-change: transform;
   touch-action: pan-y;
@@ -1117,7 +1138,7 @@ html, body {
   border-radius: 2px; overflow: hidden;
 }
 .chk-progress-fill {
-  height: 100%; background: #30d158; border-radius: 2px;
+  height: 100%; background: var(--green); border-radius: 2px;
   transition: width .3s ease;
 }
 .chk-progress-count {
@@ -1200,7 +1221,7 @@ html, body {
   transition: border-color .2s, box-shadow .2s; color-scheme: dark;
   -webkit-appearance: none; letter-spacing: -.01em;
 }
-.field:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(48,209,88,.14); }
+.field:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(var(--green-rgb),.14); }
 .row { display: flex; align-items: center; gap: 8px; }
 .chip-sm {
   font-size: .72rem; font-weight: 700; padding: 4px 10px;
@@ -1239,10 +1260,10 @@ html, body {
 }
 .fchip:active { transform: scale(.96); }
 .fchip.on {
-  background: rgba(48,209,88,.15);
+  background: rgba(var(--green-rgb),.15);
   border-color: var(--green);
   color: var(--green);
-  box-shadow: 0 0 0 1px rgba(48,209,88,.25), inset 0 1px 0 rgba(48,209,88,.12);
+  box-shadow: 0 0 0 1px rgba(var(--green-rgb),.25), inset 0 1px 0 rgba(var(--green-rgb),.12);
 }
 /* Row 2 : Auto IA + 1 mois — légèrement différenciés */
 .fchip.auto {
@@ -1271,7 +1292,7 @@ html, body {
 }
 .plan-time:focus {
   border-color: var(--green) !important;
-  box-shadow: 0 0 0 3px rgba(48,209,88,.14) !important;
+  box-shadow: 0 0 0 3px rgba(var(--green-rgb),.14) !important;
 }
 
 /* Anciennes classes conservées pour compat JS (cachées) */
@@ -1288,8 +1309,8 @@ html, body {
   -webkit-tap-highlight-color: transparent; touch-action: manipulation;
 }
 .dchip:hover, .dchip:active {
-  background: rgba(48,209,88,.12);
-  border-color: rgba(48,209,88,.4);
+  background: rgba(var(--green-rgb),.12);
+  border-color: rgba(var(--green-rgb),.4);
   color: var(--green);
 }
 
@@ -1306,7 +1327,7 @@ html, body {
 .fc svg { width: 17px; height: 17px; color: var(--text3); transition: color .15s; }
 .fc:hover { background: var(--green-t); border-color: var(--green-g); color: var(--text); }
 .fc:hover svg { color: var(--green); }
-.fc.on { background: var(--green-t); border-color: var(--green); color: var(--green); font-weight: 600; box-shadow: 0 0 10px rgba(48,209,88,.12); }
+.fc.on { background: var(--green-t); border-color: var(--green); color: var(--green); font-weight: 600; box-shadow: 0 0 10px rgba(var(--green-rgb),.12); }
 .fc.on svg { color: var(--green); }
 
 /* Time row */
@@ -1322,12 +1343,12 @@ html, body {
 
 /* ── Buttons ── */
 .btn-primary {
-  width: 100%; background: linear-gradient(145deg, #28c45a 0%, #1aa348 100%);
-  border: none; border-radius: 9999px; padding: 14px 28px; color: #fff;
+  width: 100%; background: var(--btn-grad);
+  border: none; border-radius: 9999px; padding: 14px 28px; color: var(--btn-text);
   font-size: .92rem; font-weight: 700; font-family: inherit; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   transition: transform .18s, box-shadow .18s;
-  box-shadow: 0 4px 20px rgba(34,197,94,.30),
+  box-shadow: 0 4px 20px rgba(var(--green-rgb),.30),
               0 1px 0 rgba(255,255,255,.18) inset;
   margin-top: 14px;
   -webkit-tap-highlight-color: transparent; touch-action: manipulation;
@@ -1343,11 +1364,11 @@ html, body {
 }
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 28px rgba(34,197,94,.40), 0 1px 0 rgba(255,255,255,.18) inset;
+  box-shadow: 0 8px 28px rgba(var(--green-rgb),.40), 0 1px 0 rgba(255,255,255,.18) inset;
 }
-.btn-primary:active { transform: scale(.97); box-shadow: 0 2px 10px rgba(34,197,94,.25); }
+.btn-primary:active { transform: scale(.97); box-shadow: 0 2px 10px rgba(var(--green-rgb),.25); }
 .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none;
-  box-shadow: none; background: rgba(48,209,88,.25); }
+  box-shadow: none; background: rgba(var(--green-rgb),.25); }
 .btn-secondary {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 13px; border-radius: var(--r-sm);
@@ -1419,7 +1440,7 @@ html, body {
 .badge-normal { background: var(--green-t); color: var(--green); }
 
 /* AI tip */
-.ai-tip { background: var(--green-t); border: 1px solid rgba(48,209,88,.18); border-radius: var(--r-sm); padding: 12px; margin-top: 12px; font-size: .78rem; color: var(--text2); line-height: 1.6; }
+.ai-tip { background: var(--green-t); border: 1px solid rgba(var(--green-rgb),.18); border-radius: var(--r-sm); padding: 12px; margin-top: 12px; font-size: .78rem; color: var(--text2); line-height: 1.6; }
 .ai-lbl { font-size: .62rem; font-weight: 700; color: var(--green); margin-bottom: 5px; display: flex; align-items: center; gap: 4px; }
 .ai-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: pulse 1.8s ease-in-out infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
@@ -1487,7 +1508,7 @@ html, body {
 .hist-del { background: none; border: none; color: var(--red); cursor: pointer; padding: 4px; opacity: .5; font-size: .9rem; -webkit-tap-highlight-color: transparent; }
 .hist-del:hover { opacity: 1; }
 .log-btn { width: 100%; margin-top: 10px; background: var(--green-t); border: 1px solid var(--green-g); border-radius: var(--r-sm); padding: 11px; color: var(--green); font-size: .83rem; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background .15s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-.log-btn:hover { background: rgba(48,209,88,.2); }
+.log-btn:hover { background: rgba(var(--green-rgb),.2); }
 .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 14px; }
 .stat { background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 13px; padding: 12px 8px; text-align: center; }
 .stat-v { font-size: 1.35rem; font-weight: 700; letter-spacing: -.03em; }
@@ -1606,7 +1627,7 @@ html, body {
   transition: border-color .2s, box-shadow .2s;
 }
 .wx-search-box:focus-within {
-  border-color: var(--green); box-shadow: 0 0 0 3px rgba(48,209,88,.13);
+  border-color: var(--green); box-shadow: 0 0 0 3px rgba(var(--green-rgb),.13);
 }
 .wx-search-icon {
   width: 16px; height: 16px; flex-shrink: 0;
@@ -1775,11 +1796,136 @@ html, body {
 .dots span:nth-child(3) { animation-delay: .4s; }
 @keyframes blink { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
 @media (max-width: 380px) { .freq-grid { grid-template-columns: repeat(2,1fr); } .tab { padding: 7px 10px; min-width: 46px; } }
+
+/* ══ Thèmes premium ══ */
+html[data-theme="midnight"] {
+  --bg:#060818; --bg2:#0d1030; --bg-rgb:6,8,24;
+  --green:#6e8cff; --green-d:#3f5fe0; --green-rgb:110,140,255;
+  --icon-bg:#4d6cf0; --on-accent:#060818;
+  --btn-a:#5a78f5; --btn-b:#3a52d6; --btn-text:#ffffff;
+  --hero-a:#2e3b6b; --hero-b:#161c33;
+  --au1:#3b5bff; --au2:#8a3bff; --au3:#00a3ff; --au-o:0.54;
+  --card-solid:#151a34; --bar-bg:rgba(6,8,24,.82); --pill-bg:rgba(14,18,44,.80);
+}
+html[data-theme="aurora"] {
+  --bg:#0b0612; --bg2:#150b22; --bg-rgb:11,6,18;
+  --green:#bf5af2; --green-d:#9a3fd0; --green-rgb:191,90,242;
+  --icon-bg:#a64be0; --on-accent:#0b0612;
+  --btn-a:#b24fe8; --btn-b:#8a35c4; --btn-text:#ffffff;
+  --hero-a:#502666; --hero-b:#261230;
+  --au1:#bf5af2; --au2:#ff375f; --au3:#5e5ce6; --au-o:0.52;
+  --card-solid:#1a1226; --bar-bg:rgba(11,6,18,.82); --pill-bg:rgba(26,15,38,.80);
+}
+html[data-theme="ocean"] {
+  --bg:#030f13; --bg2:#08181e; --bg-rgb:3,15,19;
+  --green:#2fd6cf; --green-d:#17a8a2; --green-rgb:47,214,207;
+  --icon-bg:#18b3ac; --on-accent:#031013;
+  --btn-a:#17a39d; --btn-b:#0e6f7c; --btn-text:#ffffff;
+  --hero-a:#145a57; --hero-b:#092b29;
+  --au1:#00d1c4; --au2:#0a84ff; --au3:#30b0c7; --au-o:0.5;
+  --card-solid:#0f2025; --bar-bg:rgba(3,15,19,.82); --pill-bg:rgba(9,28,34,.80);
+}
+html[data-theme="amber"] {
+  --bg:#110a04; --bg2:#1c1208; --bg-rgb:17,10,4;
+  --green:#ff9f0a; --green-d:#d97f00; --green-rgb:255,159,10;
+  --icon-bg:#ec8a00; --on-accent:#1a0f00;
+  --btn-a:#ff9f0a; --btn-b:#e07a00; --btn-text:#1a0f00;
+  --hero-a:#6b4304; --hero-b:#332002;
+  --au1:#ff9f0a; --au2:#ff375f; --au3:#ffd60a; --au-o:0.48;
+  --card-solid:#231a0e; --bar-bg:rgba(17,10,4,.82); --pill-bg:rgba(34,21,9,.80);
+}
+html[data-theme="onyx"] {
+  --bg:#050505; --bg2:#101010; --bg-rgb:5,5,5;
+  --green:#f2f2f7; --green-d:#c7c7cc; --green-rgb:242,242,247;
+  --icon-bg:#636366; --on-accent:#000000;
+  --btn-a:#f2f2f7; --btn-b:#c7c7cc; --btn-text:#000000;
+  --hero-a:#3a3a3c; --hero-b:#1c1c1e;
+  --au1:#ffffff; --au2:#8e8e93; --au3:#636366; --au-o:0.22;
+  --card-solid:#1c1c1e; --bar-bg:rgba(5,5,5,.82); --pill-bg:rgba(26,26,28,.80);
+}
+html[data-glass-level="1"] { --glass-blur: 14px; }
+html[data-glass-level="2"] { --glass-blur: 24px; }
+html[data-glass-level="3"] { --glass-blur: 38px; }
+body { transition: background-color .5s ease; }
+
+/* Carte « Prochaine tonte » : états urgence (classes, plus de style inline) */
+.ios-next-card.is-urgent { background: linear-gradient(135deg,#4a1a1a,#2a0d0d); border-color: rgba(255,69,58,.35); box-shadow: 0 4px 20px rgba(255,69,58,.15); }
+.ios-next-card.is-soon   { background: linear-gradient(135deg,#3a3010,#1e1800); border-color: rgba(255,214,10,.30); box-shadow: 0 4px 20px rgba(255,214,10,.12); }
+
+/* ══ Verre dépoli (actif si <html data-glass="on">) ══ */
+html[data-glass="on"] .ios-group,
+html[data-glass="on"] .lawn,
+html[data-glass="on"] .hist-stat-tile,
+html[data-glass="on"] .hist-chart-wrap,
+html[data-glass="on"] .pfc:not(.on),
+html[data-glass="on"] .about,
+html[data-glass="on"] .card {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  box-shadow: inset 0 0 0 1px var(--glass-border), inset 0 1px 0 var(--glass-hi), 0 10px 30px rgba(0,0,0,.22);
+  border-color: transparent;
+}
+html[data-glass="on"] .notif-banner {
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+}
+html[data-glass="on"] .ios-next-card:not(.is-urgent):not(.is-soon) {
+  background: linear-gradient(135deg, rgba(var(--green-rgb),.34), rgba(var(--green-rgb),.12));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border-color: rgba(var(--green-rgb),.38);
+  box-shadow: inset 0 1px 0 var(--glass-hi), 0 10px 30px rgba(0,0,0,.25);
+}
+html[data-glass="on"] .ios-next-card.is-urgent,
+html[data-glass="on"] .ios-next-card.is-soon {
+  -webkit-backdrop-filter: blur(var(--glass-blur)); backdrop-filter: blur(var(--glass-blur));
+}
+html[data-glass="on"] .hist-row-pill { background: transparent; }
+html[data-glass="on"] .topbar { background: rgba(var(--bg-rgb), .55); }
+html[data-glass="on"] .pill {
+  background: rgba(var(--bg-rgb), .46);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.6)) saturate(190%);
+  backdrop-filter: blur(calc(var(--glass-blur) * 1.6)) saturate(190%);
+}
+html[data-glass="on"] .ios-modal,
+html[data-glass="on"] .day-action-sheet {
+  background: rgba(var(--bg-rgb), .62);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 1.6)) saturate(190%);
+  backdrop-filter: blur(calc(var(--glass-blur) * 1.6)) saturate(190%);
+  box-shadow: inset 0 1px 0 var(--glass-hi), 0 -10px 40px rgba(0,0,0,.35);
+}
+html[data-glass="off"] .ab { opacity: calc(var(--au-o, .4) * .55); }
+
+/* ══ Sélecteur d'apparence ══ */
+.theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 6px; padding: 18px 10px 16px; }
+.theme-sw {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  background: none; border: none; color: var(--text2); cursor: pointer;
+  font-family: inherit; font-size: .72rem; font-weight: 600;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.theme-dot {
+  position: relative; width: 54px; height: 54px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.2), 0 6px 16px rgba(0,0,0,.4);
+  transition: transform .18s, box-shadow .18s;
+}
+.theme-dot i { width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 0 0 3px rgba(0,0,0,.28); }
+.theme-sw:active .theme-dot { transform: scale(.92); }
+.theme-sw.on { color: #fff; }
+.theme-sw.on .theme-dot { box-shadow: 0 0 0 2.5px var(--bg), 0 0 0 4.5px var(--green), 0 6px 16px rgba(0,0,0,.4); }
+.theme-sw.on .theme-dot::after {
+  content: ''; position: absolute; width: 11px; height: 6px; left: 50%; top: 50%;
+  border-left: 2.5px solid #fff; border-bottom: 2.5px solid #fff;
+  transform: translate(-50%, -62%) rotate(-45deg); filter: drop-shadow(0 1px 2px rgba(0,0,0,.5));
+}
+.theme-sw.on .theme-dot i { opacity: .0; }
 </style>
 </head>
 <body>
 
-<div class="aurora" aria-hidden="true"><div class="ab"></div><div class="ab"></div></div>
+<div class="aurora" aria-hidden="true"><div class="ab"></div><div class="ab"></div><div class="ab"></div></div>
 <div class="toast" id="toast"></div>
 
 <div class="app">
@@ -2109,6 +2255,40 @@ html, body {
     <!-- ═══ RÉGLAGES ═══ -->
     <div class="pane" id="pane-settings">
 
+      <!-- ══ APPARENCE ══ -->
+      <div class="ios-section-label">Apparence</div>
+      <div class="ios-group">
+        <div class="theme-grid" id="themePicker"></div>
+        <div class="ios-sep" style="margin-left:0"></div>
+        <div class="ios-row">
+          <div class="ios-row-icon" style="background:var(--icon-bg)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="13" height="13" rx="3"/><rect x="8" y="8" width="13" height="13" rx="3"/></svg>
+          </div>
+          <div class="ios-row-body">
+            <div class="ios-row-title">Verre dépoli</div>
+            <div class="ios-row-value">Cartes et menus translucides</div>
+          </div>
+          <label class="toggle" for="glassToggle" style="flex-shrink:0">
+            <input type="checkbox" id="glassToggle" checked onchange="setGlass(this.checked)">
+            <div class="toggle-track"></div><div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <div id="glassLevelWrap">
+          <div class="ios-sep"></div>
+          <div class="ios-row">
+            <div class="ios-row-icon" style="background:var(--icon-bg)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C8 8.5 5.5 11.5 5.5 15a6.5 6.5 0 0 0 13 0C18.5 11.5 16 8.5 12 3z"/></svg>
+            </div>
+            <div class="ios-row-body"><div class="ios-row-title">Intensité du flou</div></div>
+            <div class="seg" style="flex-shrink:0">
+              <button class="seg-o" id="segGl1" onclick="setGlassLevel(1)">Léger</button>
+              <button class="seg-o" id="segGl2" onclick="setGlassLevel(2)">Moyen</button>
+              <button class="seg-o" id="segGl3" onclick="setGlassLevel(3)">Fort</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ══ GÉNÉRAL ══ -->
       <div class="ios-section-label">Général</div>
       <div class="ios-group">
@@ -2135,17 +2315,6 @@ html, body {
             <button class="seg-o"    id="segF" onclick="setUnit('F')">°F</button>
           </div>
         </div>
-        <div class="ios-sep"></div>
-        <!-- Thème -->
-        <div class="ios-row">
-          <div class="ios-row-icon" style="background:#1c1c1e">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          </div>
-          <div class="ios-row-body">
-            <div class="ios-row-title">Thème</div>
-            <div class="ios-row-value">Sombre</div>
-          </div>
-        </div>
       </div>
 
       <!-- ══ NOTIFICATIONS ══ -->
@@ -2153,7 +2322,7 @@ html, body {
       <div class="ios-group">
         <!-- Rappels de tonte -->
         <div class="ios-row">
-          <div class="ios-row-icon" style="background:#30d158">
+          <div class="ios-row-icon" style="background:var(--icon-bg)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2a1 1 0 0 1 2 0 7 7 0 0 1 5 6.5V13l2 2H3l2-2V8.5A7 7 0 0 1 10 2z"/><path d="M9 18a2 2 0 0 0 4 0"/></svg>
           </div>
           <div class="ios-row-body">
@@ -2190,7 +2359,7 @@ html, body {
         <div class="ios-sep"></div>
         <!-- Tester -->
         <div class="ios-row" onclick="openNotifTest()" style="cursor:pointer">
-          <div class="ios-row-icon" style="background:#30d158">
+          <div class="ios-row-icon" style="background:var(--icon-bg)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M9 11l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
           </div>
           <div class="ios-row-body">
@@ -2217,7 +2386,7 @@ html, body {
       <div class="ios-section-label">Données</div>
       <div class="ios-group">
         <div class="ios-row" onclick="exportData()" style="cursor:pointer">
-          <div class="ios-row-icon" style="background:#30d158">
+          <div class="ios-row-icon" style="background:var(--icon-bg)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M11 3v11M7 10l4 4 4-4"/><path d="M4 17v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1"/></svg>
           </div>
           <div class="ios-row-body">
@@ -2257,7 +2426,7 @@ html, body {
       <div class="ios-section-label">À propos</div>
       <div class="ios-group">
         <div class="ios-row">
-          <div class="ios-row-icon" style="background:#30d158">
+          <div class="ios-row-icon" style="background:var(--icon-bg)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
           </div>
           <div class="ios-row-body"><div class="ios-row-title">Version</div></div>
@@ -2411,7 +2580,7 @@ html, body {
     </div>
     <div class="ios-sep"></div>
     <div class="ios-modal-row" onclick="setFreqModal(0);closeFreqModal()">
-      <div class="ios-row-icon" style="background:#30d158">
+      <div class="ios-row-icon" style="background:var(--icon-bg)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/></svg>
       </div>
       <div class="ios-row-body"><div class="ios-row-title">Auto IA</div><div class="ios-row-value">Tonte intelligente</div></div>
@@ -2612,7 +2781,7 @@ const TIPS = {
 // Infos utiles par astuce (titre, sous-titre, détail)
 const TIPS_ARTICLES = [
   {
-    icon:'#30d158', iconSvg:'<path d="M3 6l3 1.5M3 6l3-1.5M3 6v4M21 6l-3 1.5M21 6l-3-1.5M21 6v4M12 2l3 1.5M12 2l-3 1.5M12 2v4M12 16v4M12 20l3-1.5M12 20l-3-1.5"/>',
+    icon:'var(--icon-bg)', iconSvg:'<path d="M3 6l3 1.5M3 6l3-1.5M3 6v4M21 6l-3 1.5M21 6l-3-1.5M21 6v4M12 2l3 1.5M12 2l-3 1.5M12 2v4M12 16v4M12 20l3-1.5M12 20l-3-1.5"/>',
     title:'Hauteur de coupe idéale',
     sub:'4 à 5 cm pour un gazon dense',
     detail:'Ne jamais couper plus d\'1/3 de la hauteur totale en une seule fois. Une hauteur trop faible affaiblit les racines.'
@@ -2642,7 +2811,7 @@ const TIPS_ARTICLES = [
     detail:'Jaune = carence en fer ou sécheresse. Zones creuses = taupe ou hanneton. Mousse = sol trop acide ou ombragé. Agissez dès les premiers signes.'
   },
   {
-    icon:'#30d158', iconSvg:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+    icon:'var(--icon-bg)', iconSvg:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
     title:'Entretien saisonnier',
     sub:'Adapter la fréquence selon la saison',
     detail:'Printemps/automne : toutes les semaines. Été chaud : toutes les 2 semaines. Hiver : pause complète. La régularité est la clé d\'un beau gazon.'
@@ -3392,7 +3561,7 @@ async function generate(skipRecalc){
   setTimeout(()=>{prog.style.display='none';fill.style.width='0%';},400);
   btn.disabled=false;
   btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg> Recalculer';
-  btn.style.background='linear-gradient(155deg,#166d2e,#1fa344)';
+  btn.style.background='var(--btn-grad)';
   vibrate([8,50,8]);
   _gridMonth = null; // réinitialiser la navigation mois au mois courant
   // schedCard masqué — le planning s'affiche dans le modal (openPlanningModal)
@@ -3950,9 +4119,9 @@ function updateIosNextCard(next){
     ny.textContent=d===0?"Aujourd'hui !":d===1?'Demain':'Dans '+d+' jours';
   }
   // Couleur selon urgence
-  if(next.diff<=2) card.style.background='linear-gradient(135deg,#4a1a1a,#2a0d0d)';
-  else if(next.diff<=5) card.style.background='linear-gradient(135deg,#3a3010,#1e1800)';
-  else card.style.background='linear-gradient(135deg,#1a5c2e,#0d3a1c)';
+  card.style.background = '';   // le CSS (thème / verre) décide
+  card.classList.toggle('is-urgent', next.diff<=2);
+  card.classList.toggle('is-soon',   next.diff>2 && next.diff<=5);
 }
 
 // ── Moteur de swipe ───────────────────────────────────────────────
@@ -5005,7 +5174,7 @@ function renderHistory(){
     const row = document.createElement('div');
     row.className = 'hist-row-pill';
     row.innerHTML = `
-      <div class="ios-row-icon" style="background:${isPlan?'#0a84ff':'#30d158'}">
+      <div class="ios-row-icon" style="background:${isPlan?'#0a84ff':'var(--icon-bg)'}">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           ${isPlan
             ?'<rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M16 2v4"/>'
@@ -5175,7 +5344,7 @@ function renderStatChart(){
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr,dpr);
 
-  const GREEN  = '#30d158';
+  const GREEN  = _accent();
   const BLUE   = '#64b5f6';
   const GRID   = 'rgba(255,255,255,.07)';
   const TEXT   = 'rgba(255,255,255,.4)';
@@ -5205,8 +5374,8 @@ function renderStatChart(){
   if(pts.length >= 2){
     // Zone remplie sous la courbe
     const area = ctx.createLinearGradient(0, pad.t, 0, pad.t+cH);
-    area.addColorStop(0, 'rgba(48,209,88,.18)');
-    area.addColorStop(1, 'rgba(48,209,88,0)');
+    area.addColorStop(0, _accentA(.18));
+    area.addColorStop(1, _accentA(0));
     ctx.fillStyle=area;
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pad.t+cH);
@@ -5238,7 +5407,7 @@ function renderStatChart(){
     });
 
     // Valeurs sur les points
-    ctx.fillStyle='rgba(48,209,88,.85)';
+    ctx.fillStyle=_accentA(.85);
     ctx.font='bold 9px -apple-system,sans-serif';
     ctx.textAlign='center';
     pts.forEach(p=>{
@@ -5250,7 +5419,7 @@ function renderStatChart(){
   // ── Points tonte (axe bas) ──
   data.forEach((h,i)=>{
     const x=xAt(i);
-    ctx.fillStyle='rgba(48,209,88,.6)';
+    ctx.fillStyle=_accentA(.6);
     ctx.beginPath(); ctx.arc(x, pad.t+cH+8, 2.5, 0, Math.PI*2); ctx.fill();
   });
 
@@ -5306,7 +5475,7 @@ function _attachChartTooltip(canvas, W, H, pad, xAt, pts, data, intervals){
     const d=new Date(h.date+'T12:00');
 
     tip.innerHTML=`<div style="font-weight:700;margin-bottom:3px">${fmtDate(d)}</div>`
-      +(iv!==null?`<div style="color:rgba(48,209,88,.9)">⏱ ${iv} jours depuis la précédente</div>`:'')
+      +(iv!==null?`<div style="color:var(--green)">⏱ ${iv} jours depuis la précédente</div>`:'')
       +(h.note?`<div style="color:rgba(255,255,255,.5);margin-top:2px">${h.note}</div>`:'');
 
     const tipX=Math.min(pts[closestIdx].x, W-120);
@@ -5335,7 +5504,7 @@ function renderChecklist(){
       ? '<polyline points="20 6 9 17 4 12"/>'
       : (item.iconSvg || '<circle cx="12" cy="12" r="9"/>');
     row.innerHTML = `
-      <div class="chk-icon-wrap" style="background:${done?'#30d158':'rgba(255,255,255,.1)'}">
+      <div class="chk-icon-wrap" style="background:${done?'var(--icon-bg)':'rgba(255,255,255,.1)'}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${_iconPath}</svg>
       </div>
       <div class="ios-row-body">
@@ -6041,7 +6210,7 @@ async function restoreSavedSchedule(){
   if(btn){
     const svg='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>';
     btn.innerHTML = svg + ' Recalculer';
-    btn.style.background = 'linear-gradient(155deg,#166d2e,#1fa344)';
+    btn.style.background='var(--btn-grad)';
     btn.disabled = false;
   }
 
@@ -6065,6 +6234,70 @@ async function restoreSavedSchedule(){
 // ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
+
+// ══════════════════════════════════════════
+// APPARENCE — thèmes premium + verre dépoli
+// ══════════════════════════════════════════
+function _accent(){ return getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || '#30d158'; }
+function _accentA(a){
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--green-rgb').trim() || '48,209,88';
+  return 'rgba(' + v + ',' + a + ')';
+}
+const THEMES = [{"key": "forest", "name": "Forêt", "bg": "#09090f", "accent": "#30d158", "au": ["#30d158", "#0a84ff", "#00c7be"]}, {"key": "midnight", "name": "Minuit", "bg": "#060818", "accent": "#6e8cff", "au": ["#3b5bff", "#8a3bff", "#00a3ff"]}, {"key": "aurora", "name": "Aurore", "bg": "#0b0612", "accent": "#bf5af2", "au": ["#bf5af2", "#ff375f", "#5e5ce6"]}, {"key": "ocean", "name": "Océan", "bg": "#030f13", "accent": "#2fd6cf", "au": ["#00d1c4", "#0a84ff", "#30b0c7"]}, {"key": "amber", "name": "Ambre", "bg": "#110a04", "accent": "#ff9f0a", "au": ["#ff9f0a", "#ff375f", "#ffd60a"]}, {"key": "onyx", "name": "Onyx", "bg": "#050505", "accent": "#f2f2f7", "au": ["#ffffff", "#8e8e93", "#636366"]}];
+
+function _lsSet(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+function _lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+
+function applyTheme(key, fromUser){
+  const t = THEMES.find(x => x.key === key) || THEMES[0];
+  document.documentElement.setAttribute('data-theme', t.key);
+  if(fromUser) _lsSet('ln_theme', t.key);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute('content', t.bg);
+  document.querySelectorAll('.theme-sw').forEach(b => b.classList.toggle('on', b.dataset.key === t.key));
+  if(fromUser){ try{ vibrate(8); }catch(e){} }
+  // Le graphique (canvas) lit la couleur d'accent : le redessiner
+  requestAnimationFrame(() => { try{ renderStatChart(); }catch(e){} });
+}
+
+function renderThemePicker(){
+  const box = document.getElementById('themePicker'); if(!box) return;
+  const cur = document.documentElement.getAttribute('data-theme') || 'forest';
+  box.innerHTML = '';
+  THEMES.forEach(t => {
+    const b = document.createElement('button');
+    b.className = 'theme-sw' + (t.key === cur ? ' on' : '');
+    b.dataset.key = t.key;
+    b.setAttribute('aria-label', 'Thème ' + t.name);
+    b.innerHTML = '<span class="theme-dot" style="background:linear-gradient(135deg,' + t.au[0] + ' 0%,' + t.au[1] + ' 55%,' + t.bg + ' 100%)"><i style="background:' + t.accent + '"></i></span><span>' + t.name + '</span>';
+    b.addEventListener('click', () => applyTheme(t.key, true));
+    box.appendChild(b);
+  });
+}
+
+function setGlass(on, noSave){
+  document.documentElement.setAttribute('data-glass', on ? 'on' : 'off');
+  if(!noSave) _lsSet('ln_glass', on ? '1' : '0');
+  const w = document.getElementById('glassLevelWrap'); if(w) w.style.display = on ? '' : 'none';
+  const tg = document.getElementById('glassToggle'); if(tg) tg.checked = !!on;
+}
+function setGlassLevel(n, noSave){
+  n = Math.max(1, Math.min(3, Number(n) || 2));
+  document.documentElement.setAttribute('data-glass-level', String(n));
+  if(!noSave) _lsSet('ln_glass_level', String(n));
+  [1,2,3].forEach(i => { const el = document.getElementById('segGl' + i); if(el) el.classList.toggle('on', i === n); });
+}
+function initAppearance(){
+  const root = document.documentElement;
+  renderThemePicker();
+  setGlass(root.getAttribute('data-glass') === 'on', true);
+  setGlassLevel(root.getAttribute('data-glass-level') || 2, true);
+  const t = THEMES.find(x => x.key === root.getAttribute('data-theme'));
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta && t) meta.setAttribute('content', t.bg);
+}
+document.addEventListener('DOMContentLoaded', initAppearance);
+
 // ── Bloquer le zoom pinch sur iOS (iOS 10+ ignore user-scalable=no) ──
 document.addEventListener('gesturestart',  e=>e.preventDefault(), {passive:false});
 document.addEventListener('gesturechange', e=>e.preventDefault(), {passive:false});
