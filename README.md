@@ -77,3 +77,17 @@ icon-*.png    — Icônes app (180/192/512px)
 
 ---
 MIT License
+
+## Publier une mise à jour (vérification automatique)
+
+L'app compare son numéro de build (`<meta name="app-build">` en tête de `index.html`)
+avec celui du fichier publié sur GitHub Pages. Si le fichier publié est plus récent,
+une bannière « Mise à jour disponible » apparaît (et une pastille rouge sur Réglages).
+
+**Avant chaque publication :**
+1. `./bump-build.sh 9.4 "Résumé des nouveautés"` (ou modifier à la main les 3 balises `app-*` de `index.html`)
+2. Pousser `index.html` (et `sw.js` s'il a changé) sur GitHub.
+
+Sans changement du build, aucune mise à jour n'est détectée.
+La vérification est automatique (6 s après le lancement, puis au retour dans l'app, au plus toutes
+les 30 min) et manuelle : Réglages → À propos → « Rechercher une mise à jour ».

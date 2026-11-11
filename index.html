@@ -2,6 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="app-version" content="9.3">
+<meta name="app-build" content="202611110647">
+<meta name="app-notes" content="Thèmes premium, verre dépoli et vérification des mises à jour">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#09090f">
 <script>/* Thème appliqué avant le premier rendu (aucun flash) */
@@ -1897,6 +1900,41 @@ html[data-glass="on"] .day-action-sheet {
 }
 html[data-glass="off"] .ab { opacity: calc(var(--au-o, .4) * .55); }
 
+
+/* ══ Mises à jour ══ */
+.upd-banner {
+  position: fixed; left: 14px; right: 14px; top: calc(var(--sat) + 64px); z-index: 150;
+  max-width: 572px; margin: 0 auto;
+  display: flex; align-items: center; gap: 12px; padding: 12px 8px 12px 14px;
+  border-radius: 16px; background: rgba(var(--bg-rgb), .9);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%); backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  box-shadow: inset 0 0 0 1px rgba(var(--green-rgb), .38), inset 0 1px 0 var(--glass-hi), 0 12px 32px rgba(0,0,0,.45);
+  opacity: 0; transform: translateY(-10px); pointer-events: none;
+  transition: opacity .28s ease, transform .28s ease;
+}
+.upd-banner[hidden] { display: none; }
+.upd-banner.show { opacity: 1; transform: none; pointer-events: auto; }
+.upd-ico { width: 36px; height: 36px; border-radius: 10px; background: var(--icon-bg); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.upd-txt { min-width: 0; flex: 1; }
+.upd-txt b { display: block; font-size: .86rem; font-weight: 700; color: #fff; white-space: nowrap; }
+.upd-txt span { display: block; font-size: .72rem; color: rgba(255,255,255,.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.upd-btn {
+  border: none; border-radius: 9999px; padding: 8px 14px; flex-shrink: 0; cursor: pointer;
+  background: var(--btn-grad); color: var(--btn-text);
+  font-family: inherit; font-size: .76rem; font-weight: 700;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.upd-btn:disabled { opacity: .6; cursor: default; }
+.pill-btn.acc { background: rgba(var(--green-rgb), .16); border-color: rgba(var(--green-rgb), .4); color: var(--green); }
+.upd-x { width: 32px; height: 32px; flex-shrink: 0; border: none; background: none; color: rgba(255,255,255,.5); cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+.tab.has-update { position: relative; }
+.tab.has-update::after {
+  content: ''; position: absolute; top: 5px; right: 17px; width: 9px; height: 9px; border-radius: 50%;
+  background: #ff453a; box-shadow: 0 0 0 2px var(--bg);
+}
+.spin-ico { animation: updspin .9s linear infinite; }
+@keyframes updspin { to { transform: rotate(360deg); } }
+
 /* ══ Sélecteur d'apparence ══ */
 .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 6px; padding: 18px 10px 16px; }
 .theme-sw {
@@ -1927,6 +1965,12 @@ html[data-glass="off"] .ab { opacity: calc(var(--au-o, .4) * .55); }
 
 <div class="aurora" aria-hidden="true"><div class="ab"></div><div class="ab"></div><div class="ab"></div></div>
 <div class="toast" id="toast"></div>
+<div class="upd-banner" id="updBanner" role="status" hidden>
+  <div class="upd-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 19h16"/></svg></div>
+  <div class="upd-txt"><b>Mise à jour disponible</b><span id="updSub"></span></div>
+  <button class="upd-btn" id="updBannerBtn" onclick="applyUpdate()">Installer</button>
+  <button class="upd-x" aria-label="Plus tard" onclick="dismissUpdate()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+</div>
 
 <div class="app">
 
@@ -2430,7 +2474,19 @@ html[data-glass="off"] .ab { opacity: calc(var(--au-o, .4) * .55); }
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
           </div>
           <div class="ios-row-body"><div class="ios-row-title">Version</div></div>
-          <div class="ios-row-value" style="flex-shrink:0">9.2</div>
+          <div class="ios-row-value" id="aboutVersion" style="flex-shrink:0">—</div>
+        </div>
+        <div class="ios-sep"></div>
+        <div class="ios-row" id="updRow" onclick="checkForUpdate(true)">
+          <div class="ios-row-icon" style="background:var(--icon-bg)">
+            <svg id="updRowIco" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+          </div>
+          <div class="ios-row-body">
+            <div class="ios-row-title" id="updRowTitle">Rechercher une mise à jour</div>
+            <div class="ios-row-value" id="updRowSub">Dernière vérification : jamais</div>
+          </div>
+          <button class="pill-btn acc" id="updRowBtn" style="display:none;flex-shrink:0" onclick="event.stopPropagation();applyUpdate()">Installer</button>
+          <svg class="ios-chev" id="updRowChev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></svg>
         </div>
         <div class="ios-sep"></div>
         <div class="ios-row">
@@ -4775,7 +4831,7 @@ function runDiagnostic(){
         setDiag('SW',true,'Enregistré ✓ — '+state,'—','ok');
       } else {
         // Pas encore enregistré (premier chargement / délai) — tenter maintenant
-        navigator.serviceWorker.register('./sw.js?v=12',{scope:'./'})
+        navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'})
           .then(reg=>{
             const state=reg.active?'actif':reg.installing?'installation…':'en attente';
             setDiag('SW',true,'Enregistré ✓ — '+state,'—','ok');
@@ -6298,6 +6354,151 @@ function initAppearance(){
 }
 document.addEventListener('DOMContentLoaded', initAppearance);
 
+
+// ══════════════════════════════════════════
+// MISES À JOUR — détection d'une nouvelle version publiée
+// ══════════════════════════════════════════
+const APP_VERSION = (document.querySelector('meta[name="app-version"]') || {}).content || '?';
+const APP_BUILD   = (document.querySelector('meta[name="app-build"]')   || {}).content || '0';
+const UPD_MIN_INTERVAL = 30 * 60 * 1000;   // vérification auto au plus toutes les 30 min
+let _upd = { status:'idle', latest:null, busy:false, lastCheck: Number(_lsGet('ln_upd_last')) || 0 };
+
+function _withTimeout(p, ms){ return Promise.race([p, new Promise(r => setTimeout(r, ms))]); }
+
+// Lit uniquement le début de index.html (les <meta app-*> sont en tête) :
+// requête partielle + paramètre anti-cache pour contourner aussi le cache du CDN GitHub Pages.
+async function _fetchRemoteInfo(){
+  const u = new URL('index.html', location.href);
+  u.search = '?__upd=' + Date.now();
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), 12000);
+  try{
+    const res = await fetch(u.toString(), { cache:'no-store', headers:{ 'Range':'bytes=0-8191' }, signal: ctrl.signal });
+    if(!res.ok && res.status !== 206) throw new Error('HTTP ' + res.status);
+    let text = '';
+    if(res.body && res.body.getReader){
+      const reader = res.body.getReader(), dec = new TextDecoder('utf-8');
+      while(text.length < 16384){
+        const r = await reader.read();
+        if(r.done) break;
+        text += dec.decode(r.value, { stream:true });
+        if(/name="app-notes"/.test(text)) break;
+      }
+      try{ reader.cancel(); }catch(e){}
+    } else {
+      text = (await res.text()).slice(0, 16384);
+    }
+    const get = n => { const m = text.match(new RegExp('<meta name="' + n + '" content="([^"]*)"')); return m ? m[1] : null; };
+    const build = get('app-build');
+    if(!build) throw new Error('build introuvable');
+    return { build, version: get('app-version') || '', notes: get('app-notes') || '' };
+  } finally { clearTimeout(to); }
+}
+
+function _fmtTime(ts){ return new Date(ts).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }); }
+
+function _setUpdStatus(s){
+  _upd.status = s;
+  const title = $('updRowTitle'), sub = $('updRowSub'), btn = $('updRowBtn'), chev = $('updRowChev'), ico = $('updRowIco');
+  const tab = document.querySelector('.tab[data-tab="settings"]');
+  const last = _upd.lastCheck ? _fmtTime(_upd.lastCheck) : null;
+  const L = _upd.latest;
+  let t = 'Rechercher une mise à jour', st = last ? 'Dernière vérification : ' + last : 'Dernière vérification : jamais';
+  if(s === 'checking'){ t = 'Vérification…'; st = 'Recherche de la dernière version'; }
+  else if(s === 'available'){ t = 'Mise à jour disponible'; st = 'Version ' + ((L && L.version) || '?') + ((L && L.notes) ? ' · ' + L.notes : ''); }
+  else if(s === 'uptodate'){ t = 'Application à jour'; st = 'Dernière vérification : ' + (last || 'à l’instant'); }
+  else if(s === 'offline'){ t = 'Hors ligne'; st = 'Connectez-vous pour vérifier'; }
+  else if(s === 'error'){ t = 'Vérification impossible'; st = 'Réessayez dans un instant'; }
+  else if(s === 'applying'){ t = 'Installation…'; st = 'Ne fermez pas l’application'; }
+  if(title) title.textContent = t;
+  if(sub) sub.textContent = st;
+  if(btn) btn.style.display = (s === 'available') ? '' : 'none';
+  if(chev) chev.style.display = (s === 'available') ? 'none' : '';
+  if(ico) ico.classList.toggle('spin-ico', s === 'checking' || s === 'applying');
+  if(tab) tab.classList.toggle('has-update', s === 'available');
+}
+
+function showUpdateBanner(){
+  const b = $('updBanner'), L = _upd.latest; if(!b || !L) return;
+  const s = $('updSub'); if(s) s.textContent = 'Version ' + (L.version || '?') + (L.notes ? ' · ' + L.notes : '');
+  b.hidden = false; requestAnimationFrame(() => b.classList.add('show'));
+}
+function hideUpdateBanner(){
+  const b = $('updBanner'); if(!b) return;
+  b.classList.remove('show'); setTimeout(() => { if(!b.classList.contains('show')) b.hidden = true; }, 320);
+}
+function dismissUpdate(){
+  if(_upd.latest) _lsSet('ln_upd_dismissed', _upd.latest.build);   // pas de rappel pour cette version
+  hideUpdateBanner();
+}
+
+async function checkForUpdate(manual){
+  if(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) return;  // app native : mise à jour via le Store
+  if(location.protocol === 'file:'){ if(manual) showToast('Vérification indisponible hors serveur'); return; }
+  if(_upd.busy) return;
+  if(!manual && Date.now() - _upd.lastCheck < UPD_MIN_INTERVAL) return;
+  if(navigator.onLine === false){ _setUpdStatus('offline'); if(manual) showToast('Hors ligne'); return; }
+  _upd.busy = true; _setUpdStatus('checking');
+  try{
+    const info = await _fetchRemoteInfo();
+    _upd.lastCheck = Date.now(); _lsSet('ln_upd_last', String(_upd.lastCheck));
+    if(Number(info.build) > Number(APP_BUILD)){
+      _upd.latest = info; _setUpdStatus('available');
+      if(manual || _lsGet('ln_upd_dismissed') !== info.build) showUpdateBanner();
+    } else {
+      _upd.latest = null; _setUpdStatus('uptodate'); hideUpdateBanner();
+      if(manual) showToast('Vous avez la dernière version');
+    }
+  }catch(e){
+    console.warn('[Update]', e && e.message);
+    _setUpdStatus('error');
+    if(manual) showToast('Impossible de vérifier — réessayez');
+  }finally{ _upd.busy = false; }
+}
+
+// Installe : purge les caches + désenregistre le Service Worker, puis recharge avec un paramètre
+// unique (contourne aussi le cache du CDN). Les données de l'utilisateur (localStorage) sont intactes.
+async function applyUpdate(){
+  const L = _upd.latest; if(!L || _upd.busy) return;
+  _upd.busy = true; _setUpdStatus('applying');
+  const bb = $('updBannerBtn'); if(bb){ bb.disabled = true; bb.textContent = 'Installation…'; }
+  _lsSet('ln_upd_expect', L.build);
+  try{
+    if('serviceWorker' in navigator){
+      const regs = await _withTimeout(navigator.serviceWorker.getRegistrations(), 3000);
+      await _withTimeout(Promise.all((regs || []).map(r => r.unregister())), 3000);
+    }
+  }catch(e){}
+  try{
+    if(window.caches){
+      const ks = await _withTimeout(caches.keys(), 3000);
+      await _withTimeout(Promise.all((ks || []).map(k => caches.delete(k))), 3000);
+    }
+  }catch(e){}
+  const u = new URL(location.href); u.searchParams.set('v', String(Date.now()));
+  location.replace(u.toString());
+}
+
+function initUpdates(){
+  // Nettoyer le paramètre ?v= laissé par la dernière installation
+  if(/[?&]v=\d+/.test(location.search)){
+    const u = new URL(location.href); u.searchParams.delete('v');
+    try{ history.replaceState(null, '', u.pathname + u.search + u.hash); }catch(e){}
+  }
+  // Résultat de la dernière installation
+  const exp = _lsGet('ln_upd_expect');
+  if(exp){
+    try{ localStorage.removeItem('ln_upd_expect'); }catch(e){}
+    if(Number(APP_BUILD) >= Number(exp)) setTimeout(() => showToast('Mise à jour installée · version ' + APP_VERSION, 3500), 600);
+    else setTimeout(() => showToast('Version pas encore disponible sur le serveur — réessayez dans quelques minutes', 5500), 600);
+  }
+  const av = $('aboutVersion'); if(av) av.textContent = APP_VERSION + ' · ' + String(APP_BUILD).slice(0, 8);
+  _setUpdStatus('idle');
+  setTimeout(() => checkForUpdate(false), 6000);                 // 6 s après le lancement
+}
+document.addEventListener('visibilitychange', () => { if(!document.hidden) checkForUpdate(false); });
+document.addEventListener('DOMContentLoaded', initUpdates);
+
 // ── Bloquer le zoom pinch sur iOS (iOS 10+ ignore user-scalable=no) ──
 document.addEventListener('gesturestart',  e=>e.preventDefault(), {passive:false});
 document.addEventListener('gesturechange', e=>e.preventDefault(), {passive:false});
@@ -6412,7 +6613,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // ── Enregistrement Service Worker + restauration KV ──
   if('serviceWorker' in navigator && location.protocol !== 'file:'){
-    navigator.serviceWorker.register('./sw.js?v=12',{scope:'./'})
+    navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'})
       .then(r=>{
         console.log('[LawnNotifier] SW v10:',r.scope);
         r.update();

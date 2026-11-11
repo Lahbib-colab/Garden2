@@ -1,7 +1,7 @@
-// LawnNotifier — Service Worker v15
+// LawnNotifier — Service Worker v16
 // IMPORTANT : changer CACHE_VERSION force le remplacement de l'ancien cache
 
-const CACHE_VERSION = 'lawnnotifier-v15';
+const CACHE_VERSION = 'lawnnotifier-v16';
 const BASE = self.registration.scope;
 
 const ASSETS = [
@@ -15,7 +15,7 @@ const ASSETS = [
 
 // ── Install : mise en cache des assets ──
 self.addEventListener('install', event => {
-  console.log('[SW] Install v15');
+  console.log('[SW] Install v16');
   event.waitUntil(
     caches.open(CACHE_VERSION).then(cache =>
       Promise.allSettled(ASSETS.map(url => cache.add(url)))
@@ -27,7 +27,7 @@ self.addEventListener('install', event => {
 
 // ── Activate : suppression FORCÉE de tous les vieux caches ──
 self.addEventListener('activate', event => {
-  console.log('[SW] Activate v15 — nettoyage des anciens caches');
+  console.log('[SW] Activate v16 — nettoyage des anciens caches');
   event.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
@@ -53,11 +53,15 @@ self.addEventListener('fetch', event => {
       url.includes('nominatim.openstreetmap.org') ||
       url.includes('lawnnotifier-api')) return;
 
+  // Vérification de mise à jour : toujours directement le réseau, jamais le cache
+  if (url.includes('__upd=')) return;
+
   // Network-first pour TOUT : garantit qu'on a toujours la dernière version
   event.respondWith(
     fetch(event.request, { cache: 'no-store' })
       .then(response => {
-        if (response.ok) {
+        // Ne mettre en cache que les réponses complètes (un 206 partiel ferait échouer cache.put)
+        if (response.status === 200 && !event.request.headers.has('range')) {
           const clone = response.clone();
           caches.open(CACHE_VERSION).then(c => c.put(event.request, clone));
         }
@@ -94,4 +98,9 @@ self.addEventListener('push', event => {
       badge: BASE + 'icon-192.png',
     })
   );
+});
+
+// ── Message depuis la page ──
+self.addEventListener('message', event => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
