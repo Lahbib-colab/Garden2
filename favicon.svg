@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#10231a"/>
+      <stop offset="1" stop-color="#060b08"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="46%" r="46%">
+      <stop offset="0" stop-color="#30d158" stop-opacity=".26"/>
+      <stop offset="1" stop-color="#30d158" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="leaf" gradientUnits="userSpaceOnUse" x1="322" y1="318" x2="738" y2="793">
+      <stop offset="0" stop-color="#86eaa0"/>
+      <stop offset="1" stop-color="#30d158"/>
+    </linearGradient>
+  </defs>
+  <!-- Fond plein, sans coins arrondis ni cadre : iOS applique son propre masque -->
+  <rect width="1024" height="1024" rx="228" fill="url(#bg)"/>
+  <rect width="1024" height="1024" rx="228" fill="url(#glow)"/>
+  <!-- Jeune pousse : un seul pictogramme, à plat -->
+  <g transform="translate(512 512) scale(1.16) translate(-530 -555.5)" fill="url(#leaf)">
+    <path d="M512 545 C500 430 590 340 738 318 C752 462 668 560 512 545 Z"/>
+    <path d="M512 600 C522 508 450 436 322 420 C306 548 380 618 512 600 Z"/>
+    <path d="M512 770 L512 560" fill="none" stroke="url(#leaf)" stroke-width="46" stroke-linecap="round"/>
+  </g>
+</svg>

@@ -2,9 +2,9 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" content="9.3">
-<meta name="app-build" content="202611110647">
-<meta name="app-notes" content="Thèmes premium, verre dépoli et vérification des mises à jour">
+<meta name="app-version" content="9.4">
+<meta name="app-build" content="202611110702">
+<meta name="app-notes" content="Icône au choix : clair, sombre ou vert sauge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#09090f">
 <script>/* Thème appliqué avant le premier rendu (aucun flash) */
@@ -13,7 +13,13 @@ var reduce=window.matchMedia&&matchMedia("(prefers-reduced-transparency: reduce)
 d.setAttribute("data-theme",t||"forest");d.setAttribute("data-glass",(g===null?!reduce:g==="1")?"on":"off");d.setAttribute("data-glass-level",l||"2");}catch(e){document.documentElement.setAttribute("data-glass","on");}</script>
 <title>LawnNotifier</title>
 <link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
 <link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="./icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="./icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="./icon-120.png">
+<meta name="apple-mobile-web-app-title" content="LawnNotifier">
 <style>
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1935,6 +1941,24 @@ html[data-glass="off"] .ab { opacity: calc(var(--au-o, .4) * .55); }
 .spin-ico { animation: updspin .9s linear infinite; }
 @keyframes updspin { to { transform: rotate(360deg); } }
 
+
+/* ══ Choix de l'icône de l'écran d'accueil ══ */
+.icon-pick { padding: 14px 16px 16px; }
+.icon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+.icon-opt {
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+  background: none; border: none; color: var(--text2); cursor: pointer;
+  font-family: inherit; font-size: .72rem; font-weight: 600;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.icon-opt .ico { position: relative; width: 64px; height: 64px; border-radius: 22.4%; overflow: hidden; transition: transform .18s, box-shadow .18s; box-shadow: 0 6px 16px rgba(0,0,0,.4); }
+.icon-opt .ico img { width: 100%; height: 100%; display: block; }
+.icon-opt .ico::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(255,255,255,.16); pointer-events: none; }
+.icon-opt:active .ico { transform: scale(.94); }
+.icon-opt.on { color: #fff; }
+.icon-opt.on .ico { box-shadow: 0 0 0 2.5px var(--bg), 0 0 0 4.5px var(--green), 0 6px 16px rgba(0,0,0,.4); }
+.icon-hint { margin-top: 14px; font-size: .72rem; line-height: 1.45; color: var(--text2); }
+
 /* ══ Sélecteur d'apparence ══ */
 .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 6px; padding: 18px 10px 16px; }
 .theme-sw {
@@ -2330,6 +2354,13 @@ html[data-glass="off"] .ab { opacity: calc(var(--au-o, .4) * .55); }
               <button class="seg-o" id="segGl3" onclick="setGlassLevel(3)">Fort</button>
             </div>
           </div>
+        </div>
+        <div class="ios-sep" style="margin-left:0"></div>
+        <div class="icon-pick">
+          <div class="ios-row-title">Icône de l'app</div>
+          <div class="ios-row-value">Écran d'accueil de l'iPhone</div>
+          <div class="icon-grid" id="iconPicker"></div>
+          <div class="icon-hint">Pour l'appliquer : supprimez l'icône de l'écran d'accueil, ouvrez le site dans Safari, puis Partager → Sur l'écran d'accueil.</div>
         </div>
       </div>
 
@@ -6353,6 +6384,44 @@ function initAppearance(){
   if(meta && t) meta.setAttribute('content', t.bg);
 }
 document.addEventListener('DOMContentLoaded', initAppearance);
+
+// ── Icône de l'écran d'accueil : Clair / Sombre / Vert sauge ──
+// iOS enregistre l'image d'installation au moment de « Sur l'écran d'accueil » : on met à jour les <link apple-touch-icon>.
+const ICON_SETS = [
+  { key:'light', name:'Clair',      prefix:'icon-light' },
+  { key:'dark',  name:'Sombre',     prefix:'icon' },
+  { key:'sage',  name:'Vert sauge', prefix:'icon-sage' },
+];
+function _iconUrl(set, size){ return './' + set.prefix + '-' + size + '.png'; }
+function applyIcon(key, fromUser){
+  const s = ICON_SETS.find(x => x.key === key) || ICON_SETS[1];
+  document.querySelectorAll('link[rel="apple-touch-icon"]').forEach(l => {
+    const m = (l.getAttribute('sizes') || '180x180').match(/^(\d+)/);
+    l.setAttribute('href', _iconUrl(s, m ? m[1] : 180));
+  });
+  const logo = document.querySelector('.logo-icon'); if(logo) logo.src = _iconUrl(s, 180);
+  document.querySelectorAll('.icon-opt').forEach(b => b.classList.toggle('on', b.dataset.key === s.key));
+  if(fromUser){
+    _lsSet('ln_icon', s.key);
+    try{ vibrate(8); }catch(e){}
+    showToast('Icône « ' + s.name + ' » — à réinstaller sur l’écran d’accueil', 4200);
+  }
+}
+function renderIconPicker(){
+  const box = document.getElementById('iconPicker'); if(!box) return;
+  box.innerHTML = '';
+  ICON_SETS.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'icon-opt'; b.dataset.key = s.key;
+    b.setAttribute('aria-label', 'Icône ' + s.name);
+    b.innerHTML = '<span class="ico"><img alt="" src="' + _iconUrl(s, 120) + '"></span><span>' + s.name + '</span>';
+    b.addEventListener('click', () => applyIcon(s.key, true));
+    box.appendChild(b);
+  });
+}
+function initIcon(){ renderIconPicker(); applyIcon(_lsGet('ln_icon') || 'dark', false); }
+document.addEventListener('DOMContentLoaded', initIcon);
+
 
 
 // ══════════════════════════════════════════

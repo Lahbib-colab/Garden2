@@ -91,3 +91,18 @@ une bannière « Mise à jour disponible » apparaît (et une pastille rouge sur
 Sans changement du build, aucune mise à jour n'est détectée.
 La vérification est automatique (6 s après le lancement, puis au retour dans l'app, au plus toutes
 les 30 min) et manuelle : Réglages → À propos → « Rechercher une mise à jour ».
+
+## Icônes (Clair · Sombre · Vert sauge)
+
+Réglages → Apparence → « Icône de l'app » choisit l'image utilisée à l'installation sur l'écran d'accueil
+(iOS enregistre l'icône au moment de « Sur l'écran d'accueil » : il faut supprimer l'ancienne icône puis réinstaller).
+
+| Variante    | Fichiers                              | Fond                          | Pictogramme        |
+|-------------|----------------------------------------|-------------------------------|--------------------|
+| Sombre      | `icon-180.png`, `icon-512.png`, …      | #10231a → #060b08 + halo vert | vert clair         |
+| Clair       | `icon-light-180.png`, …                | #fbfdf9 → #dfeadc             | vert profond       |
+| Vert sauge  | `icon-sage-180.png`, …                 | #a9bba1 → #718b6b             | crème              |
+
+`icons-source/` : dessins SVG, masters 1024 px (sans transparence) et `glyph.svg` (pictogramme seul, blanc,
+fond transparent) pour reconstruire l'icône par calques dans **Icon Composer** (app native Capacitor/Xcode,
+iOS 26/27 : styles Clair, Sombre, Transparent, Teinté). Le calque `glyph.svg` sert aussi de calque monochrome.
